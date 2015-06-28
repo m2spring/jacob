@@ -1,16 +1,10 @@
+# JACOB
 
-                                   J A C O B
-
-                         (Just A Compiler for OBeron-2)
-
-
-                                Version 0.2
-
-                                   5/31/98
-
+(Just A Compiler for OBeron-2)
+Version 0.2
+5/31/98
         
-Introduction
-------------
+## Introduction
 
 This is the second public release of our Oberon-2 compiler Jacob. Jacob (as
 the name says ;-) is a stand-alone Oberon-2 compiler under Linux. It compiles a
@@ -27,42 +21,28 @@ There is still a lot of debug code in Jacob so the execution speed is not
 optimal. The various command-line options allows tracing of the compile phase
 and looking at intermediate results which are often hidden within a compiler.
 
+## Features
 
-Features
---------
+* Jacob implements the full Oberon-2 language as reported in "The
+  Programming Language Oberon-2" (March 1995).
+* External modules allow to write library modules in other Languages.
+* Instead of an explicit dispose function a garbage collector is implemented
+  using a mark-and-sweep algorithm.
+* Command-line options for enabling and disabling NIL, index, range 
+  and assertion checks.
 
- - Jacob implements the full Oberon-2 language as reported in 
-   "The Programming Language Oberon-2" (March 1995).
+## Implementation extensions/restrictions
 
- - External modules allow to write library modules in other Languages.
+* The underscore character is legal in identifiers.
+* The maximum length of identifiers is 255.
+* Procedures can be nested up to a maximum of 30.
+* A type extension hierarchy can have a maximum depth of 8.
+* The difference between the smallest and the largest case label may not be
+  greater than 4096.
+* SYSTEM.NEW is only valid for pointers which base type doesn't contain any
+  pointer.
 
- - Instead of an explicit dispose function a garbage collector is implemented
-   using a mark-and-sweep algorithm.
-
- - Command-line options for enabling and disabling NIL, index, range 
-   and assertion checks.
-
-
-Implementation extensions/restrictions
---------------------------------------
-
- - The underscore character is legal in identifiers.
- 
- - The maximum length of identifiers is 255.
-
- - Procedures can be nested up to a maximum of 30.
- 
- - A type extension hierarchy can have a maximum depth of 8.
- 
- - The difference between the smallest and the largest case label may not be
-   greater than 4096.
-   
- - SYSTEM.NEW is only valid for pointers which base type doesn't contain any
-   pointer.
-
-
-Disclaimer
-----------
+##Disclaimer
 
 This software package is FREE, so you can do with it whatever is in your mind, 
 BUT: whatever you do with this package, YOU are responsible and you do it ON
@@ -72,24 +52,20 @@ Because of the early version of Jacob it is definitely possible that there are
 bugs in the implementation. If you find one (or several) don't despair. Please
 let us know about it (see section Bug Report below).
 
-
-Requirements
-------------
+## Requirements
 
 Jacob only requires the GNU assembler as. We use version 2.7
 (i586-unknown-linux).
 
-
-Installation
-------------
+## Installation
 
 Un-tar the package wherever you want (/usr is recommended).
 This will result in the subdirectory tree:
 
-   jacob
-   jacob/lib
-   jacob/sys
-   jacob/test
+> jacob
+> jacob/lib
+> jacob/sys
+> jacob/test
    
 If you decide to use a home directory other than /usr
 you have to edit the script files oc and sys/oc.linker and
@@ -103,9 +79,7 @@ jacob/test, compile the Test module by "oc Test". This will also
 generate the object files of the library modules, if you have
 write permissions to jacob/lib.
 
-
-Invocation
-----------
+## Invocation
 
 By typing jacob -h you get the usual description of the usage with a short
 explanation of the available command-line options. 
@@ -113,25 +87,21 @@ explanation of the available command-line options.
 Assembler and object files are written into the directory which
 contains the source file.
 
-
-Library Modules
----------------
+## Library Modules
 
 We have (up to now) implemented a (very) quick'n'dirty set of library modules. 
 These are:
 
- - Out      : output of some basic types
- - Storage  : heap and garbage collector functions
- - SysLib   : interface to the linux os
- - RawFiles : basic file i/o
- - Lib      : command-line arguments, random numbers and others
- - Str      : string Handling
+* Out      : output of some basic types
+* Storage  : heap and garbage collector functions
+* SysLib   : interface to the linux os
+* RawFiles : basic file i/o
+* Lib      : command-line arguments, random numbers and others
+* Str      : string Handling
 
 A more detailed description can be found at the end of this file.
 
-
-Bug Report
-----------
+## Bug Report
 
 If you find an error in the implementation or you have comments regarding
 Jacob, PLEASE send it to us. Help us to improve Jacob by sending e-mail to the
@@ -141,46 +111,34 @@ following address:
 
 It is useful to send a small example program which shows the bug.
 
-
-Future Work
------------
+## Future Work
 
 As future work we plan:
 
- - A hand-written front-end which is implemented using Jacob itself
- 
- - More sufficient library modules
+* A hand-written front-end which is implemented using Jacob itself
+* More sufficient library modules
+* The use of symbol files to speed up the import stage
+* An improved memory management especially a faster mark algorithm
 
- - The use of symbol files to speed up the import stage
- 
- - An improved memory management especially a faster mark algorithm
+## Changes from Version 0.1.1 to 0.2
 
-Changes from Version 0.1.1 to 0.2
----------------------------------
+* Scanner recognizes an identifier with a length greater 255 and
+  emits an appropriate error message instead of dumping its core.
+* Fixed this bug in the code generator which caused the message
+  "Str.s:1104: Error: register does not match opcode suffix"
+  when compiling lib/Str.ob2.
+* source code is also available. 
 
- - Scanner recognizes an identifier with a length greater 255 and
-   emits an appropriate error message instead of dumping its core.
+## Changes from Version 0.1 to 0.1.1
 
- - Fixed this bug in the code generator which caused the message
-   "Str.s:1104: Error: register does not match opcode suffix"
-   when compiling lib/Str.ob2.
+* Small bug fix: Changed /lib/elf/ld-linux.so.1 to /lib/ld-linux.so.1
 
- - source code is also available. 
+## Changes from Version 0 to 0.1
 
-Changes from Version 0.1 to 0.1.1
----------------------------------
-
- - Small bug fix: Changed /lib/elf/ld-linux.so.1 to /lib/ld-linux.so.1
-
-Changes from Version 0 to 0.1
------------------------------
-
- - Jacob runs now as ELF executable and produces ELF output.
- 
- - External modules (former "foreign" modules):
- 
-   - Changed syntax (with respect to the Oakwood Guidelines):
- 
+* Jacob runs now as ELF executable and produces ELF output.
+* External modules (former "foreign" modules):
+  * Changed syntax (with respect to the Oakwood Guidelines):
+    <pre>
         Module      = MODULE ident ';' 
                       [ImportList] 
                       DeclSeq 
@@ -198,7 +156,8 @@ Changes from Version 0 to 0.1
                       } .
         XFormalPars = '(' [XFPSections] ')' [':' Qualident] .
         XFPSections = FPSection {';' FPSection} [';' '..'] .
-        
+     </pre>
+ 
      External modules are identified by the keyword EXTERNAL following the
      module's name. The following bracket-enclosed string will be passed
      unchanged to the linker.
@@ -213,61 +172,54 @@ Changes from Version 0 to 0.1
      which case any non-empty actual parameter list starting at the 
      corresponding position is legal. 
    
-   - Changed parameter passing mechanisms for external procedures:
-     - No hidden parameters (type tags, array lengths) will be passed.
-     
-     - The following "objects" will be passed according the kind/type of
-       the formal/actual parameter ('..' is treated like an open-array
-       value parameter):
+  * Changed parameter passing mechanisms for external procedures:
+    * No hidden parameters (type tags, array lengths) will be passed.
+    * The following "objects" will be passed according the kind/type of
+      the formal/actual parameter ('..' is treated like an open-array
+      value parameter):
+<pre>
+formal parameter     | actual parameter         | passed object
+===================================================================
+variable parameter   | any                      | address of actual 
+                     |                          | parameter
+-------------------------------------------------------------------
+non-open-array value | any                      | value of actual
+parameter            |                          | parameter
+-------------------------------------------------------------------
+open-array value     | character constant;      | address of actual
+parameter            | string constant; array   | parameter
+-------------------------------------------------------------------
+open-array value     | SYSTEM.BYTE; SYSTEM.PTR; | value of actual
+parameter            | BOOLEAN; CHAR variable;  | parameter
+                     | SET; integer type; real  |
+                     | type; NIL; pointer,      |
+                     | procedure or record type |
+-------------------------------------------------------------------
+..                   | character constant;      | address of actual
+                     | string constant; array   | parameter
+-------------------------------------------------------------------
+..                   | SYSTEM.BYTE; SYSTEM.PTR; | value of actual
+                     | BOOLEAN; CHAR variable;  | parameter
+                     | SET; integer type; real  |
+                     | type; NIL; pointer,      |
+                     | procedure or record type |
+---------------------+--------------------------+------------------
+</pre>
  
-       formal parameter     | actual parameter         | passed object
-       ===================================================================
-       variable parameter   | any                      | address of actual 
-                            |                          | parameter
-       -------------------------------------------------------------------
-       non-open-array value | any                      | value of actual
-       parameter            |                          | parameter
-       -------------------------------------------------------------------
-       open-array value     | character constant;      | address of actual
-       parameter            | string constant; array   | parameter
-       -------------------------------------------------------------------
-       open-array value     | SYSTEM.BYTE; SYSTEM.PTR; | value of actual
-       parameter            | BOOLEAN; CHAR variable;  | parameter
-                            | SET; integer type; real  |
-                            | type; NIL; pointer,      |
-                            | procedure or record type |
-       -------------------------------------------------------------------
-       ..                   | character constant;      | address of actual
-                            | string constant; array   | parameter
-       -------------------------------------------------------------------
-       ..                   | SYSTEM.BYTE; SYSTEM.PTR; | value of actual
-                            | BOOLEAN; CHAR variable;  | parameter
-                            | SET; integer type; real  |
-                            | type; NIL; pointer,      |
-                            | procedure or record type |
-       ---------------------+--------------------------+------------------
- 
-   - External variables declarable and accessible.
- 
-   - There are no type descriptors for records.
-   
-   - If external procedures are assigned to procedure variables, the
-     programmer should exactly know what (s)he's doing...
- 
- - Code improvements:
-   - Displays in stack frames are more compact.
-   - Jump optimization (not only) for boolean short-circuit.
-   
- - Improved memory handling at compile-time.
- 
- - New command line options.
-   
- - Various bug fixes:
-   - Comparison of two function results with a real type.
-   - Recompilation if a indirectly imported module is younger than
-     the client module.
-   - A SYSTEM.VAL at a variable parameter position gets now coded correctly.
-   - ...
- 
- - Library modules:
-   - argc, argv, env and errno now directly accessible through module SysLib.
+  * External variables declarable and accessible.
+  * There are no type descriptors for records.
+  * If external procedures are assigned to procedure variables, the
+    programmer should exactly know what (s)he's doing...
+* Code improvements:
+  * Displays in stack frames are more compact.
+  * Jump optimization (not only) for boolean short-circuit.
+* Improved memory handling at compile-time.
+* New command line options.
+* Various bug fixes:
+  * Comparison of two function results with a real type.
+  * Recompilation if a indirectly imported module is younger than
+    the client module.
+  * A SYSTEM.VAL at a variable parameter position gets now coded correctly.
+  * ...
+* Library modules:
+  * argc, argv, env and errno now directly accessible through module SysLib.
