@@ -1,0 +1,24 @@
+MODULE M1;
+
+PROCEDURE P;
+VAR bo:BOOLEAN; 
+    ch:CHAR; 
+    si:SHORTINT; 
+    in:INTEGER; 
+    li:LONGINT; 
+    re:REAL;
+    lr:LONGREAL;
+    se:BITSET;
+BEGIN (* P *)
+ bo:=TRUE; 
+ ch:='A'; 
+ si:=20; 
+ in:=21; 
+ li:=22; 
+ re:=1.0+re; 
+ lr:=2.0E0+lr; 
+ se:={0,1,2}; 
+END P;
+
+BEGIN (* M1 *)
+END M1.

@@ -1,0 +1,11 @@
+MODULE FunctionM;
+VAR i,j:LONGINT; a:ARRAY [0..20] OF LONGINT; 
+
+PROCEDURE F1(i:LONGINT):LONGINT; 
+BEGIN (* F1 *)			 
+ RETURN 1; 
+END F1;
+
+BEGIN (* FunctionM *)
+ i:=a[F1(i)+F1(j)]; 
+END FunctionM.

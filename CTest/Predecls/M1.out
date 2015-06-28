@@ -1,0 +1,25 @@
+Compiling M1 (M1.ob2) 
+ 933216 SimpleAssignment  
+ 933888   Selector   4
+ 934056     OpenIndexApplication  
+ 934392       OpenIndexPop   FALSE 0 TRUE TRUE
+ 935904         EmptyAddress  
+ 934560         OpenIndexBase  
+ 935232           OpenIndexPush   FALSE 0
+ 935904             EmptyAddress  
+ 936072             OpenIndexStart   FALSE
+ 936240               Selector   0
+ 936408                 Pointer  
+ 936576                   ContentOf   l
+ 936744                     GlobalVariable   M1$G 8 arr
+ 935400             ContentOf   l
+ 935568               GlobalVariable   M1$G 64 i
+ 935064           LongintConst   1
+ 934896           ConjureRegister  
+ 934728           ConjureRegister  
+ 934224       AddressOf  
+ 936408         Pointer  
+ 936576           ContentOf   l
+ 936744             GlobalVariable   M1$G 8 arr
+ 933384   ContentOf   b
+ 933552     GlobalVariable   M1$G 60 c

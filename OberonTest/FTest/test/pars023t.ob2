@@ -1,0 +1,7 @@
+(* DeclSeq *)
+
+MODULE pars023t;
+TYPE bla*=hurga;
+VAR a,b,c:hurga; d,e*,f-,g*,h:bla;
+TYPE a=b; c-=d.e; f*=g;
+END pars023t.

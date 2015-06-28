@@ -1,0 +1,12 @@
+Compiling esca001f
+'MODULE' esca001f
+-------------------------------------------------------------------------------
+i   VAR       SHORTINT
+c   VAR       CHAR
+-------------------------------------------------------------------------------
+
+esca001f.ob2: 17,4: Limit: case range too large
+esca001f.ob2: 17,4: Case label not compatible with case expression
+esca001f.ob2: 17,10: Case label not compatible with case expression
+esca001f.ob2: 28,5: Case label not compatible with case expression
+esca001f.ob2: 28,8: Case label not compatible with case expression

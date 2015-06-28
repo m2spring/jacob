@@ -1,0 +1,9 @@
+File scan002f.ob2
+0004,001: <ident>    Stranger
+0004,010: <ident>    Identifier
+0005,001: <ident>    Leider_nicht_erlaubt
+0006,001: <integer>  8
+0006,002: <ident>    auchkeinidentifier
+0007,001: <eof>      
+
+scan002f.ob2: 4,9: Illegal char in source

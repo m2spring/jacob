@@ -1,0 +1,25 @@
+#
+FILE=Emit.mi
+FIND1="^VAR   i        : INTEGER;$"
+REPL1="VAR yyDIV0var:INTEGER;"
+FIND2="^     i := 0; i := 1 DIV i; HALT;$"
+REPL2="yyDIV0var:=0; yyDIV0var:=1 DIV yyDIV0var; HALT;"
+
+if grep -q "$FIND1" $FILE && grep -q "$FIND2" $FILE ; then
+   sed -e s/"$FIND1"/"$REPL1"/ \
+       -e s/"$FIND2"/"$REPL2"/ $FILE >$FILE.tmp
+   mv $FILE.tmp $FILE
+   echo $FILE has been patched
+   exit
+fi
+
+if grep -q "$REPL1" $FILE && grep -q "$REPL2" $FILE ; then
+   exit
+fi
+
+echo "Unable to patch $FILE!"
+echo -ne "\a" ; sleep 1
+echo -ne "\a" ; sleep 1
+echo -ne "\a" ;
+exit 1
+	

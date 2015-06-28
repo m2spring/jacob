@@ -1,0 +1,20 @@
+MODULE M;
+TYPE tRec=RECORD
+           a:LONGINT; 
+          END;
+VAR p:PROCEDURE;
+    a:ARRAY [0..19] OF PROCEDURE;
+    i:LONGINT;        
+    rec:tRec; 
+
+PROCEDURE P1(VAR r:tRec);
+BEGIN (* P1 *)
+END P1;
+
+BEGIN (* M *)   
+(*<<<<<<<<<<<<<<<
+ p;            
+ a[i];
+>>>>>>>>>>>>>>>*)
+ P1(rec); 
+END M.

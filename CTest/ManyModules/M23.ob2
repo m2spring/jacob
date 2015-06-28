@@ -1,0 +1,3 @@
+MODULE M23;
+BEGIN (* M23 *)
+END M23.

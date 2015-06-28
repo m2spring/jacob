@@ -1,0 +1,60 @@
+Code.AssignStmt
+   CodeAssignment.StandardType
+      CodeRExpr.DesignExpr
+         CodeRDesignator
+            CodeRDesignator1.StandardTypedVar
+               CodeLDesignator
+                  CodeLDesignator1.Var
+                     CodeDesignations.Index
+                        CodeRExpr.DesignExpr
+                           CodeRDesignator
+                              CodeLDesignator
+                                 CodeArguments
+                                    CodeValParam.StandardType
+                                       CodeRExpr.DesignExpr
+                                          CodeRDesignator
+                                             CodeRDesignator1.StandardTypedVar
+                                                CodeLDesignator
+                                                   CodeLDesignator1.Var
+                                                      CodeDesignations.mtDesignation
+                                                      CodeDesignations.mtDesignation => 734996
+                                                   CodeLDesignator1.Var => 734996
+                                                CodeLDesignator => 734996
+                                             CodeRDesignator1.StandardTypedVar => 734864
+                                          CodeRDesignator => 734864
+                                       CodeRExpr.DesignExpr => 734864
+                                 CodeLDesignator1.Proc
+                                 CodeLDesignator1.Proc => 735128
+                              CodeLDesignator => 735128
+                           CodeRDesignator => 734996
+                        CodeRExpr.DesignExpr => 734996
+                        CodeDesignations.mtDesignation
+                        CodeDesignations.mtDesignation => 734864
+                     CodeDesignations.Index => 734864
+                  CodeLDesignator1.Var => 734864
+               CodeLDesignator => 734864
+            CodeRDesignator1.StandardTypedVar => 734732
+         CodeRDesignator => 734732
+      CodeRExpr.DesignExpr => 734732
+   CodeLDesignator
+      CodeLDesignator1.Var
+         CodeDesignations.mtDesignation
+         CodeDesignations.mtDesignation => 734600
+      CodeLDesignator1.Var => 734600
+   CodeLDesignator => 734600
+no code selected
+ 734468 SimpleAssignment  
+ 734600   GlobalVariable   Function$G 8
+                     Gv Cost=0 Rule=61
+                     Memory Cost=0 Rule=7
+ 734732   ContentOf   l
+ 734864     Index   4
+ 735128       DirectCall   4 L1
+                     Memory Cost=0 Rule=25
+ 734996       FuncResultOf   l
+                     LReg Cost=0 Rule=33
+                     Reg Cost=0 Rule=3
+ 735128         DirectCall   4 L1
+                     Memory Cost=0 Rule=25
+
+internal error

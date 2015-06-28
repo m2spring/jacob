@@ -1,0 +1,124 @@
+Compiling Ind02 (Ind02.ob2) 
+Linking Ind02
+	.comm	Ind02$G,7660
+#      8 vl1: LONGINT
+#     12 vl2: LONGINT
+#     16 vl3: LONGINT
+#     20 a: ARRAY 10 OF RECORD...
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Ind02$N:
+	.asciz	"Ind02"
+	.align	2,144
+	.long	Ind02$N
+	.long	0
+	.long	_NILPROC
+	.globl	Ind02$D
+Ind02$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Ind02$I$N:
+	.asciz	"Ind02$I"
+	.align	2,144
+	.long	Ind02$I$N
+	.long	0
+	.long	_NILPROC
+Ind02$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Ind02$I
+Ind02$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Ind02$I$D
+	subl	$L3,%esp
+
+	# a[l1].i:=$SI_LI(l2);
+	movl	$2,784+Ind02$G	# a 
+
+	# a[l1].a[l1][l2][l3]:=1;
+	movw	$1,844+Ind02$G	# a 
+
+	# a[l3].r.a[l1].l:=4711;
+	movl	$4711,2932+Ind02$G	# a 
+
+	# a[l3].r.a[l1].a[l2]:=44;
+	movl	$44,2944+Ind02$G	# a 
+
+	# vl1:=$SI_LI(l1);
+	movl	$1,8+Ind02$G	# vl1 
+
+	# vl2:=$SI_LI(l2);
+	movl	$2,12+Ind02$G	# vl2 
+
+	# vl3:=$SI_LI(l3);
+	movl	$3,16+Ind02$G	# vl3 
+
+	# a[vl1].i:=$SI_LI(l2);
+	movl	8+Ind02$G,%eax	# vl1 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	imull	$764,%eax
+	movl	$2,20+Ind02$G(%eax)	# a 
+
+	# a[vl1].a[vl1][vl2][vl3]:=1;
+	movl	8+Ind02$G,%ebx	# vl1 
+	cmpl	$10,%ebx
+	jae	_IndexFault
+	movl	8+Ind02$G,%eax	# vl1 
+	cmpl	$20,%eax
+	jae	_IndexFault
+	imull	$764,%ebx
+	leal	24+Ind02$G(%ebx),%ebx	# a 
+	imull	$30,%eax
+	leal	(%ebx,%eax),%ebx
+	movl	12+Ind02$G,%eax	# vl2 
+	cmpl	$3,%eax
+	jae	_IndexFault
+	leal	(%eax,%eax,4),%eax	# %eax:=5*%eax; 
+	leal	(%ebx,%eax,2),%ebx
+	movl	16+Ind02$G,%eax	# vl3 
+	cmpl	$5,%eax
+	jae	_IndexFault
+	movw	$1,(%ebx,%eax,2)
+
+	# a[vl3].r.a[vl1].l:=4711;
+	movl	16+Ind02$G,%ebx	# vl3 
+	cmpl	$10,%ebx
+	jae	_IndexFault
+	movl	8+Ind02$G,%eax	# vl1 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	imull	$764,%ebx
+	leal	624+Ind02$G(%ebx),%ebx	# a 
+	shll	$4,%eax	# %eax:=16*%eax; 
+	movl	$4711,(%ebx,%eax)
+
+	# a[vl3].r.a[vl1].a[vl2]:=44;
+	movl	16+Ind02$G,%ebx	# vl3 
+	cmpl	$10,%ebx
+	jae	_IndexFault
+	movl	8+Ind02$G,%eax	# vl1 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	imull	$764,%ebx
+	leal	624+Ind02$G(%ebx),%ebx	# a 
+	shll	$4,%eax	# %eax:=16*%eax; 
+	leal	4(%ebx,%eax),%ebx
+	movl	12+Ind02$G,%eax	# vl2 
+	cmpl	$3,%eax
+	jae	_IndexFault
+	movl	$44,(%ebx,%eax,4)
+
+	leave
+	ret
+L3=	0
+

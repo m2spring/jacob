@@ -1,0 +1,436 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.Stmts                                                                                                           ***/
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeStmts ( stmt:Stmts )
+
+ Stmt(next:Stmts)?{ 
+    IF ARG.OptionCommentsInAsm THEN CMT.Cmt(stmt); END;
+    CodeStmt(stmt); 
+    ASM.Ln; 
+    CodeStmts(next); 
+ };.
+
+/*END CodeStmts */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeStmt ( stmt:Stmt )
+LOCAL{ VAR acode:ACode; dcode:DCode; boolcode:BoolCode; condLabel,endLabel,loopLabel,trueLabel,falseLabel:LAB.T; }
+
+ AssignStmt(_
+           ,designator:Designator(_,_,_,_,dstType,_,_,_,_)
+           ,expr:Exprs(_,srcType,srcVal),coercion)?{ TRACE(CodeStmts.AssignStmt); 
+    CodeAssignment(dstType,srcType,srcVal,designator,expr,coercion);
+    SHOWCODE(CodeStmts.AssignStmt,0); 
+ };.
+ 
+ CallStmt(_,d:Designator)?{ TRACE(CodeStmts.CallStmt); 
+    CodeProcedureCall(d); 
+    SHOWCODE(CodeStmts.CallStmt,0); 
+ };.
+ 
+ IfStmt(_,expr:Exprs(_,_,value),_,_)?{ TRACE(CodeStmts.IfStmt); 
+    CodeIfStmt(value,stmt); 
+    SHOWCODE(CodeStmts.IfStmt,0); 
+ };.
+
+ CaseStmt(_,_,_,_,labelLimits)?{ TRACE(CodeStmts.CaseStmt); 
+    CodeCaseStmt(labelLimits,stmt); 
+    SHOWCODE(CodeStmts.CaseStmt,0); 
+ };.
+ 
+ WhileStmt(_,expr:Exprs(_,_,value),_)?{ TRACE(CodeStmts.WhileStmt); 
+    CodeWhileStmt(value,stmt); 
+    SHOWCODE(CodeStmts.WhileStmt,0); 
+ };.
+
+ RepeatStmt(_,_,expr:Exprs(_,_,value))?{ TRACE(CodeStmts.RepeatStmt); 
+    CodeRepeatStmt(value,stmt); 
+    SHOWCODE(CodeStmts.RepeatStmt,0); 
+ };.
+ 
+ ForStmt(_,_,_,_,_,_,_,_,entry,_,_,_)?{ TRACE(CodeStmts.ForStmt); 
+    CodeForStmt(entry,stmt); 
+    SHOWCODE(CodeStmts.ForStmt,0); 
+ };. 
+
+ LoopStmt(_,stmts:Stmts,endLoopLabel)?{ TRACE(CodeStmts.LoopStmt); 
+    ASM.Label(LAB.New(loopLabel)); 
+    CodeStmts(stmts); 
+
+    IF ARG.OptionCommentsInAsm THEN ASM.CmtLnS('	END (* LOOP *)'); END;
+    ASM.C1( jmp  ,  L(loopLabel) ); 
+    ASM.Label(endLoopLabel); 
+    SHOWCODE(CodeStmts.LoopStmt,0); 
+ };. 
+
+ WithStmt(_,guardedStmts:GuardedStmts,else:Stmts)?{ TRACE(CodeStmts.WithStmt); 
+    CodeGuardedStmts(guardedStmts,LAB.NewLocal(),else,LAB.NewLocal()); 
+    SHOWCODE(CodeStmts.WithStmt,0); 
+ };.
+ 
+ ExitStmt(_,_,endLoopLabel)?{ TRACE(CodeStmts.ExitStmt); 
+    ASM.C1( jmp  ,  L(endLoopLabel) ); 
+    SHOWCODE(CodeStmts.ExitStmt,0); 
+ };.
+ 
+ ReturnStmt(_,_,expr:Exprs(_,srcType,srcVal),coercion)?{ TRACE(CodeStmts.ReturnStmt); 
+    IF IsEmptyNode(expr) THEN 
+       Cons.ProcReturn;
+    ELSE 
+       CodeFunctionReturn(srcType,srcVal,expr,coercion); 
+    END;
+    SHOWCODE(CodeStmts.ReturnStmt,0); 
+ };.
+ 
+/*END CodeStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeIfStmt ( exprVal:ValueReprs , IfStmt ) 
+LOCAL{ VAR boolcode:BoolCode; endLabel,trueLabel,falseLabel:LAB.T; }
+
+ BooleanValue(v),IfStmt(_,_,then:Stmts,else:Stmts)?{ TRACE(CodeIfStmt.Const); 
+    IF v THEN 
+       CodeStmts(then); 
+    ELSE 
+       CodeStmts(else); 
+    END;			 
+    SHOWCODE(CodeIfStmt.Const,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:ExitStmt(_,_,endLoopLabel),else:Stmts)?{ TRACE(CodeIfStmt.ThenExit.Else); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,endLoopLabel,LAB.New(falseLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    
+    ASM.Label(falseLabel); 		      
+    CodeStmts(else); 
+    SHOWCODE(CodeIfStmt.ThenExit.Else,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:Stmts,else:ExitStmt(_,_,endLoopLabel))?{ TRACE(CodeIfStmt.Then.ElseExit); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(trueLabel),endLoopLabel,boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    
+    ASM.Label(trueLabel); 		      
+    CodeStmts(then); 
+    SHOWCODE(CodeIfStmt.Then.ElseExit,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:mtStmt,else:mtStmt)?{ TRACE(CodeIfStmt.mt.mt); 
+    endLabel:=LAB.NewLocal(); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,endLabel,endLabel,boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    ASM.Label(endLabel); 		      
+    SHOWCODE(CodeIfStmt.mt.mt,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:Stmts,else:mtStmt)?{ TRACE(CodeIfStmt.Then.mt); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(trueLabel),LAB.New(endLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    
+    ASM.Label(trueLabel); 		      
+    CodeStmts(then); 
+    ASM.Label(endLabel); 		      
+    SHOWCODE(CodeIfStmt.Then.mt,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:mtStmt,else:Stmts)?{ TRACE(CodeIfStmt.mt.Else); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(endLabel),LAB.New(falseLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    
+    ASM.Label(falseLabel); 		      
+    CodeStmts(else); 
+    ASM.Label(endLabel); 		      
+    SHOWCODE(CodeIfStmt.mt.Else,0); 
+ };.
+
+ _,IfStmt(_,expr:Exprs,then:Stmts,else:Stmts)?{ TRACE(CodeIfStmt.Then.Else); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(trueLabel),LAB.New(falseLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    
+    ASM.Label(trueLabel); 		      
+    CodeStmts(then); 
+    ASM.C1( jmp  ,  L(LAB.New(endLabel)) ); 
+    
+    ASM.Label(falseLabel); 		      
+    CodeStmts(else); 
+    ASM.Label(endLabel); 		      
+    SHOWCODE(CodeIfStmt.Then.Else,0); 
+ };.
+
+/*END CodeIfStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeWhileStmt ( exprVal:ValueReprs , WhileStmt ) 
+LOCAL{ VAR boolcode:BoolCode; condLabel,endLabel,loopLabel:LAB.T; }
+
+ BooleanValue(v),WhileStmt(_,_,stmts:Stmts)?{ TRACE(CodeWhileStmt.Const); 
+    IF v THEN 
+       ASM.Label(LAB.New(loopLabel)); 
+       CodeStmts(stmts); 
+       ASM.C1( jmp  ,  L(loopLabel) ); 
+    END;			 
+    SHOWCODE(CodeWhileStmt.Const,0); 
+ };.
+
+ _,WhileStmt(_,expr:Exprs,stmts:Stmts)?{ TRACE(CodeWhileStmt); 
+    ASM.C1( jmp  ,  L(LAB.New(condLabel)) ); 
+    ASM.Label(LAB.New(loopLabel)); 
+    CodeStmts(stmts); 
+    ASM.Label(condLabel); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,loopLabel,LAB.New(endLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    ASM.Label(endLabel); 
+    SHOWCODE(CodeWhileStmt,0); 
+ };.
+
+/*END CodeWhileStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeRepeatStmt ( exprVal:ValueReprs , RepeatStmt ) 
+LOCAL{ VAR boolcode:BoolCode; endLabel,loopLabel:LAB.T; }
+
+ BooleanValue(v),RepeatStmt(_,stmts:Stmts,_)?{ TRACE(CodeRepeatStmt.Const); 
+    IF v THEN 
+       CodeStmts(stmts); 
+    ELSE 
+       ASM.Label(LAB.New(loopLabel)); 
+       CodeStmts(stmts); 
+       ASM.C1( jmp  ,  L(loopLabel) ); 
+    END;
+    SHOWCODE(CodeRepeatStmt.Const,0); 
+ };.
+
+ _,RepeatStmt(_,stmts:Stmts,expr:Exprs)?{ TRACE(CodeRepeatStmt); 
+    ASM.Label(LAB.New(loopLabel)); 
+    CodeStmts(stmts); 
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(endLabel),loopLabel,boolcode); 
+    Cons.NoBoolVal(boolcode); 
+    ASM.Label(endLabel); 
+    SHOWCODE(CodeRepeatStmt,0); 
+ };.
+
+/*END CodeRepeatStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeCaseStmt ( LabelRanges , stmt:CaseStmt ) 
+LOCAL{ VAR dcode:DCode; acode:ACode; }
+
+ CharRange   (_,a,b),_?{ CodeCaseStmt1(stmt,a,b,(* isChar:= *)TRUE ); };.
+ IntegerRange(_,a,b),_?{ CodeCaseStmt1(stmt,a,b,(* isChar:= *)FALSE); };.
+ 
+ _,CaseStmt(_,expr:Exprs(_,type,_),_,else:Stmts,_)?{ TRACE(CodeCaseStmt); 
+    CodeRExpr(type,expr,OB.cmtCoercion,dcode); 
+    Cons.PointerFrom(dcode,acode);
+    Cons.NoFuncResult(acode);
+    
+    CodeStmts(else); 	   
+    SHOWCODE(CodeCaseStmt,0); 
+ };.
+
+/*END CodeCaseStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeCaseStmt1 ( CaseStmt , minLabelVal:LONGINT , maxLabelVal:LONGINT , isChar:BOOLEAN )
+LOCAL{ VAR i:LONGINT; tabLabel,elseLabel,endLabel:tLabel; LabelTab:tCaseLabelTab; dcode:DCode; s:ARRAY [0..10] OF CHAR; } 
+
+ CaseStmt(_,expr:Exprs(_,type,_),cases:Cases,else:Stmts,_),..?{ TRACE(CodeCaseStmt1); 
+    tabLabel:=LAB.NewLocal(); endLabel:=LAB.NewLocal(); elseLabel:=LAB.NewLocal(); 
+    FOR i:=0 TO maxLabelVal-minLabelVal DO LabelTab[i]:=elseLabel; END;
+
+    CodeRExpr(type,expr,OB.cmtCoercion,dcode); 
+    Cons.CaseExpr(isChar,minLabelVal,maxLabelVal,tabLabel,elseLabel,dcode); 
+    CodeCases(cases,endLabel,LabelTab,minLabelVal); 
+
+    ASM.Align(2); 
+    ASM.Label(tabLabel); 
+    FOR i:=0 TO maxLabelVal-minLabelVal DO 
+     ASM.LongL(LabelTab[i]); 
+     IF ARG.OptionCommentsInAsm THEN 
+        IF isChar THEN OT.oCHAR2ARR(i+minLabelVal,s); ASM.CmtS(s); ELSE ASM.CmtI(i+minLabelVal); END;
+     END;
+    END;
+
+    ASM.Label(elseLabel); 
+    CodeStmts(else); 
+    ASM.Label(endLabel); 
+    SHOWCODE(CodeCaseStmt1,0); 
+ };.
+
+/*END CodeCaseStmt1 */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeCases ( case:Cases , endLabel:tLabel , REF LabelTab:tCaseLabelTab , minLabelVal:LONGINT )
+LOCAL{ VAR label:tLabel; }
+
+ Case(next:Cases,caseLabels:CaseLabels,stmts:Stmts),..?{ TRACE(CodeCases); 
+    ASM.Label(LAB.New(label)); 
+    IF ARG.OptionCommentsInAsm THEN CMT.Cmt(case); END;
+    EnterCaseLabels(caseLabels,label,LabelTab,minLabelVal); 
+
+    CodeStmts(stmts); 
+    ASM.C1( jmp  ,  L(endLabel) ); 
+    ASM.Ln;
+
+    CodeCases(next,endLabel,LabelTab,minLabelVal); 
+    SHOWCODE(CodeCases,0); 
+ };.
+
+/*END CodeCases */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE EnterCaseLabels ( CaseLabels , label:tLabel , REF LabelTab:tCaseLabelTab , minLabelVal:LONGINT )
+
+ CaseLabel(next:CaseLabels,ConstExpr(_,Exprs(_,_,a)),ConstExpr(_,Exprs(_,_,b))),..?{
+    EnterCaseLabel (a,b ,label,LabelTab,minLabelVal); 
+    EnterCaseLabels(next,label,LabelTab,minLabelVal); 
+ };.
+
+/*END EnterCaseLabels */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE EnterCaseLabel ( ValueReprs , ValueReprs , label:tLabel , REF LabelTab:tCaseLabelTab , minLabelVal:LONGINT )
+LOCAL{ VAR i,x,y:LONGINT; }
+
+ CharValue   (a),mtValue        ,.. ;
+ IntegerValue(a),mtValue        ,.. ?{ x:=a; LabelTab[x-minLabelVal]:=label; };.
+ 
+ CharValue   (a),CharValue   (b),.. ;
+ IntegerValue(a),IntegerValue(b),.. ?{ x:=a; y:=b; FOR i:=x-minLabelVal TO y-minLabelVal DO LabelTab[i]:=label; END; };.
+
+/*END EnterCaseLabel */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeForStmt ( v:VarEntry , ForStmt ) 
+LOCAL{ VAR acode,vAcode:ACode; stepDcode,dcode:DCode; condLabel,loopLabel:LAB.T; }
+
+ VarEntry(_,_,_,_,_,_,vType:TypeRepr(_,vSize,_,_,_),_,_,_,_,_,_,_)
+,ForStmt(_,_,_
+        ,beg:Exprs(_,begType,_)
+        ,end:Exprs(_,endType,_)
+        ,ConstExpr(_,Exprs(_,_,step))
+        ,stmts:Stmts,curLevel,entry,tempAddr,begCoercion,endCoercion)?{ TRACE(CodeForStmt); 
+
+    (* temp := end *)
+    Cons.LocalVariable(tempAddr,Idents.NoIdent,acode); 
+    CodeRExpr(endType,end,endCoercion,dcode); 
+    Cons.SimpleAssignment(acode,dcode); 
+    
+    (* v := beg *)
+    CodeSimpleLDesignator(entry,curLevel,vAcode); 
+    CodeRExpr(begType,beg,begCoercion,dcode); 
+    Cons.SimpleAssignment(vAcode,dcode); 
+    
+    ASM.C1( jmp  ,  L(LAB.New(condLabel)) ); 
+    ASM.Label(LAB.New(loopLabel)); 
+
+    CodeStmts(stmts); 
+
+    CodeSimpleLDesignator(entry,curLevel,vAcode); 
+    Cons.ForStmt(tempAddr,V.ValueOfInteger(step),loopLabel,condLabel,ASM.SizeTab[vSize],vAcode); 
+    SHOWCODE(CodeForStmt,0); 
+ };.
+
+ .. ?{ ERR.Fatal('CODE.CodeForStmt: failed'); };.
+ 
+/*END CodeForStmt */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeGuardedStmts ( guardedStmts:GuardedStmts , elseLabel:tLabel , else:Stmts , endLabel:tLabel )
+LOCAL{ VAR nextLabel:tLabel; }
+
+ GuardedStmt(mtGuardedStmt,Guard(_,_,_,var,testtype),stmts:Stmts,curLevel),..?{ TRACE(CodeGuardStmts.LastGuard); 
+    IF ARG.OptionCommentsInAsm THEN CMT.Cmt(guardedStmts); END;
+
+    CodeGuard(var,testtype,elseLabel,curLevel); 
+    CodeStmts(stmts); 
+    ASM.C1( jmp  ,  L(endLabel) ); 
+
+    ASM.Label(elseLabel); 
+    CodeStmts(else); 
+    ASM.Label(endLabel);  
+    SHOWCODE(CodeGuardStmts.LastGuard,0); 
+ };.
+ 
+ GuardedStmt(next:GuardedStmts,Guard(_,_,_,var,testtype),stmts:Stmts,curLevel),..?{ TRACE(CodeGuardStmts.Guard); 
+    IF ARG.OptionCommentsInAsm THEN CMT.Cmt(guardedStmts); END;
+
+    CodeGuard(var,testtype,LAB.New(nextLabel),curLevel); 
+    CodeStmts(stmts); 
+    ASM.C1( jmp  ,  L(endLabel) ); 
+    
+    ASM.Label(nextLabel); 
+    CodeGuardedStmts(next,elseLabel,else,endLabel); 
+    SHOWCODE(CodeGuardStmts.Guard,0); 
+ };.
+ 
+ .. ?{ ERR.Fatal('CODE.CodeGuardedStmts: failed'); };.
+
+/*END CodeGuardedStmts */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeGuard ( variable:VarEntry , testType:TypeReprs , falseLabel:tLabel , curLevel:tLevel )
+LOCAL{ VAR acode:ACode; dcode:DCode; boolcode:BoolCode; labelcode:Cons.Label; trueLabel:tLabel; ofs:LONGINT; }
+
+ VarEntry(_,_,ident,_,level,_,staticType:RecordTypeRepr,_,_,parMode,address,_,isWithed,_),..? (parMode=OB.REFPAR); 
+ { TRACE(CodeGuard.RecordType); 
+    IF (ADR.TTableElemOfsInTDesc(staticType,testType,ofs) OR isWithed) & (ofs#0) THEN 
+       IF level=curLevel THEN
+          Cons.LocalVariable(address-4,ident,acode); 
+       ELSE
+          Cons.LocalVariable(-4*(1+level-OB.MODULELEVEL),Idents.NoIdent,acode); 
+          Cons.ContentOf(l,acode,dcode); 
+          Cons.PointerFrom(dcode,acode); 
+          Cons.Selector(address-4,acode,acode); 
+       END;
+       Cons.ContentOf(l,acode,dcode); 
+
+       Cons.LabelDef(LAB.MT,labelcode); 
+       Cons.Is(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,LAB.New(trueLabel),falseLabel,labelcode,dcode,boolcode);
+       Cons.NoBoolVal(boolcode); 
+       ASM.Label(trueLabel); 
+    END;
+    SHOWCODE(CodeGuard.RecordType,0); 
+ };.
+
+ VarEntry(_,_,_,_,_,_,PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,statType:TypeReprs)),_,_,_,_,_,isWithed,_)
+,                     PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,tstType :TypeReprs)),..?{ TRACE(CodeGuard.PointerType); 
+    IF (ADR.TTableElemOfsInTDesc(statType,tstType,ofs) OR isWithed) & (ofs#0) THEN 
+       CodeSimpleLDesignator(variable,curLevel,acode); 
+       Cons.ContentOf(l,acode,dcode); 
+
+       IF ARG.OptionNilChecking THEN 
+          Cons.NilCheck(dcode,dcode); 
+       END;
+       Cons.PointerFrom(dcode,acode); 
+       Cons.Selector(-4,acode,acode); 
+       Cons.ContentOf(l,acode,dcode); 
+
+       Cons.LabelDef(LAB.MT,labelcode); 
+       Cons.Is(LAB.AppS(T.LabelOfTypeRepr(tstType),'$D'),ofs,LAB.New(trueLabel),falseLabel,labelcode,dcode,boolcode);
+       Cons.NoBoolVal(boolcode); 
+       ASM.Label(trueLabel); 
+    END;
+    SHOWCODE(CodeGuard.PointerType,0); 
+ };.
+
+ .. ?{ ERR.Fatal('CODE.CodeGuard: failed'); };.
+
+/*END CodeGuard */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.Stmts                                                                                                       ***/
+/********************************************************************************************************************************/
+

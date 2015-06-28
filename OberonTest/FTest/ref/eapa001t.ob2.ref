@@ -1,0 +1,12 @@
+Compiling eapa001t
+'MODULE' eapa001t
+-------------------------------------------------------------------------------
+tarray   TYPE      ARRAY 3 OF CHAR
+a        VAR       tarray
+si       VAR       SHORTINT
+i        VAR       INTEGER
+li       VAR       LONGINT
+r        VAR       REAL
+lr       VAR       LONGREAL
+-------------------------------------------------------------------------------
+

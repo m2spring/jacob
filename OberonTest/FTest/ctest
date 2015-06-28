@@ -1,0 +1,30 @@
+#!/bin/sh
+
+if [ "$1" = "" ]
+   then echo Aufruf mit ctest VERZEICHNISNAME
+        exit
+fi
+dir=`pwd`
+cd $dir/test
+rm core 2>/dev/null
+echo Compiling test-files...
+for i in *.ob2
+ do
+  echo -ne "processing $i   "
+  out=$dir/$1/$i.$1
+  case $i in
+   scan*)  oc -dp -t  $i &>$out;;
+   pars*)  oc -dp -pt $i &>$out;;
+   e*)     oc -dp -cg -Ds $i &>$out;;
+  esac
+  if [ -f core ]
+     then echo " Segmentation fault (core dumped)"
+          rm core 2>/dev/null
+     else echo -ne "\r"
+  fi
+ done
+
+echo -ne "                                                   \r"
+
+
+

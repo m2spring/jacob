@@ -1,0 +1,18 @@
+Compiling etpo001t
+'MODULE' etpo001t
+-------------------------------------------------------------------------------
+tArray    TYPE      ARRAY 3 OF CHAR
+tRecord   TYPE      RECORD
+                     a   VAR       INTEGER
+                     b   VAR       INTEGER
+                     c   VAR       INTEGER
+                     k   VAR       CHAR
+                    END
+tP1       TYPE      POINTER TO tArray
+tP2       TYPE      POINTER TO tRecord
+tP3       TYPE      POINTER TO ARRAY OF ARRAY OF INTEGER
+p1        VAR       tP1
+p2        VAR       tP2
+p3        VAR       tP3
+-------------------------------------------------------------------------------
+

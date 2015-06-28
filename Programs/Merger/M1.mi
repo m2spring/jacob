@@ -1,0 +1,4 @@
+MODULE M1;
+IMPORT
+BE GIN (* M1 *)
+END M1.

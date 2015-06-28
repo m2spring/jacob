@@ -1,0 +1,103 @@
+Compiling eaex001f
+'PROCEDURE' P1
+-------------------------------------------------------------------------------
+c   VAR       CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P2
+-------------------------------------------------------------------------------
+c25   CONST     BOOLEAN = <?Value>
+c26   CONST     BOOLEAN = <?Value>
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P3
+-------------------------------------------------------------------------------
+c28   CONST     BOOLEAN = <?Value>
+c29   CONST     BOOLEAN = <?Value>
+c30   CONST     BOOLEAN = FALSE
+-------------------------------------------------------------------------------
+
+'MODULE' eaex001f
+-------------------------------------------------------------------------------
+csi         CONST     SHORTINT = 1
+ci          CONST     INTEGER = 500
+cli         CONST     LONGINT = MAX(LONGINT)
+cr          CONST     REAL = 4.00000E0
+clr         CONST     LONGREAL = 2.0000000000000D0
+cs          CONST     SET = {1}
+cb          CONST     BOOLEAN = TRUE
+cc          CONST     <Char> = 'A'
+T0          TYPE      RECORD
+                      END
+                      (-->T1)
+
+T1          TYPE      RECORD(T0)
+                      END
+TPROC       TYPE      ()
+T0POINTER   TYPE      POINTER TO T0
+T1POINTER   TYPE      POINTER TO T1
+b           VAR       BOOLEAN
+arr         VAR       ARRAY 5 OF CHAR
+rec0        VAR       T0
+rec1        VAR       T1
+proc        VAR       TPROC
+ptr0        VAR       T0POINTER
+ptr1        VAR       T1POINTER
+c1          CONST     <ErrorType> = <?Value>
+c2          CONST     <ErrorType> = <?Value>
+c3          CONST     <ErrorType> = <?Value>
+c4          CONST     <ErrorType> = <?Value>
+c5          CONST     <ErrorType> = <?Value>
+c6          CONST     <ErrorType> = <?Value>
+c7          CONST     <ErrorType> = <?Value>
+c8          CONST     <ErrorType> = <?Value>
+c9          CONST     <ErrorType> = <?Value>
+c10         CONST     <ErrorType> = <?Value>
+c11         CONST     <ErrorType> = <?Value>
+c12         CONST     <ErrorType> = <?Value>
+c13         CONST     <ErrorType> = <?Value>
+c14         CONST     <ErrorType> = <?Value>
+c15         CONST     <ErrorType> = <?Value>
+c16         CONST     BOOLEAN = TRUE
+c17         CONST     BOOLEAN = <EmptyValue>
+c18         CONST     BOOLEAN = FALSE
+c19         CONST     BOOLEAN = <EmptyValue>
+c20         CONST     INTEGER = <EmptyValue>
+c21         CONST     BOOLEAN = <?Value>
+P1          PROCEDURE ()
+P2          PROCEDURE ()
+P3          PROCEDURE ()
+-------------------------------------------------------------------------------
+
+eaex001f.ob2: 43,10: Operator not applicable
+eaex001f.ob2: 47,10: Operator not applicable
+eaex001f.ob2: 51,10: Operator not applicable
+eaex001f.ob2: 61,9: Operator not applicable
+eaex001f.ob2: 65,10: Operator not applicable
+eaex001f.ob2: 69,10: Operator not applicable
+eaex001f.ob2: 73,10: Operator not applicable
+eaex001f.ob2: 82,9: Operator not applicable
+eaex001f.ob2: 86,9: Operator not applicable
+eaex001f.ob2: 94,10: Operator not applicable
+eaex001f.ob2: 104,11: Operator not applicable
+eaex001f.ob2: 108,11: Operator not applicable
+eaex001f.ob2: 112,11: Operator not applicable
+eaex001f.ob2: 116,10: Operator not applicable
+eaex001f.ob2: 125,13: Invalid type of expression
+eaex001f.ob2: 129,7: Invalid type of expression
+eaex001f.ob2: 129,7: Expression not constant
+eaex001f.ob2: 133,15: Invalid type of expression
+eaex001f.ob2: 137,7: Invalid type of expression
+eaex001f.ob2: 137,7: Expression not constant
+eaex001f.ob2: 141,7: Expression not constant
+eaex001f.ob2: 141,8: Invalid type of expression
+eaex001f.ob2: 153,11: Operator not applicable
+eaex001f.ob2: 161,8: Operator not applicable
+eaex001f.ob2: 165,9: Operator not applicable
+eaex001f.ob2: 181,11: Operator not applicable
+eaex001f.ob2: 185,11: Operator not applicable
+eaex001f.ob2: 190,10: Operator not applicable
+eaex001f.ob2: 201,8: Invalid type of expression
+eaex001f.ob2: 205,8: Invalid type of expression
+eaex001f.ob2: 209,15: Invalid type of expression
+eaex001f.ob2: 219,11: Type test not applicable

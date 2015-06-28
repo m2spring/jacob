@@ -1,0 +1,77 @@
+Compiling Ind01 (Ind01.ob2) 
+Linking Ind01
+	.comm	Ind01$G,176
+#      8 s: BOOLEAN
+#     12 r1: RECORD...
+#    156 r2: RECORD...
+#    168 l1: LONGINT
+#    172 l2: LONGINT
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Ind01$N:
+	.asciz	"Ind01"
+	.align	2,144
+	.long	Ind01$N
+	.long	0
+	.long	_NILPROC
+	.globl	Ind01$D
+Ind01$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Ind01$I$N:
+	.asciz	"Ind01$I"
+	.align	2,144
+	.long	Ind01$I$N
+	.long	0
+	.long	_NILPROC
+Ind01$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Ind01$I
+Ind01$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Ind01$I$D
+	subl	$L0,%esp
+
+	# s:=TRUE;
+	movb	$1,8+Ind01$G	# s 
+
+	# r1.s:=FALSE;
+	movb	$0,12+Ind01$G	# r1 
+
+	# r1.a1[l1].s:={};
+	movl	168+Ind01$G,%eax	# l1 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	imull	$14,%eax
+	movl	$0,13+Ind01$G(%eax)	# r1 
+
+	# r1.a1[l1].a2[l2]:=TRUE;
+	movl	168+Ind01$G,%ebx	# l1 
+	cmpl	$10,%ebx
+	jae	_IndexFault
+	movl	172+Ind01$G,%eax	# l2 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	imull	$14,%ebx
+	movb	$1,17+Ind01$G(%eax,%ebx)	# r1 
+
+	# r2.a1[l1]:=0X;
+	movl	168+Ind01$G,%eax	# l1 
+	cmpl	$10,%eax
+	jae	_IndexFault
+	movb	$0,156+Ind01$G(%eax)	# r2 
+
+	leave
+	ret
+L0=	0
+

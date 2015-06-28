@@ -1,0 +1,10 @@
+MODULE Mm4;
+VAR i:INTEGER; 
+    r:RECORD
+       f:BOOLEAN; 
+       i:SHORTINT; 
+      END;
+BEGIN (* Mm4 *)
+ i:=i+i; 	 
+ r.i:=r.i+r.i; 
+END Mm4.

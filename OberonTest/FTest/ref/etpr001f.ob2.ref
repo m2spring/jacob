@@ -1,0 +1,30 @@
+Compiling etpr001f
+'BOUND' bound
+-------------------------------------------------------------------------------
+r   RECEIVER  tRec
+i   REFPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Inner
+-------------------------------------------------------------------------------
+i   VALPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Outer
+-------------------------------------------------------------------------------
+Inner   PROCEDURE (i:INTEGER)
+-------------------------------------------------------------------------------
+
+'MODULE' etpr001f
+-------------------------------------------------------------------------------
+tProc   TYPE      (VAR i:INTEGER)
+tRec    TYPE      RECORD
+                   bound   BOUND     VAR r:tRec(VAR i:INTEGER)
+                  END
+p       VAR       tProc
+Outer   PROCEDURE ()
+-------------------------------------------------------------------------------
+
+etpr001f.ob2: 24,5: Expression not assignment compatible
+etpr001f.ob2: 31,5: Identifier not declared
+etpr001f.ob2: 34,5: Expression not assignment compatible

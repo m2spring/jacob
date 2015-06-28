@@ -1,0 +1,151 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.Exprs                                                                                                           ***/
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeRExpr ( type:TypeReprs , expr:Exprs , co:Coercion => DCode )
+LOCAL{ VAR dcode,dcode1,dcode2:DCode; trueLabel,falseLabel:tLabel; boolcode:BoolCode; }
+
+ _,Exprs(_,_,value),_ => {dcode} ? (V.IsValidConstValue(value));{ TRACE(CodeRExpr.UnnamedConst); 
+    CodeValue(value,type,co,dcode);
+    SHOWCODE(CodeRExpr.UnnamedConst,dcode); 
+ };.
+ 
+ BooleanTypeRepr,Exprs(_,_,value),.. => {dcode} ?{ TRACE(CodeRExpr.BooleanExpr); 
+    CodeBooleanExpr(expr,value,LAB.MT,LAB.New(trueLabel),LAB.New(falseLabel),boolcode); 
+    Cons.BoolVal(trueLabel,falseLabel,boolcode,dcode); 
+ };.
+ 
+ SetTypeRepr,NegateExpr(_,t,_,e:Exprs),_ => {dcode} ?{ TRACE(CodeRExpr.SetNegate); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode);
+    Cons.MonOper(not,dcode,dcode); 
+    SHOWCODE(CodeRExpr.SetNegate,dcode); 
+ };.
+
+ _,NegateExpr(_,t,_,e:Exprs),_ => {dcode} ?{ TRACE(CodeRExpr.Negate); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode);
+    Cons.MonOper(neg,dcode,dcode); 
+    CodeCoercion(co,dcode,dcode);
+    SHOWCODE(CodeRExpr.Negate,dcode); 
+ };.
+
+ _,IdentityExpr(_,t,_,e:Exprs),_ => {dcode} ?{ TRACE(CodeRExpr.Identity); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode);
+    CodeCoercion(co,dcode,dcode);
+    SHOWCODE(CodeRExpr.Identity,dcode); 
+ };.
+
+ _,DyExpr(_,_,_,oper:DyOperator(_,_,co1,co2),e1:Exprs(_,t1,_),e2:Exprs(_,t2,_)),_ => {dcode} ?{ TRACE(CodeRExpr.DyExpr); 
+    CodeRExpr(t1,e1,co1,dcode1); 
+    CodeRExpr(t2,e2,co2,dcode2); 
+    CodeDyOper(oper,type,dcode1,dcode2,dcode); 
+    CodeCoercion(co,dcode,dcode);
+    SHOWCODE(CodeRExpr.DyExpr,dcode); 
+ };.
+
+ _,SetExpr(_,_,_,elements:Elements,value),_ => {dcode} ?{ TRACE(CodeRExpr.SetExpr); 
+    CodeValue(value,type,OB.cmtCoercion,dcode); 
+    CodeElements(elements,dcode,dcode); 
+    SHOWCODE(CodeRExpr.SetExpr,dcode); 
+ };.
+
+ _,DesignExpr(_,_,_,d:Designator,_),_ => {dcode} ?{ TRACE(CodeRExpr.DesignExpr); 
+    CodeRDesignator(d,dcode);
+    CodeCoercion(co,dcode,dcode);
+    SHOWCODE(CodeRExpr.DesignExpr,dcode); 
+ };.
+
+ .. => NIL ? { ERR.Fatal('CODE.CodeRExpr: failed'); };.
+
+/*END CodeRExpr */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeDyOper ( DyOperator , type:TypeReprs , dcode1:DCode , dcode2:DCode => DCode )
+LOCAL{ VAR dcode:DCode; }
+
+ PlusOper ,SetTypeRepr     ,.. => {dcode} ?{ Cons.SymDyOper     (or  ,dcode1,dcode2,dcode); };.
+ PlusOper ,IntTypeRepr     ,.. => {dcode} ?{ Cons.SymDyOper     (add ,dcode1,dcode2,dcode); };.
+ PlusOper ,FloatTypeRepr   ,.. => {dcode} ?{ Cons.FloatSymDyOper(fadd,dcode1,dcode2,dcode); };.
+                           
+ MinusOper,SetTypeRepr     ,.. => {dcode} ?{ Cons.Difference    (     dcode1,dcode2,dcode); };.
+ MinusOper,IntTypeRepr     ,.. => {dcode} ?{ Cons.Sub           (     dcode1,dcode2,dcode); };.
+ MinusOper,FloatTypeRepr   ,.. => {dcode} ?{ Cons.FloatDyOper   (fsub,dcode1,dcode2,dcode); };.
+                           
+ MultOper ,SetTypeRepr     ,.. => {dcode} ?{ Cons.SymDyOper     (and ,dcode1,dcode2,dcode); };.
+ MultOper ,ShortintTypeRepr,.. => {dcode} ?{ Cons.Int2Integer(dcode1,dcode1); 
+                                             Cons.Int2Integer(dcode2,dcode2); 
+                                             Cons.SymDyOper     (imul,dcode1,dcode2,dcode); 
+                                             Cons.Card2Shortint (dcode,dcode);              };.
+
+ MultOper ,IntTypeRepr     ,.. => {dcode} ?{ Cons.SymDyOper     (imul,dcode1,dcode2,dcode); };.
+ MultOper ,FloatTypeRepr   ,.. => {dcode} ?{ Cons.FloatSymDyOper(fmul,dcode1,dcode2,dcode); };.
+                           
+ RDivOper ,SetTypeRepr     ,.. => {dcode} ?{ Cons.SymDyOper     (xor ,dcode1,dcode2,dcode); };.
+ RDivOper ,FloatTypeRepr   ,.. => {dcode} ?{ Cons.FloatDyOper   (fdiv,dcode1,dcode2,dcode); };.
+                           
+ DivOper  ,IntTypeRepr     ,.. => {dcode} ?{ Cons.Div           (     dcode1,dcode2,dcode); };.
+ ModOper  ,IntTypeRepr     ,.. => {dcode} ?{ Cons.Mod           (     dcode1,dcode2,dcode); };.
+
+ .. => NIL ? { ERR.Fatal('CODE.CodeDyOper: failed'); };.
+
+/*END CodeDyOper */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeElements ( elements:Elements , dcodeIn:DCode => DCode )
+LOCAL{ VAR dcode,dcode1,dcode2:DCode; }
+
+ Element(next:Elements,expr:Exprs(_,type,val),mtExpr),_ => {dcode} ?{ TRACE(CodeElements.Expr); 
+    IF V.IsCalculatableValue(val) THEN 
+       CodeElements(next,dcodeIn,dcode); 
+    ELSE 
+       CodeRExpr(type,expr,OB.cmtCoercion,dcode); 
+       Cons.Int2Longint(dcode,dcode); 
+       Cons.SetExtendByElem(dcodeIn,dcode,dcode); 
+       CodeElements(next,dcode,dcode); 
+    END;
+    SHOWCODE(CodeElements.Expr,dcode); 
+ };.
+
+ Element(next:Elements,expr1:Exprs(_,type1,val1),expr2:Exprs(_,type2,val2)),_ => {dcode} ?{ TRACE(CodeElements.Expr..Expr); 
+    IF V.IsCalculatableValue(val1) & V.IsCalculatableValue(val2) THEN 
+       CodeElements(next,dcodeIn,dcode); 
+    ELSE 
+       CodeRExpr(type1,expr1,OB.cmtCoercion,dcode1); Cons.Int2Longint(dcode1,dcode1); 
+       CodeRExpr(type2,expr2,OB.cmtCoercion,dcode2); Cons.Int2Longint(dcode2,dcode2); 
+       Cons.SetExtendByRange(dcodeIn,dcode1,dcode2,dcode); 
+       CodeElements(next,dcode,dcode); 
+    END;
+    SHOWCODE(CodeElements.Expr..Expr,dcode); 
+ };.
+
+ mtElement,_ => dcodeIn ?.
+
+ .. => NIL ? { ERR.Fatal('CODE.CodeElements: failed'); };.
+ 
+/*END CodeElements */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeCoercion ( Coercion , codeIn:DCode => DCode )
+LOCAL{ VAR dcode:DCode; }
+
+ Shortint2Integer ,_ => {dcode} ?{ Cons.Int2Integer(codeIn,dcode); };.
+ Shortint2Longint ,_ ;
+ Integer2Longint  ,_ => {dcode} ?{ Cons.Int2Longint(codeIn,dcode); };.
+                  
+ Shortint2Real    ,_ ;
+ Integer2Real     ,_ ;
+ Longint2Real     ,_ ;
+ Shortint2Longreal,_ ;
+ Integer2Longreal ,_ ;
+ Longint2Longreal ,_ => {dcode} ?{ Cons.Int2Float  (codeIn,dcode); };.
+
+ .. => codeIn ?.
+
+/*END CodeCoercion */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.Exprs                                                                                                       ***/
+/********************************************************************************************************************************/
+

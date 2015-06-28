@@ -1,0 +1,14 @@
+Compiling etpo001f
+'MODULE' etpo001f
+-------------------------------------------------------------------------------
+Forward            TYPE      POINTER TO INTEGER
+<NotYetDeclared>   TYPE      INTEGER
+UseFwd             TYPE      RECORD
+                              f      VAR       Forward
+                              proc   VAR       (f:Forward)
+                             END
+fp                 VAR       Forward
+NotYetDeclared     TYPE      INTEGER
+-------------------------------------------------------------------------------
+
+etpo001f.ob2: 9,25: Wrong type of pointer base

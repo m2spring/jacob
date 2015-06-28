@@ -1,0 +1,13 @@
+Compiling etyp001t
+'MODULE' etyp001t
+-------------------------------------------------------------------------------
+T1   TYPE      RECORD
+                s   VAR       SET
+                g   VAR       POINTER TO T1
+               END
+T2   TYPE      RECORD
+                t   VAR       T1
+                p   VAR       (VAR r:T2)
+               END
+-------------------------------------------------------------------------------
+

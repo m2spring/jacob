@@ -1,0 +1,9 @@
+MODULE SetTest;
+VAR i:LONGINT; 
+BEGIN (* SetTest *)
+ i:=149; 
+ IF i IN {0..9}
+    THEN 
+    ELSE 
+ END; (* IF *)
+END SetTest.

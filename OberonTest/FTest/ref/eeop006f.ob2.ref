@@ -1,0 +1,40 @@
+Compiling eeop006f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r   VALPARAM  T0
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P2
+-------------------------------------------------------------------------------
+r   REFPARAM  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eeop006f
+-------------------------------------------------------------------------------
+T0    TYPE      RECORD
+                 s   VAR       SET
+                END
+                (-->T1)
+
+T1    TYPE      RECORD(T0)
+                 s      VAR       SET
+                 i      VAR       INTEGER
+                 proc   VAR       (VAR r:T1)
+                END
+PT0   TYPE      POINTER TO T0
+PT1   TYPE      POINTER TO T1
+p0    VAR       PT0
+p1    VAR       PT1
+P     PROCEDURE (r:T0)
+P2    PROCEDURE (VAR r:T0)
+-------------------------------------------------------------------------------
+
+eeop006f.ob2: 30,3: Guard not applicable
+eeop006f.ob2: 38,13: Actual parameter not compatible with formal
+eeop006f.ob2: 45,4: Guard not applicable
+eeop006f.ob2: 45,8: Dereference not applicable
+eeop006f.ob2: 45,9: Record field not found
+eeop006f.ob2: 50,3: Guard not applicable
+eeop006f.ob2: 50,7: Dereference not applicable
+eeop006f.ob2: 50,8: Record field not found
+eeop006f.ob2: 55,4: Guard not applicable

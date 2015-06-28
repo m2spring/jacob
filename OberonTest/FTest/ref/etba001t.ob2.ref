@@ -1,0 +1,13 @@
+Compiling etba001t
+'MODULE' etba001t
+-------------------------------------------------------------------------------
+vshortint   VAR       SHORTINT
+vint        VAR       INTEGER
+vlongint    VAR       LONGINT
+vreal       VAR       REAL
+vlongreal   VAR       LONGREAL
+vchar       VAR       CHAR
+vbool       VAR       BOOLEAN
+vset        VAR       SET
+-------------------------------------------------------------------------------
+

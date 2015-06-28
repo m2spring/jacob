@@ -1,0 +1,22 @@
+Compiling eaar001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+a   VALPARAM  TA
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+x   REFPARAM  ARRAY OF ARRAY OF INTEGER
+-------------------------------------------------------------------------------
+
+'MODULE' eaar001f
+-------------------------------------------------------------------------------
+TA   TYPE      ARRAY 5 OF INTEGER
+a    VAR       ARRAY 5 OF INTEGER
+b    VAR       ARRAY 1 OF ARRAY 2 OF CHAR
+P    PROCEDURE (a:TA)
+Q    PROCEDURE (VAR x:ARRAY OF ARRAY OF INTEGER)
+-------------------------------------------------------------------------------
+
+eaar001f.ob2: 22,4: Actual parameter not compatible with formal
+eaar001f.ob2: 26,4: Actual parameter not compatible with formal

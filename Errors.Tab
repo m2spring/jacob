@@ -1,0 +1,90 @@
+; Comments start with a ';'
+
+01 "Illegal char in source"                                   ; MsgIllegalCharInSource      
+02 "Comment not closed"                                       ; MsgCommentNotClosed         
+03 "Illegal integer constant"                                 ; MsgIllegalIntegerConst      
+04 "Illegal real constant"                                    ; MsgIllegalRealConst         
+05 "Illegal longreal constant"                                ; MsgIllegalLongrealConst     
+06 "Illegal char constant"                                    ; MsgIllegalCharConst         
+07 "String not terminated"                                    ; MsgStringNotTerminated      
+08 "Limit: Identifier too long (>255)"                        ; MsgIdentifierTooLong
+09 "Identifier not declared"                                  ; MsgUndeclaredIdent          
+10 "Identifier not exported from qualified module"            ; MsgIdentNotExported         
+11 "Identifier already declared"                              ; MsgAlreadyDeclared          
+12 "Identifier not declared in qualified module"              ; MsgUndeclaredExternIdent    
+13 "Unresolved forward reference"                             ; MsgUnresolvedForwardType    
+14 "Unresolved forward procedure"                             ; MsgUnresolvedForwardProc    
+15 "CONSTs are always read-only"                              ; MsgConstsAlwaysReadOnly     
+16 "TYPEs are always read-only"                               ; MsgTypesAlwaysReadOnly      
+17 "Procedures are always read-only"                          ; MsgProcsAlwaysReadOnly      
+18 "Only globals can be exported"                             ; MsgIllegalLocalExport       
+19 "Missing array length"                                     ; MsgMissingArrayLength       
+20 "Invalid length of array"                                  ; MsgInvalidArrayLen          
+21 "Constant not integer"                                     ; MsgConstantNotInteger       
+22 "Open arrays are not allowed here"                         ; MsgIllegalOpenArray         
+23 "Object too big"                                           ; MsgObjectTooBig             
+24 "Record type expected"                                     ; MsgRecordTypeExpected       
+25 "Wrong type of pointer base"                               ; MsgWrongPointerBase         
+26 "Illegal recursive type application"                       ; MsgIllegalRecursiveType     
+27 "Expression not constant"                                  ; MsgExprNotConstant          
+28 "Invalid type of expression"                               ; MsgInvalidExprType          
+29 "Const arithmetic error"                                   ; MsgConstArithmeticError     
+30 "Expression exceeds set bounds"                            ; MsgIntOutOfSet              
+31 "Type test not applicable"                                 ; MsgTypeTestNotApplicable    
+32 "Operator not applicable"                                  ; MsgOperatorNotApplicable    
+33 "Type expected"                                            ; MsgTypeExpected             
+34 "L-value expected"                                         ; MsgLValueExpected           
+35 "Module identifier expected"                               ; MsgIdentIsNoModule          
+36 "Modules are not allowed here"                             ; MsgModulesNotAllowed        
+37 "Types are not allowed here"                               ; MsgTypeNotAllowed           
+38 "Record field not found"                                   ; MsgRecordFieldNotFound      
+39 "Record field not exported"                                ; MsgRecordFieldNotExported   
+40 "Field selector not applicable"                            ; MsgSelectorNotApplicable    
+41 "Index not applicable"                                     ; MsgIndexNotApplicable       
+42 "Index out of bounds"                                      ; MsgIndexOutOfBounds         
+43 "Dereference not applicable"                               ; MsgDerefNotApplicable       
+44 "Arguments not allowed here"                               ; MsgArgumentsNotAllowed      
+45 "Guard not applicable"                                     ; MsgGuardNotApplicable       
+46 "Illegal call of redefined procedure"                      ; MsgNonReceiverSupered       
+47 "There is no redefined procedure to call"                  ; MsgMissingRedefined         
+48 "Only the redefined procedure is callable here"            ; MsgSuperingWithinRedefining 
+49 "Procedure name not correctly repeated"                    ; MsgProcname2Incorrect       
+50 "Actual declaration doesn't match with forward decl"       ; MsgNonMatchingActualDecl    
+51 "Illegal type of function result"                          ; MsgIllegalFunctionResult    
+52 "Too many actual parameters"                               ; MsgTooManyParams            
+53 "Too few actual parameters"                                ; MsgTooFewParams             
+54 "Actual parameter not compatible with formal"              ; MsgParmNotCompatible        
+55 "Read-only variable not allowed as actual VAR-Parameter"   ; MsgIllegalROVarPar          
+56 "Expression not assignment compatible"                     ; MsgNotAssignCompatible      
+57 "Object is read-only"                                      ; MsgObjectIsReadonly         
+58 "Variable expected"                                        ; MsgVariableExpected         
+59 "Integer type expected"                                    ; MsgIntegerTypeExpected      
+60 "Expression not compatible with control variable"          ; MsgNotCompatibleWithCtrlVar 
+61 "BY expression must be non-zero"                           ; MsgStepMustBeNonZero        
+62 "Procedure call not allowed here"                          ; MsgIllegalFuncCall          
+63 "Procedure expected"                                       ; MsgProcedureExpected        
+64 "No RETURN in function procedure"                          ; MsgMissingReturn            
+65 "Missing RETURN expression"                                ; MsgMissingReturnExpr        
+66 "Misplaced RETURN expression"                              ; MsgMisplacedReturnExpr      
+67 "RETURN expression not compatible with formal result type" ; MsgIncompatibleReturnExpr   
+68 "RETURN not allowed here"                                  ; MsgReturnOnlyInProcs        
+69 "Wrong type of CASE-expression"                            ; MsgIllegalCaseExpr          
+70 "Case label not compatible with case expression"           ; MsgLabelNotCompatible       
+71 "Overlapping case label"                                   ; MsgOverlappingCaseLabel     
+72 "Illegal CASE-label range"                                 ; MsgIllegalCaseLabelRange    
+73 "Wrong type of CASE-label"                                 ; MsgWrongLabelType           
+74 "EXIT without LOOP"                                        ; MsgExitWithoutLoop          
+75 "Bound procedure must be global"                           ; MsgBoundProcMustBeGlobal    
+76 "Redefinition must be exported"                            ; MsgRedefMustBeExported      
+77 "Non-matching formal parameters in redefinition"           ; MsgNonMatchingRedef         
+78 "Invalid type"                                             ; MsgInvalidType              
+79 "Receiver parameter must be a pointer"                     ; MsgReceiverParamNotPointer
+80 "Module name differs from file name"                       ; MsgModuleFilenameDiffers    
+81 "Module name not correctly repeated"                       ; MsgModulename2Incorrect     
+82 "File not found"                                           ; MsgFileNotFound             
+83 "Cyclic imports not allowed"                               ; MsgCyclicImport             
+84 "Limit: object exceeds variable memory space"              ; MsgTooManyVars              
+85 "Illegal LEN dimension"                                    ; MsgIllegalLenDimension      
+86 "Limit: Procedure nested too deeply"                       ; MsgProcNestedTooDeeply
+87 "Limit: Type exceeds max. extension level"                 ; MsgMaxExtLevelReached
+88 "Limit: case range too large"                              ; MsgMaxCaseLabelRange

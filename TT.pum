@@ -1,0 +1,1161 @@
+/********************************************************************************************************************************/
+/*** TT.pum / Abstract syntax tree transformator                                                                              ***/
+/********************************************************************************************************************************/
+TRAFO TT TREE Tree OB PUBLIC
+
+ /*** Some utility functions related to the abstract syntax tree ***/
+
+ GetQualification                                                   /* Selector: returns the qualification ident of a qualident */
+ IsEmptyExpr                                                        /* Tests the empty expression                               */
+ IsEmptyExprList                                                    /* Tests the empty expression list                          */
+ IsImportingDesignation                                             /* Tests the importing designation                          */
+ IsNotEmptyQualident                                                /* Tests an empty qualident                                 */
+ IsNoStmts                                                          /* Tests the NoStmts                                        */
+ IdentOfFirstVariable
+ IdentOfFirstParameter
+
+ /*** Proper transformation functions ***/
+
+ ElementCorrection  
+ ArgumentCorrection                                                 /* see below                                                */
+ DesignorToGuardedDesignation                                       /* see below                                                */
+ DesignorToDesignation                                              /* see below                                                */
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT  Idents    ,
+                POS       ;
+
+        TYPE    tIdent    = Idents.tIdent;                          (* These types are re-declared due to the fact that         *)
+                tPosition = POS.tPosition; }                        /* qualidents are illegal in a puma specification.          */
+
+GLOBAL{ IMPORT  Idents    ,
+                POS       ,
+                UTI       ; }
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION GetQualification ( Qualidents ) tIdent
+
+ QualifiedIdent
+ (/* Position =: */ _
+ ,/* ServerId =: */ serverId
+ ,/* Ident    =: */ ..)      RETURN serverId         ?.
+
+ ..                          RETURN {Idents.NoIdent} ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsEmptyExpr ( Exprs )
+ mtExpr ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsEmptyExprList ( Tree )
+ mtExprList       ?.
+ mtNewExprList    ?.
+ mtSysAsmExprList ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsImportingDesignation( Designations )
+ Importing ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsArgumentor( Designors )
+ Argumentor?.
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsNotEmptyQualident ( Qualidents )
+ mtQualident ? FAIL; .
+ _           ?       .
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsNoStmts ( Stmts )
+ NoStmts ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION IdentOfFirstVariable ( IdentLists ) tIdent
+ IdentList(_,IdentDef(ident,..)) RETURN ident            ?.
+ _                               RETURN {Idents.NoIdent} ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION IdentOfFirstParameter ( ParIds ) tIdent
+ ParId(_,ident,_) RETURN ident            ?.
+ _                RETURN {Idents.NoIdent} ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION ElementCorrection ( expr2 : Exprs
+                           , val1  : ValueReprs
+                           , val2  : ValueReprs ) ValueReprs
+ mtExpr , .. RETURN val1 ?.
+ ..          RETURN val2 ?.
+ 
+/********************************************************************************************************************************/
+/*
+ * If a complete designator is a proper procedure call (without parentheses) this functions yields an Argumenting
+ * with an empty ExprList.
+ */
+/*$1*/
+FUNCTION ArgumentCorrection ( isCall : BOOLEAN                       /* ... is in a call designator context                     */
+                            , type   : TypeReprs                     /* ... of the current designator expression                */
+                            , pos    : tPosition                     /* Position right behind the current designator expression */
+                            , next   : Designations )                /* The following designation                               */
+                            Designations
+
+ /* isCall =: */ {TRUE}
+,/* type   =: */ ProcedureTypeRepr
+,/* pos    =: */ _
+,/* next   =: */ mtDesignation
+                 RETURN Argumenting
+                        (/* Nextor   := */ mtDesignor
+                        ,/* Position := */ {pos}
+                        ,/* Nextion  := */ mtDesignation
+                        ,/* Op2Pos   := */ {pos}
+                        ,/* ExprList := */ mtExprList) ?.
+
+..               RETURN next                           ?.
+
+/********************************************************************************************************************************/
+/*
+ * Transforms a designor (syntactical designator operator / selector) to the appropriate designation
+ * (operational designator operator) according to the current designator entry and type:
+ * - Only the first designor gets transformed.
+ * - Implicit dereferencings get inserted.
+ * - An abreviated array expression list gets split into a first index expression designation
+ *   and a remaining index expression designor.
+ * - Predeclared and SYSTEM-declared Argumenting nodes gets created.
+ */
+
+/*$1*/
+FUNCTION DesignorToGuardedDesignation (  curModule : ModuleEntry
+                                      ,  entry     : Entries         /* The current designator entry                            */
+                                      ,  typeRepr  : TypeReprs       /* ... of the current designator expression                */
+                                      ,  designor  : Designors       /* The following designor                                  */
+                                      =>             Designors )     /* Should be the same actual parameter as the previous     */
+                                      Designations
+LOCAL{ VAR designorOut,designation:Tree.tTree; }
+			       
+ _
+,VarEntry
+ (/* prevEntry	   =: */ _
+ ,/* module	   =: */ _
+ ,/* ident	   =: */ _
+ ,/* exportMode	   =: */ _
+ ,/* level	   =: */ _
+ ,/* declStatus	   =: */ _
+ ,/* typeRepr	   =: */ type
+ ,/* isParam	   =: */ _
+ ,/* isReceiverPar =: */ _
+ ,/* parMode	   =: */ _
+ ,/* address	   =: */ _
+ ,/* refMode	   =: */ _
+ ,/* isWithed      =: */ isWithed
+ ,/* isLaccessed   =: */ _)
+,.. => mtDesignor
+ RETURN Guarding
+        (/* Nextor     := */ designor
+        ,/* Position   := */ _
+        ,/* Nextion    := */ mtDesignation
+        ,/* IsImplicit := */ TRUE
+        ,/* Qualidents := */ mtQualident /*QualidentFromType(curModule,type)*/
+        )             ?(isWithed & ~IsArgumentor(designor));.
+  
+ .. => {designorOut} 
+ RETURN {designation} ?{ designation:=DesignorToDesignation(entry,typeRepr,designor,designorOut); };.
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION QualidentFromType ( ModuleEntry , TypeReprs ) Qualidents
+
+ ModuleEntry(curModuleId,..) , TypeRepr(TypeEntry(_,ModuleEntry(typeModuleId,..),typeId,..),..) 
+ RETURN QualifiedIdent  ({POS.NoPosition},typeModuleId,typeId,{POS.NoPosition}) ? (curModuleId#typeModuleId);.
+
+ _                          , TypeRepr(TypeEntry(_,_                          ,typeId,..),..) 
+ RETURN UnqualifiedIdent({POS.NoPosition},             typeId                 ) ?.
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION DesignorToDesignation (  entry    : Entries                 /* The current designator entry                            */
+                               ,  typeRepr : TypeReprs               /* ... of the current designator expression                */
+                               ,  designor : Designors               /* The following designor                                  */
+                               =>            Designors )             /* Should be the same actual parameter as the previous     */
+                               Designations		  
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+_,_,   mtDesignor
+=>     mtDesignor
+RETURN mtDesignation
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ServerIdent.Import ==> ServerIdent$Import */
+
+       ServerEntry
+,_,
+       Selector
+       (/* Next     =: */ next:Designors
+       ,/* OpPos    =: */ opPos
+       ,/* Ident    =: */ ident
+       ,/* IdPos    =: */ idPos)
+=>
+       mtDesignor
+RETURN
+       Importing
+       (/* Nextor   := */ next
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation
+       ,/* Ident    := */ ident
+       ,/* IdPos    := */ idPos)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* PointerTypedObject.FieldSelector ==> PointerTypedObject^.FieldSelector */
+
+_,     PointerTypeRepr
+,
+       selector:Selector
+       (/* Nextor   =: */ _
+       ,/* OpPos    =: */ opPos
+       ,/* Ident    =: */ _
+       ,/* IdPos    =: */ _)
+=>
+       mtDesignor
+RETURN
+       Dereferencing
+       (/* Nextor   := */ selector
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* PointerTypedObject[] ==> PointerTypedObject^[] */
+
+_,     PointerTypeRepr
+,
+       indexor:Indexor
+       (/* Nextor   =: */ _
+       ,/* Op1Pos   =: */ opPos
+       ,/* Op2Pos   =: */ _
+       ,/* ExprList =: */ _)
+=>
+       mtDesignor
+RETURN
+       Dereferencing
+       (/* Nextor   := */ indexor
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+_,_,   Selector
+       (/* Nextor   =: */ next:Designors
+       ,/* OpPos    =: */ opPos
+       ,/* Ident    =: */ ident
+       ,/* IdPos    =: */ idPos)
+=>
+       mtDesignor
+RETURN
+       Selecting
+       (/* Nextor   := */ next
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation
+       ,/* Ident    := */ ident
+       ,/* IdPos    := */ idPos)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* [] ==> [] */
+
+_,_,   Indexor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ op1Pos
+       ,/* Op2Pos   =: */ op2Pos
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ mtExprList
+                          ,/* Expr   =: */ expr:Exprs)
+       )
+=>
+       mtDesignor
+RETURN
+       Indexing
+       (/* Nextor   := */ next
+       ,/* Position := */ op1Pos
+       ,/* Nextion  := */ mtDesignation
+       ,/* Op2Pos   := */ op2Pos
+       ,/* Expr     := */ expr)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* [e1,e2,e3,...] ==> [e1],[e2,e3,...] */
+
+_,_,   Indexor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ op1Pos
+       ,/* Op2Pos   =: */ op2Pos
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ nextExpr:ExprList(_,Exprs(e2Pos))
+                          ,/* Expr   =: */ expr:Exprs(e1Pos))
+       )
+=>
+       mtDesignor
+RETURN
+       Indexing
+       (/* Nextor   := */ Indexor
+                          (/* Nextor   := */ next
+                          ,/* Op1Pos   := */ e1Pos
+                          ,/* Op2Pos   := */ op2Pos
+                          ,/* ExprList := */ nextExpr)
+       ,/* Position := */ op1Pos
+       ,/* Nextion  := */ mtDesignation
+       ,/* Op2Pos   := */ e2Pos
+       ,/* Expr     := */ expr)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* BoundProc^ ==> BoundProc! */
+
+       BoundProcEntry
+,_,
+       Dereferencor
+       (/* Nextor   =: */ next:Designors
+       ,/* OpPos    =: */ opPos)
+=>
+       mtDesignor
+RETURN
+       Supering
+       (/* Nextor   := */ next
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* BoundProc^ ==> BoundProc! */
+
+       InheritedProcEntry
+,_,
+       Dereferencor
+       (/* Nextor   =: */ next:Designors
+       ,/* OpPos    =: */ opPos)
+=>
+       mtDesignor
+RETURN
+       Supering
+       (/* Nextor   := */ next
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ^ ==> ^ */
+
+_,_,   Dereferencor
+       (/* Nextor   =: */ next:Designors
+       ,/* OpPos    =: */ opPos)
+=>
+       mtDesignor
+RETURN
+       Dereferencing
+       (/* Nextor   := */ next
+       ,/* Position := */ opPos
+       ,/* Nextion  := */ mtDesignation)
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* RecordTypedObject(Ident) ==> RecordTypedObject`(Ident) */
+
+_,     RecordTypeRepr
+,
+       Argumentor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ opPos
+       ,/* Op2Pos   =: */ _
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ mtExprList
+                          ,/* Expr   =: */ DesignExpr
+                                           (/* Position   =: */ _
+                                           ,/* Designator =: */ Designator
+                                                                (/* Ident        =: */ ident
+                                                                ,/* Position     =: */ position
+                                                                ,/* Designors    =: */ mtDesignor
+                                                                ,/* Designations =: */ _)
+                                           )
+                          )
+       )
+=>
+       mtDesignor
+RETURN
+       Guarding
+       (/* Nextor     := */ next
+       ,/* Position   := */ opPos
+       ,/* Nextion    := */ mtDesignation
+       ,/* IsImplicit := */ FALSE
+       ,/* Qualidents := */ UnqualifiedIdent
+                            (/* Position := */ position
+                            ,/* Ident    := */ ident)
+       )
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* PointerTypedObject(Ident) ==> PointerTypedObject`(Ident) */
+
+_,     PointerTypeRepr
+,
+       Argumentor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ opPos
+       ,/* Op2Pos   =: */ _
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ mtExprList
+                          ,/* Expr   =: */ DesignExpr
+                                           (/* Position   =: */ _
+                                           ,/* Designator =: */ Designator
+                                                                (/* Ident        =: */ ident
+                                                                ,/* Position     =: */ position
+                                                                ,/* Designors    =: */ mtDesignor
+                                                                ,/* Designations =: */ _)
+                                           )
+                          )
+       )
+=>
+       mtDesignor
+RETURN
+       Guarding
+       (/* Nextor     := */ next
+       ,/* Position   := */ opPos
+       ,/* Nextion    := */ mtDesignation
+       ,/* IsImplicit := */ FALSE
+       ,/* Qualidents := */ UnqualifiedIdent
+                            (/* Position := */ position
+                            ,/* Ident    := */ ident)
+       )
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* RecordTypedObject(Qual.Ident) ==> RecordTypedObject`(Qual.Ident) */
+
+_,     RecordTypeRepr
+,
+       Argumentor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ opPos
+       ,/* Op2Pos   =: */ _
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ mtExprList
+                          ,/* Expr   =: */ DesignExpr
+                                           (/* Position   =: */ _
+                                           ,/* Designator =: */ Designator
+                                                                (/* Ident        =: */ serverId
+                                                                ,/* Position     =: */ position
+                                                                ,/* Designors    =: */ Selector
+                                                                                       (/* Nextor =: */ mtDesignor
+                                                                                       ,/* OpPos  =: */ _
+                                                                                       ,/* Ident  =: */ ident
+                                                                                       ,/* IdPos  =: */ identPos)
+                                                                ,/* Designations =: */ _)
+                                           )
+                          )
+       )
+=>
+       mtDesignor
+RETURN
+       Guarding
+       (/* Nextor     := */ next
+       ,/* Position   := */ opPos
+       ,/* Nextion    := */ mtDesignation
+       ,/* IsImplicit := */ FALSE
+       ,/* Qualidents := */ QualifiedIdent
+                            (/* Position := */ position
+                            ,/* ServerId := */ serverId
+                            ,/* Ident    := */ ident
+                            ,/* IdentPos := */ identPos)
+       )
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* PointerTypedObject(Qual.Ident) ==> PointerTypedObject`(Qual.Ident) */
+
+_,     PointerTypeRepr
+,
+       Argumentor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ opPos
+       ,/* Op2Pos   =: */ _
+       ,/* ExprList =: */ ExprList
+                          (/* Next   =: */ mtExprList
+                          ,/* Expr   =: */ DesignExpr
+                                           (/* Position   =: */ _
+                                           ,/* Designator =: */ Designator
+                                                                (/* Ident        =: */ serverId
+                                                                ,/* Position     =: */ position
+                                                                ,/* Designors    =: */ Selector
+                                                                                       (/* Nextor =: */ mtDesignor
+                                                                                       ,/* OpPos  =: */ _
+                                                                                       ,/* Ident  =: */ ident
+                                                                                       ,/* IdPos  =: */ identPos)
+                                                                ,/* Designations =: */ _)
+                                           )
+                          )
+       )
+=>
+       mtDesignor
+RETURN
+       Guarding
+       (/* Nextor     := */ next
+       ,/* Position   := */ opPos
+       ,/* Nextion    := */ mtDesignation
+       ,/* IsImplicit := */ FALSE
+       ,/* Qualidents := */ QualifiedIdent
+                            (/* Position := */ position
+                            ,/* ServerId := */ serverId
+                            ,/* Ident    := */ ident
+                            ,/* IdentPos := */ identPos)
+       )
+?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+_, AbsTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,AbsArgumenting      ) ?.
+_, AshTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,AshArgumenting      ) ?.
+_, CapTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,CapArgumenting      ) ?.
+_, ChrTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,ChrArgumenting      ) ?.
+_, EntierTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,EntierArgumenting   ) ?.
+_, LenTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,LenArgumenting      ) ?.
+_, LongTypeRepr      , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,LongArgumenting     ) ?.
+_, MaxTypeRepr       , Argumentor => mtDesignor RETURN ExtractExprType(designor,MaxArgumenting      ) ?.
+_, MinTypeRepr       , Argumentor => mtDesignor RETURN ExtractExprType(designor,MinArgumenting      ) ?.
+_, OddTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,OddArgumenting      ) ?.
+_, OrdTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,OrdArgumenting      ) ?.
+_, ShortTypeRepr     , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,ShortArgumenting    ) ?.
+_, SizeTypeRepr      , Argumentor => mtDesignor RETURN ExtractExprType(designor,SizeArgumenting     ) ?.
+
+_, AssertTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,AssertArgumenting   ) ?.
+_, CopyTypeRepr      , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,CopyArgumenting     ) ?.
+_, DecTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,DecArgumenting      ) ?.
+_, ExclTypeRepr      , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,ExclArgumenting     ) ?.
+_, HaltTypeRepr      , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,HaltArgumenting     ) ?.
+_, IncTypeRepr       , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,IncArgumenting      ) ?.
+_, InclTypeRepr      , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,InclArgumenting     ) ?.
+_, NewTypeRepr       , Argumentor => mtDesignor RETURN ExtractExprNew (designor,NewArgumenting      ) ?.
+
+_, SysAdrTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,SysAdrArgumenting   ) ?.
+_, SysBitTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysBitArgumenting   ) ?.
+_, SysCcTypeRepr     , Argumentor => mtDesignor RETURN ExtractExpr1   (designor,SysCcArgumenting    ) ?.
+_, SysLshTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysLshArgumenting   ) ?.
+_, SysRotTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysRotArgumenting   ) ?.
+_, SysValTypeRepr    , Argumentor => mtDesignor RETURN ExtractExprVal (designor,SysValArgumenting   ) ?.
+
+_, SysGetTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysGetArgumenting   ) ?.
+_, SysPutTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysPutArgumenting   ) ?.
+_, SysGetregTypeRepr , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysGetregArgumenting) ?.
+_, SysPutregTypeRepr , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysPutregArgumenting) ?.
+_, SysMoveTypeRepr   , Argumentor => mtDesignor RETURN ExtractExpr3   (designor,SysMoveArgumenting  ) ?.
+_, SysNewTypeRepr    , Argumentor => mtDesignor RETURN ExtractExpr2   (designor,SysNewArgumenting   ) ?.
+_, SysAsmTypeRepr    , Argumentor => mtDesignor RETURN ExtractExprAsm (designor,SysAsmArgumenting   ) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ... (...) ==> ... (...) */
+
+_,_,   Argumentor
+       (/* Nextor   =: */ next:Designors
+       ,/* Op1Pos   =: */ op1Pos
+       ,/* Op2Pos   =: */ op2Pos
+       ,/* ExprList =: */ exprList:ExprLists)
+=>
+       mtDesignor
+RETURN
+       Argumenting
+       (/* Nextor   := */ next
+       ,/* Position := */ op1Pos
+       ,/* Nextion  := */ mtDesignation
+       ,/* Op2Pos   := */ op2Pos
+       ,/* ExprList := */ exprList)
+?.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the first expression from the expression list of the PredeclArgumenting node.
+ * Truncates the first expression from the expression list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExpr1( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+/* ([]) ==> (mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ mtExprList)
+,
+       PredeclArgumenting1
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr      =: */ e
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e  := Tree.mmtExpr(POS.NoPosition);
+                  l  := Tree.mmtExprList();
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e,...]) ==> (e,[...]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ nextExprList
+                           ,/* Expr   =: */ expr)
+       )
+,
+       PredeclArgumenting1
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr      =: */ e
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e  := expr;
+                  l  := nextExprList;
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the first two expressions from the expression list of the PredeclArgumenting node.
+ * Truncates the first two expressions from the expression list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExpr2( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+/* ([]) ==> (mtExpr,mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ mtExprList)
+,
+       PredeclArgumenting2Opt
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := Tree.mmtExpr(POS.NoPosition);
+                  e2 := Tree.mmtExpr(POS.NoPosition);
+                  l  := Tree.mmtExprList();
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e]) ==> (e,mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ mtExprList
+                           ,/* Expr   =: */ expr1)
+       )
+,
+       PredeclArgumenting2Opt
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := expr1;
+                  e2 := Tree.mmtExpr(POS.NoPosition);
+                  l  := Tree.mmtExprList();
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e1,e2,...]) ==> (e1,e2,[...]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ ExprList
+                                            (/* Next   =: */ nextExprList
+                                            ,/* Expr   =: */ expr2)
+                           ,/* Expr   =: */ expr1)
+       )
+,
+       PredeclArgumenting2Opt
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := expr1;
+                  e2 := expr2;
+                  l  := nextExprList;
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the first three expressions from the expression list of the PredeclArgumenting node.
+ * Truncates the first three expressions from the expression list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExpr3( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+/* ([]) ==> (mtExpr,mtExpr,mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ exprList:mtExprList)
+,
+       PredeclArgumenting3
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* Expr3     =: */ e3
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := Tree.mmtExpr(POS.NoPosition);
+                  e2 := Tree.mmtExpr(POS.NoPosition);
+                  e3 := Tree.mmtExpr(POS.NoPosition);
+                  l  := Tree.mmtExprList();
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e]) ==> (e,mtExpr,mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ nextExprList:mtExprList
+                           ,/* Expr   =: */ expr1)
+       )
+,
+       PredeclArgumenting3
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* Expr3     =: */ e3
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := expr1;
+                  e2 := Tree.mmtExpr(POS.NoPosition);
+                  e3 := Tree.mmtExpr(POS.NoPosition);
+                  l  := nextExprList;
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e1,e2]) ==> (e1,e2,mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ ExprList
+                                            (/* Next   =: */ nextExprList:mtExprList
+                                            ,/* Expr   =: */ expr2)
+                           ,/* Expr   =: */ expr1)
+       )
+,
+       PredeclArgumenting3
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* Expr3     =: */ e3
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := expr1;
+                  e2 := expr2;
+                  e3 := Tree.mmtExpr(POS.NoPosition);
+                  l  := nextExprList;
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([e1,e2,e3,...]) ==> (e1,e2,e3,[...]) */
+
+       Argumentor
+       (/* Nextor    =: */ next:Designors
+       ,/* Op1Pos    =: */ op1Pos
+       ,/* Op2Pos    =: */ op2Pos
+       ,/* ExprList  =: */ ExprList
+                           (/* Next   =: */ ExprList
+                                            (/* Next   =: */ ExprList
+                                                             (/* Next   =: */ nextExprList
+                                                             ,/* Expr   =: */ expr3)
+                                            ,/* Expr   =: */ expr2)
+                           ,/* Expr   =: */ expr1)
+       )
+,
+       PredeclArgumenting3
+       (/* Nextor    =: */ n
+       ,/* Position  =: */ p1
+       ,/* Nextion   =: */ _
+       ,/* Op2Pos    =: */ p2
+       ,/* Expr1     =: */ e1
+       ,/* Expr2     =: */ e2
+       ,/* Expr3     =: */ e3
+       ,/* ExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e1 := expr1;
+                  e2 := expr2;
+                  e3 := expr3;
+                  l  := nextExprList;
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the qualident from the first expression, if the expression is a qualident (yields ErrorQualident, otherwise).
+ * Truncates the first expression from the expression list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExprType ( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+       Argumentor
+       (/* Nextor       =: */ next:Designors
+       ,/* Op1Pos       =: */ op1Pos
+       ,/* Op2Pos       =: */ op2Pos
+       ,/* ExprList     =: */ exprList)
+,
+       TypeArgumenting
+       (/* Nextor       =: */ n
+       ,/* Position     =: */ p1
+       ,/* Nextion      =: */ _
+       ,/* Op2Pos       =: */ p2
+       ,/* Qualidents   =: */ q
+       ,/* ExprLists    =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  q  := ExtractFirstQualident(exprList,l);
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the qualident from the first expression of the expression list,
+ * if the expression is a qualident (yields ErrorQualident, otherwise).
+ * Extracts the second expression from the expression list
+ * Truncates the first two expressions from the expression list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExprVal ( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+       Argumentor
+       (/* Nextor       =: */ next:Designors
+       ,/* Op1Pos       =: */ op1Pos
+       ,/* Op2Pos       =: */ op2Pos
+       ,/* ExprList     =: */ exprList)
+,
+       SysValArgumenting
+       (/* Nextor       =: */ n
+       ,/* Position     =: */ p1
+       ,/* Nextion      =: */ _
+       ,/* Op2Pos       =: */ p2
+       ,/* Qualidents   =: */ q
+       ,/* ExprLists    =: */ l
+       ,/* Expr         =: */ e)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  q  := ExtractFirstQualident(exprList,l);
+                  e  := ExtractFirstExpr(l,l);
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the first expression from the expression list of the PredeclArgumenting node.
+ * Truncates the first expression from the expression list.
+ * Transforms the expression list to a new-expression-list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExprNew ( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+/* NEW([]) ==> NEW(mtExpr,[]) */
+
+       Argumentor
+       (/* Nextor       =: */ next:Designors
+       ,/* Op1Pos       =: */ op1Pos
+       ,/* Op2Pos       =: */ op2Pos
+       ,/* ExprList     =: */ mtExprList)
+,
+       NewArgumenting
+       (/* Nextor       =: */ n
+       ,/* Position     =: */ p1
+       ,/* Nextion      =: */ _
+       ,/* Op2Pos       =: */ p2
+       ,/* Expr         =: */ e
+       ,/* NewExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e  := Tree.mmtExpr(POS.NoPosition);
+                  l  := Tree.mmtNewExprList();
+                };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* NEW([e,...]) ==> NEW(e,[...]) */
+
+       Argumentor
+       (/* Nextor       =: */ next:Designors
+       ,/* Op1Pos       =: */ op1Pos
+       ,/* Op2Pos       =: */ op2Pos
+       ,/* ExprList     =: */ ExprList
+                              (/* Next   =: */ nextExprList
+                              ,/* Expr   =: */ expr)
+       )
+,
+       NewArgumenting
+       (/* Nextor       =: */ n
+       ,/* Position     =: */ p1
+       ,/* Nextion      =: */ _
+       ,/* Op2Pos       =: */ p2
+       ,/* Expr         =: */ e
+       ,/* NewExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  e  := expr;
+                  l  := ExprListToNewExprList(nextExprList);
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * "Extracts" all expressions from the expression list of the PredeclArgumenting node.
+ * Transforms the expression list to a asm-expression-list.
+ * Yields the PredeclArgumenting argument node.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractExprAsm ( Designors , argNode:PredeclArgumenting ) PredeclArgumenting
+
+/* ASM([...]) ==> ASM([...]) */
+
+       Argumentor
+       (/* Nextor          =: */ next:Designors
+       ,/* Op1Pos          =: */ op1Pos
+       ,/* Op2Pos          =: */ op2Pos
+       ,/* ExprList        =: */ exprList)
+,                          
+       SysAsmArgumenting      
+       (/* Nextor          =: */ n
+       ,/* Position        =: */ p1
+       ,/* Nextion         =: */ _
+       ,/* Op2Pos          =: */ p2
+       ,/* SysAsmExprLists =: */ l)
+RETURN
+       argNode ?{ n  := next;
+                  p1 := op1Pos;
+                  p2 := op2Pos;
+                  l  := ExprListToSysAsmExprList(exprList);
+                };.
+
+/********************************************************************************************************************************/
+/*
+ * Transforms an expression list to a new-expression-list.
+ */
+/* UNEXPORTED: */
+FUNCTION ExprListToNewExprList ( ExprLists ) NewExprLists
+
+       mtExprList
+RETURN
+       mtNewExprList ?.
+
+       ExprList
+       (/* Next   =: */ n
+       ,/* Expr   =: */ e)
+RETURN
+       NewExprList
+       (/* Next   := */ ExprListToNewExprList(n)
+       ,/* Expr   := */ e) ?.
+
+/********************************************************************************************************************************/
+/*
+ * Transforms an expression list to a asm-expression-list.
+ */
+/* UNEXPORTED: */
+FUNCTION ExprListToSysAsmExprList ( ExprLists ) SysAsmExprLists
+
+       mtExprList
+RETURN
+       mtSysAsmExprList ?.
+
+       ExprList
+       (/* Next   =: */ n
+       ,/* Expr   =: */ e)
+RETURN
+       SysAsmExprList
+       (/* Next   := */ ExprListToSysAsmExprList(n)
+       ,/* Expr   := */ e) ?.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the qualident from the first expression of the expression list,
+ * if the expression is a qualident (an ErrorQualident, otherwise).
+ * Truncates the first expression from the expression list.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractFirstQualident ( exprList:ExprLists => ExprLists ) Qualidents
+
+/* ([ident,...]) ==> [...] , ident */
+
+       ExprList
+       (/* Next     =: */ nextExprList
+       ,/* Expr     =: */ DesignExpr
+                          (/* Position   =: */ _
+                          ,/* Designator =: */ Designator
+                                               (/* Ident        =: */ ident
+                                               ,/* Position     =: */ pos
+                                               ,/* Designors    =: */ mtDesignor
+                                               ,/* Designations =: */ _)
+                          )
+       )
+=>     nextExprList
+RETURN
+       UnqualifiedIdent
+       (/* Position := */ pos
+       ,/* Ident    := */ ident) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([ident.ident,...]) ==> [...] , ident.ident */
+
+       ExprList
+       (/* Next     =: */ nextExprList
+       ,/* Expr     =: */ DesignExpr
+                          (/* Position   =: */ _
+                          ,/* Designator =: */ Designator
+                                               (/* Ident        =: */ serverId
+                                               ,/* Position     =: */ pos
+                                               ,/* Designors    =: */ Selector
+                                                                      (/* Nextor =: */ mtDesignor
+                                                                      ,/* OpPos  =: */ _
+                                                                      ,/* Ident  =: */ ident
+                                                                      ,/* IdPos  =: */ identPos)
+                                               ,/* Designations =: */ _)
+                          )
+       )
+=>     nextExprList
+RETURN
+       QualifiedIdent
+       (/* Position := */ pos
+       ,/* ServerId := */ serverId
+       ,/* Ident    := */ ident
+       ,/* IdentPos := */ identPos) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([<expr>,...]) ==> [...] , <error> */
+
+       ExprList
+       (/* Next     =: */ nextExprList
+       ,/* Expr     =: */ Exprs
+                        (/* Position   =: */ pos)
+       )
+=>     nextExprList
+RETURN
+       ErrorQualident
+       (/* Position := */ pos) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([]) ==> [] , <mt> */
+       mtExprList
+=>     exprList
+RETURN
+       mtQualident
+       (/* Position := */ {POS.NoPosition}) ?.
+
+/********************************************************************************************************************************/
+/*
+ * Extracts the first expression from the expression list.
+ * Truncates the first three expressions from the expression list.
+ */
+/* UNEXPORTED: */
+FUNCTION ExtractFirstExpr ( exprList:ExprLists => ExprLists ) Exprs
+
+/* ([<expr>,...]) ==> [...] , <expr> */
+
+       ExprList
+       (/* Next     =: */ nextExprList
+       ,/* Expr     =: */ expr)
+=>     nextExprList
+RETURN
+       expr ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* ([]) ==> [] , <mtExpr> */
+       _
+=>     exprList
+RETURN
+       mtExpr
+       (/* Position := */ {POS.NoPosition}) ?.
+
+/********************************************************************************************************************************/
+/*** END TT.pum                                                                                                               ***/
+/********************************************************************************************************************************/
+
+

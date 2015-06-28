@@ -1,0 +1,16 @@
+MODULE Reals;
+
+VAR a,b,c,d:REAL;
+
+PROCEDURE P(n:LONGINT):REAL;
+BEGIN (* P *)               
+ IF n<=0
+    THEN RETURN 1.0; 
+    ELSE RETURN (b+(b+(b+(b+(b+c)*a)*a)*a)*a)*a+P(n-1); 
+ END; (* IF *)
+END P;
+
+VAR r:REAL;
+BEGIN (* Reals *)
+ r:=P(100); 
+END Reals.

@@ -1,0 +1,19 @@
+Compiling etar002f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+a   REFPARAM  ARRAY OF CHAR
+-------------------------------------------------------------------------------
+
+'MODULE' etar002f
+-------------------------------------------------------------------------------
+T1   TYPE      ARRAY OF CHAR
+v1   VAR       T1
+v2   VAR       ARRAY 3 OF ARRAY OF CHAR
+P    PROCEDURE (VAR a:ARRAY OF CHAR) : T1
+-------------------------------------------------------------------------------
+
+etar002f.ob2: 12,5: Open arrays are not allowed here
+etar002f.ob2: 16,22: Missing array length
+etar002f.ob2: 21,34: Open arrays are not allowed here
+etar002f.ob2: 21,34: Illegal type of function result
+etar002f.ob2: 26,9: RETURN expression not compatible with formal result type

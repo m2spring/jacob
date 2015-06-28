@@ -1,0 +1,298 @@
+PROCEDURE ConstRegistered2Registered;
+BEGIN (* ConstRegistered2Registered *)
+ sp:=S.VAL(S.PTR    ,TRUE          ); 
+ sp:=S.VAL(S.PTR    ,'X'           ); 
+ sp:=S.VAL(S.PTR    ,0X            ); 
+ sp:=S.VAL(S.PTR    ,1X            ); 
+ sp:=S.VAL(S.PTR    ,{1,2,3}       ); 
+ sp:=S.VAL(S.PTR    ,127           ); 
+ sp:=S.VAL(S.PTR    ,32767         ); 
+ sp:=S.VAL(S.PTR    ,1+MAX(INTEGER)); 
+ sp:=S.VAL(S.PTR    ,NIL           ); 
+ sp:=S.VAL(S.PTR    ,PR            ); 
+                    
+ ch:=S.VAL(CHAR     ,TRUE          ); 
+ ch:=S.VAL(CHAR     ,'X'           ); 
+ ch:=S.VAL(CHAR     ,0X            ); 
+ ch:=S.VAL(CHAR     ,1X            ); 
+ ch:=S.VAL(CHAR     ,{1,2,3}       ); 
+ ch:=S.VAL(CHAR     ,127           ); 
+ ch:=S.VAL(CHAR     ,32767         ); 
+ ch:=S.VAL(CHAR     ,1+MAX(INTEGER)); 
+ ch:=S.VAL(CHAR     ,NIL           ); 
+ ch:=S.VAL(CHAR     ,PR            ); 
+                    
+ bo:=S.VAL(BOOLEAN  ,TRUE          ); 
+ bo:=S.VAL(BOOLEAN  ,'X'           ); 
+ bo:=S.VAL(BOOLEAN  ,0X            ); 
+ bo:=S.VAL(BOOLEAN  ,1X            ); 
+ bo:=S.VAL(BOOLEAN  ,{1,2,3}       ); 
+ bo:=S.VAL(BOOLEAN  ,127           ); 
+ bo:=S.VAL(BOOLEAN  ,32767         ); 
+ bo:=S.VAL(BOOLEAN  ,1+MAX(INTEGER)); 
+ bo:=S.VAL(BOOLEAN  ,NIL           ); 
+ bo:=S.VAL(BOOLEAN  ,PR            ); 
+                    
+ se:=S.VAL(SET      ,TRUE          ); 
+ se:=S.VAL(SET      ,'X'           ); 
+ se:=S.VAL(SET      ,0X            ); 
+ se:=S.VAL(SET      ,1X            ); 
+ se:=S.VAL(SET      ,{1,2,3}       ); 
+ se:=S.VAL(SET      ,127           ); 
+ se:=S.VAL(SET      ,32767         ); 
+ se:=S.VAL(SET      ,1+MAX(INTEGER)); 
+ se:=S.VAL(SET      ,NIL           ); 
+ se:=S.VAL(SET      ,PR            ); 
+                    
+ si:=S.VAL(SHORTINT ,TRUE          ); 
+ si:=S.VAL(SHORTINT ,'X'           ); 
+ si:=S.VAL(SHORTINT ,0X            ); 
+ si:=S.VAL(SHORTINT ,1X            ); 
+ si:=S.VAL(SHORTINT ,{1,2,3}       ); 
+ si:=S.VAL(SHORTINT ,127           ); 
+ si:=S.VAL(SHORTINT ,32767         ); 
+ si:=S.VAL(SHORTINT ,1+MAX(INTEGER)); 
+ si:=S.VAL(SHORTINT ,NIL           ); 
+ si:=S.VAL(SHORTINT ,PR            ); 
+                    
+ in:=S.VAL(INTEGER  ,TRUE          ); 
+ in:=S.VAL(INTEGER  ,'X'           ); 
+ in:=S.VAL(INTEGER  ,0X            ); 
+ in:=S.VAL(INTEGER  ,1X            ); 
+ in:=S.VAL(INTEGER  ,{1,2,3}       ); 
+ in:=S.VAL(INTEGER  ,127           ); 
+ in:=S.VAL(INTEGER  ,32767         ); 
+ in:=S.VAL(INTEGER  ,1+MAX(INTEGER)); 
+ in:=S.VAL(INTEGER  ,NIL           ); 
+ in:=S.VAL(INTEGER  ,PR            ); 
+                    
+ li:=S.VAL(LONGINT  ,TRUE          ); 
+ li:=S.VAL(LONGINT  ,'X'           ); 
+ li:=S.VAL(LONGINT  ,0X            ); 
+ li:=S.VAL(LONGINT  ,1X            ); 
+ li:=S.VAL(LONGINT  ,{1,2,3}       ); 
+ li:=S.VAL(LONGINT  ,127           ); 
+ li:=S.VAL(LONGINT  ,32767         ); 
+ li:=S.VAL(LONGINT  ,1+MAX(INTEGER)); 
+ li:=S.VAL(LONGINT  ,NIL           ); 
+ li:=S.VAL(LONGINT  ,PR            ); 
+                    
+ pt:=S.VAL(Pointer  ,TRUE          ); 
+ pt:=S.VAL(Pointer  ,'X'           ); 
+ pt:=S.VAL(Pointer  ,0X            ); 
+ pt:=S.VAL(Pointer  ,1X            ); 
+ pt:=S.VAL(Pointer  ,{1,2,3}       ); 
+ pt:=S.VAL(Pointer  ,127           ); 
+ pt:=S.VAL(Pointer  ,32767         ); 
+ pt:=S.VAL(Pointer  ,1+MAX(INTEGER)); 
+ pt:=S.VAL(Pointer  ,NIL           ); 
+ pt:=S.VAL(Pointer  ,PR            ); 
+                   
+ pr:=S.VAL(Procedure,TRUE          ); 
+ pr:=S.VAL(Procedure,'X'           ); 
+ pr:=S.VAL(Procedure,0X            ); 
+ pr:=S.VAL(Procedure,1X            ); 
+ pr:=S.VAL(Procedure,{1,2,3}       ); 
+ pr:=S.VAL(Procedure,127           ); 
+ pr:=S.VAL(Procedure,32767         ); 
+ pr:=S.VAL(Procedure,1+MAX(INTEGER)); 
+ pr:=S.VAL(Procedure,NIL           ); 
+ pr:=S.VAL(Procedure,PR            ); 
+END ConstRegistered2Registered;
+
+PROCEDURE Registered2Registered;
+BEGIN (* Registered2Registered *)
+ sp:=S.VAL(S.PTR    ,bo); 
+ sp:=S.VAL(S.PTR    ,ch); 
+ sp:=S.VAL(S.PTR    ,se); 
+ sp:=S.VAL(S.PTR    ,si); 
+ sp:=S.VAL(S.PTR    ,in); 
+ sp:=S.VAL(S.PTR    ,li); 
+ sp:=S.VAL(S.PTR    ,pt); 
+ sp:=S.VAL(S.PTR    ,pr); 
+                    
+ ch:=S.VAL(CHAR     ,bo); 
+ ch:=S.VAL(CHAR     ,ch); 
+ ch:=S.VAL(CHAR     ,se); 
+ ch:=S.VAL(CHAR     ,si); 
+ ch:=S.VAL(CHAR     ,in); 
+ ch:=S.VAL(CHAR     ,li); 
+ ch:=S.VAL(CHAR     ,pt); 
+ ch:=S.VAL(CHAR     ,pr); 
+                    
+ bo:=S.VAL(BOOLEAN  ,bo); 
+ bo:=S.VAL(BOOLEAN  ,ch); 
+ bo:=S.VAL(BOOLEAN  ,se); 
+ bo:=S.VAL(BOOLEAN  ,si); 
+ bo:=S.VAL(BOOLEAN  ,in); 
+ bo:=S.VAL(BOOLEAN  ,li); 
+ bo:=S.VAL(BOOLEAN  ,pt); 
+ bo:=S.VAL(BOOLEAN  ,pr); 
+                    
+ se:=S.VAL(SET      ,bo); 
+ se:=S.VAL(SET      ,ch); 
+ se:=S.VAL(SET      ,se); 
+ se:=S.VAL(SET      ,si); 
+ se:=S.VAL(SET      ,in); 
+ se:=S.VAL(SET      ,li); 
+ se:=S.VAL(SET      ,pt); 
+ se:=S.VAL(SET      ,pr); 
+                    
+ si:=S.VAL(SHORTINT ,bo); 
+ si:=S.VAL(SHORTINT ,ch); 
+ si:=S.VAL(SHORTINT ,se); 
+ si:=S.VAL(SHORTINT ,si); 
+ si:=S.VAL(SHORTINT ,in); 
+ si:=S.VAL(SHORTINT ,li); 
+ si:=S.VAL(SHORTINT ,pt); 
+ si:=S.VAL(SHORTINT ,pr); 
+                    
+ in:=S.VAL(INTEGER  ,bo); 
+ in:=S.VAL(INTEGER  ,ch); 
+ in:=S.VAL(INTEGER  ,se); 
+ in:=S.VAL(INTEGER  ,si); 
+ in:=S.VAL(INTEGER  ,in); 
+ in:=S.VAL(INTEGER  ,li); 
+ in:=S.VAL(INTEGER  ,pt); 
+ in:=S.VAL(INTEGER  ,pr); 
+                    
+ li:=S.VAL(LONGINT  ,bo); 
+ li:=S.VAL(LONGINT  ,ch); 
+ li:=S.VAL(LONGINT  ,se); 
+ li:=S.VAL(LONGINT  ,si); 
+ li:=S.VAL(LONGINT  ,in); 
+ li:=S.VAL(LONGINT  ,li); 
+ li:=S.VAL(LONGINT  ,pt); 
+ li:=S.VAL(LONGINT  ,pr); 
+                    
+ pt:=S.VAL(Pointer  ,bo); 
+ pt:=S.VAL(Pointer  ,ch); 
+ pt:=S.VAL(Pointer  ,se); 
+ pt:=S.VAL(Pointer  ,si); 
+ pt:=S.VAL(Pointer  ,in); 
+ pt:=S.VAL(Pointer  ,li); 
+ pt:=S.VAL(Pointer  ,pt); 
+ pt:=S.VAL(Pointer  ,pr); 
+                   
+ pr:=S.VAL(Procedure,bo); 
+ pr:=S.VAL(Procedure,ch); 
+ pr:=S.VAL(Procedure,se); 
+ pr:=S.VAL(Procedure,si); 
+ pr:=S.VAL(Procedure,in); 
+ pr:=S.VAL(Procedure,li); 
+ pr:=S.VAL(Procedure,pt); 
+ pr:=S.VAL(Procedure,pr); 
+END Registered2Registered;
+
+PROCEDURE ConstRegistered2Float;
+BEGIN (* ConstRegistered2Float *)
+ re:=S.VAL(REAL    ,TRUE          ); 
+ re:=S.VAL(REAL    ,'X'           ); 
+ re:=S.VAL(REAL    ,0X            ); 
+ re:=S.VAL(REAL    ,1X            ); 
+ re:=S.VAL(REAL    ,{1,2,3}       ); 
+ re:=S.VAL(REAL    ,127           ); 
+ re:=S.VAL(REAL    ,32767         ); 
+ re:=S.VAL(REAL    ,1+MAX(INTEGER)); 
+ re:=S.VAL(REAL    ,NIL           ); 
+ re:=S.VAL(REAL    ,PR            ); 
+                   
+ lr:=S.VAL(LONGREAL,TRUE          ); 
+ lr:=S.VAL(LONGREAL,'X'           ); 
+ lr:=S.VAL(LONGREAL,0X            ); 
+ lr:=S.VAL(LONGREAL,1X            ); 
+ lr:=S.VAL(LONGREAL,{1,2,3}       ); 
+ lr:=S.VAL(LONGREAL,127           ); 
+ lr:=S.VAL(LONGREAL,32767         ); 
+ lr:=S.VAL(LONGREAL,1+MAX(INTEGER)); 
+ lr:=S.VAL(LONGREAL,NIL           ); 
+ lr:=S.VAL(LONGREAL,PR            ); 
+END ConstRegistered2Float;
+
+PROCEDURE Registered2Float;
+BEGIN (* Registered2Float *)
+ re:=S.VAL(REAL    ,bo); 
+ re:=S.VAL(REAL    ,ch); 
+ re:=S.VAL(REAL    ,se); 
+ re:=S.VAL(REAL    ,si); 
+ re:=S.VAL(REAL    ,in); 
+ re:=S.VAL(REAL    ,li); 
+ re:=S.VAL(REAL    ,pt); 
+ re:=S.VAL(REAL    ,pr); 
+                   
+ lr:=S.VAL(LONGREAL,bo); 
+ lr:=S.VAL(LONGREAL,ch); 
+ lr:=S.VAL(LONGREAL,se); 
+ lr:=S.VAL(LONGREAL,si); 
+ lr:=S.VAL(LONGREAL,in); 
+ lr:=S.VAL(LONGREAL,li); 
+ lr:=S.VAL(LONGREAL,pt); 
+ lr:=S.VAL(LONGREAL,pr); 
+END Registered2Float;
+
+PROCEDURE ConstRegistered2Structured;
+BEGIN (* ConstRegistered2Structured *)
+ ar:=S.VAL(Array   ,TRUE          ); 
+ ar:=S.VAL(Array   ,'X'           ); 
+ ar:=S.VAL(Array   ,0X            ); 
+ ar:=S.VAL(Array   ,1X            ); 
+ ar:=S.VAL(Array   ,{1,2,3}       ); 
+ ar:=S.VAL(Array   ,127           ); 
+ ar:=S.VAL(Array   ,32767         ); 
+ ar:=S.VAL(Array   ,1+MAX(INTEGER)); 
+ ar:=S.VAL(Array   ,NIL           ); 
+ ar:=S.VAL(Array   ,PR            ); 
+                   
+ rc:=S.VAL(Record  ,TRUE          ); 
+ rc:=S.VAL(Record  ,'X'           ); 
+ rc:=S.VAL(Record  ,0X            ); 
+ rc:=S.VAL(Record  ,1X            ); 
+ rc:=S.VAL(Record  ,{1,2,3}       ); 
+ rc:=S.VAL(Record  ,127           ); 
+ rc:=S.VAL(Record  ,32767         ); 
+ rc:=S.VAL(Record  ,1+MAX(INTEGER)); 
+ rc:=S.VAL(Record  ,NIL           ); 
+ rc:=S.VAL(Record  ,PR            ); 
+END ConstRegistered2Structured;
+
+PROCEDURE Registered2Structured;
+BEGIN (* Registered2Structured *)
+ ar:=S.VAL(Array ,bo); 
+ ar:=S.VAL(Array ,ch); 
+ ar:=S.VAL(Array ,se); 
+ ar:=S.VAL(Array ,si); 
+ ar:=S.VAL(Array ,in); 
+ ar:=S.VAL(Array ,li); 
+ ar:=S.VAL(Array ,pt); 
+ ar:=S.VAL(Array ,pr); 
+                   
+ rc:=S.VAL(Record,bo); 
+ rc:=S.VAL(Record,ch); 
+ rc:=S.VAL(Record,se); 
+ rc:=S.VAL(Record,si); 
+ rc:=S.VAL(Record,in); 
+ rc:=S.VAL(Record,li); 
+ rc:=S.VAL(Record,pt); 
+ rc:=S.VAL(Record,pr); 
+END Registered2Structured;
+
+PROCEDURE String2;
+BEGIN (* String2 *)
+ sp:=S.VAL(S.PTR    ,'123456789'); 
+ ch:=S.VAL(CHAR     ,'1234567890'); 
+ bo:=S.VAL(BOOLEAN  ,'1234567890A'); 
+ se:=S.VAL(SET      ,'1234567890AB'); 
+ si:=S.VAL(SHORTINT ,'1234567890ABC'); 
+ in:=S.VAL(INTEGER  ,'1234567890ABCD'); 
+ li:=S.VAL(LONGINT  ,'1234567890ABCDE'); 
+ pt:=S.VAL(Pointer  ,'1234567890ABCDEF'); 
+ pr:=S.VAL(Procedure,'1234567890ABCDEFG'); 
+
+ re:=S.VAL(REAL     ,'1234567890ABCDEFGH'); 
+ lr:=S.VAL(LONGREAL ,'1234567890ABCDEFGHI'); 
+
+ ar:=S.VAL(Array    ,'1234567890ABCDEFGHIJ'); 
+ rc:=S.VAL(Record   ,'1234567890ABCDEFGHIJK'); 
+END String2;
+
+

@@ -1,0 +1,30 @@
+#!/bin/sh
+
+#SYSDIR=`dirname $0`
+SYSDIR=/usr/mocka/sys
+
+case $1 in
+'-elf' ) LD='/usr/bin/ld -m elf_i386 -rpath /lib' ;
+	 PRE='/usr/lib/crt1.o /usr/lib/crti.o /usr/lib/crtbegin.o' ;
+	 RTS=$SYSDIR/M2RTS-elf.o ;
+	 POST='/usr/lib/crtend.o /usr/lib/crtn.o'
+	 shift ;;
+*      ) LD='/usr/i486-linuxaout/bin/ld -m i386linux' ;
+	 PRE='/usr/i486-linuxaout/lib/crt0.o' ;
+	 RTS=$SYSDIR/M2RTS-aout.o ;
+	 POST= ;;
+esac;
+
+case $1 in
+'-static' ) STAT='-static' ; shift ;;
+*         ) STAT='-dynamic-linker /lib/ld-linux.so.1' ;;
+esac;
+
+case $1 in
+'-g' ) LIB="-L/usr/lib/gcc-lib/i386-linux/2.7.2.1 -L/usr/i486-linux/lib -lc -lgcc" ; shift ;;
+*    ) LIB="-L/usr/lib/gcc-lib/i386-linux/2.7.2.1 -L/usr/i486-linux/lib -lc -lgcc" ;;
+esac;
+
+program=$1 ; shift ; modules="$*"
+
+$LD -o $program $STAT $PRE $RTS $modules $LIB $POST

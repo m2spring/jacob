@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/cctb/lib/rex/rex -l/usr/cctb/lib/rex $*

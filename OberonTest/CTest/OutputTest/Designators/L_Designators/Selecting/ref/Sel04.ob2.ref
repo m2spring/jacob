@@ -1,0 +1,140 @@
+Compiling Sel04 (Sel04.ob2) 
+  Importing Sel03 (Sel03.ob2)
+Linking Sel04
+	.comm	Sel04$G,32
+#      8 r: Sel03.tRec1
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+Sel04$N:
+	.asciz	"Sel04"
+	.align	2,144
+	.long	Sel04$N
+	.long	0
+	.long	_NILPROC
+	.globl	Sel04$D
+Sel04$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+#      8 addr r (Sel03.tRec1)
+# PROCEDURE P1(r:Sel03.tRec1)
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L0$N:
+	.asciz	"Sel04.P1"
+	.align	2,144
+	.long	L0$N
+	.long	0
+	.long	_NILPROC
+L0$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L0:
+	pushl	%ebp
+	pushl	$L0$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L2,%esp
+
+# Local copy for parameter r
+	movl	$6,%ecx
+	subl	$24,%esp
+	movl	%esp,%edi
+	movl	8(%ebp),%esi
+	movl	%edi,8(%ebp)
+	cld
+	repz
+	movsl
+
+	# r.r1.r2.r3.r4.s5:={};
+	movl	8(%ebp),%eax	# r 
+	movl	$0,18(%eax)
+
+	leave
+	ret
+L2=	0
+
+#------------------------------------------------------------------------------
+#     12 addr r (VAR Sel03.tRec1)
+#      8 tag  r
+# PROCEDURE P2(VAR r:Sel03.tRec1)
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L1$N:
+	.asciz	"Sel04.P2"
+	.align	2,144
+	.long	L1$N
+	.long	0
+	.long	_NILPROC
+L1$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L1:
+	pushl	%ebp
+	pushl	$L1$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L3,%esp
+
+	# r.r1.r2.r3.r4.s5:={};
+	movl	12(%ebp),%eax	# r 
+	movl	$0,18(%eax)
+
+	leave
+	ret
+L3=	0
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Sel04$I$N:
+	.asciz	"Sel04$I"
+	.align	2,144
+	.long	Sel04$I$N
+	.long	0
+	.long	_NILPROC
+Sel04$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Sel04$I
+Sel04$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Sel04$I$D
+	subl	$L4,%esp
+
+	# pointer variable init code
+	movl	$0,22+Sel04$G
+
+	# P1(r);
+	leal	8+Sel04$G,%eax	# r 
+	pushl	%eax
+	call	L0
+	addl	$4,%esp
+
+	# P2(r);
+	leal	8+Sel04$G,%eax	# r 
+	pushl	%eax
+	leal	Sel03_tRec1$D,%eax
+	pushl	%eax
+	call	L1
+	addl	$8,%esp
+
+	leave
+	ret
+L4=	0
+

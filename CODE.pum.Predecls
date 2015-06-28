@@ -1,0 +1,556 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.Predecls                                                                                                        ***/
+/********************************************************************************************************************************/
+PROCEDURE CodePredeclFuncs ( PredeclArgumenting , dstType:TypeReprs  => DCode )
+LOCAL{ VAR acode:ACode; dcode,dcode1,dcode2:DCode; idData:tImplicitDesignationData; retypecode:RetypeCode; }
+
+ AbsArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.ABS); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    IF ARG.OptionRangeChecking & T.IsIntegerType(t) THEN Cons.MinIntCheck(LAB.AbsFault,dcode,dcode); END;
+    Cons.Abs(dcode,dcode); 
+    SHOWCODE(CodeRDesignator1.ABS,dcode); 
+ };.
+
+ AshArgumenting(_,_,_,_,_,_,expr1:Exprs(_,type1,_),expr2:Exprs(_,type2,val2),_,_,_),_ => {dcode} ?{ TRACE(PredeclFuncs.ASH); 
+    CodeRExpr(type1,expr1,OB.cmtCoercion,dcode1); 
+    Cons.Int2Longint(dcode1,dcode1); 
+    CodeSecondShiftOperand(val2,type2,expr2,dcode2); 
+    Cons.Ash(dcode1,dcode2,dcode); 
+    SHOWCODE(CodeRDesignator1.ASH,dcode); 
+ };.
+
+ CapArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.CAP); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Cap(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.CAP,dcode); 
+ };.
+
+ ChrArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.CHR); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    IF ARG.OptionRangeChecking THEN Cons.ChrRangeCheck(dcode,dcode); END;
+    Cons.Int2Shortint(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.CHR,dcode); 
+ };.
+
+ EntierArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.ENTIER); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Entier(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.ENTIER,dcode); 
+ };.
+
+ LenArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),Exprs(_,_,val),_,_,_),_ => {dcode} ?{ TRACE(CodePredeclFuncs.LEN);
+    CodeImplicitLDesignator(d,idData,acode);
+    Cons.Selector(idData.ofsOfLEN0+4*(idData.nofOpenIndexings+V.ValueOfInteger(val)),idData.acodeToObjHeader,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+ };.
+
+ LongArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),IntegerTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.LONG->INTEGER); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Int2Integer(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.LONG->INTEGER,dcode); 
+ };.
+
+ LongArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),LongintTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.LONG->LONGINT); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Int2Longint(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.LONG->LONGINT,dcode); 
+ };.
+
+ LongArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),LongrealTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.LONG->LONGREAL); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Real2Longreal(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.LONG->LONGREAL,dcode); 
+ };.
+
+/*
+ * MaxArgumenting ... Always constant!
+ *
+ * MinArgumenting ... Always constant!
+ *
+ * OddArgumenting ... boolean function...
+ */
+
+ OrdArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.ORD); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Card2Integer(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.ORD,dcode); 
+ };.
+
+ ShortArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),ShortintTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.SHORT->SHORTINT); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    IF ARG.OptionRangeChecking THEN Cons.ShortRangeCheck(dcode,dcode); END;
+    Cons.Int2Shortint(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.SHORT->REAL,dcode); 
+ };.
+
+ ShortArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),IntegerTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.SHORT->INTEGER); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    IF ARG.OptionRangeChecking THEN Cons.ShortRangeCheck(dcode,dcode); END;
+    Cons.Int2Integer(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.SHORT->REAL,dcode); 
+ };.
+
+ ShortArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),RealTypeRepr => {dcode} ?{ TRACE(PredeclFuncs.SHORT->REAL); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.Longreal2Real(dcode,dcode);
+    SHOWCODE(CodeRDesignator1.SHORT->REAL,dcode); 
+ };.
+
+/*
+ * SizeArgumenting ... Always constant!
+ */
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ SysAdrArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),_),_ => {dcode} ?{ TRACE(PredeclFuncs.SYSTEM.ADR); 
+    CodeLDesignator(d,acode); 
+    Cons.AddressOf(acode,dcode);
+    SHOWCODE(CodeRDesignator1.SYSTEM.ADR,dcode); 
+ };.
+
+/*
+ * SysBitArgumenting ... boolean function...
+ * SysCcArgumenting ... boolean function...
+ */
+
+ SysLshArgumenting(_,_,_,_,_,_,expr1:Exprs(_,type1,_),expr2:Exprs(_,type2,val2),_,_,_),_ => {dcode} ?
+ { TRACE(PredeclFuncs.SYSTEM.LSH); 
+    CodeRExpr(type1,expr1,OB.cmtCoercion,dcode1); 
+    CodeSecondShiftOperand(val2,type2,expr2,dcode2); 
+    Cons.ShiftOrRotate(shl,dcode1,dcode2,dcode); 
+    SHOWCODE(CodeRDesignator1.SYSTEM.LSH,dcode); 
+ };.
+
+ SysRotArgumenting(_,_,_,_,_,_,expr1:Exprs(_,type1,_),expr2:Exprs(_,type2,val2),_,_,_),_ => {dcode} ?
+ { TRACE(PredeclFuncs.SYSTEM.ROT); 
+    CodeRExpr(type1,expr1,OB.cmtCoercion,dcode1); 
+    CodeSecondShiftOperand(val2,type2,expr2,dcode2); 
+    Cons.ShiftOrRotate(rol,dcode1,dcode2,dcode); 
+    SHOWCODE(CodeRDesignator1.SYSTEM.ROT,dcode); 
+ };.
+
+ SysValArgumenting(_,_,_,_,_,_,_,_,expr:Exprs(_,sType,_),dType,tmpOfs),_ => {dcode} ?{ TRACE(PredeclFuncs.SYSTEM.VAL); 
+    CodeSysValSource(sType,dType,expr,tmpOfs,retypecode); 
+    CodeSysValRDestination(dType,retypecode,dcode); 
+ };.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ .. => NIL ?{ ERR.Fatal('CODE.CodePredeclFuncs: failed'); };.
+ 
+/*END CodePredeclFuncs */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeSysValSource ( srcType:TypeReprs , dstType:TypeReprs , expr:Exprs , tmpOfs:LONGINT => RetypeCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; retypecode:RetypeCode; }
+
+ ByteTypeRepr      (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ PtrTypeRepr       (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ BooleanTypeRepr   (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ CharTypeRepr      (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ CharStringTypeRepr(_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ SetTypeRepr       (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ ShortintTypeRepr  (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ IntegerTypeRepr   (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ LongintTypeRepr   (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ NilTypeRepr       (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ PointerTypeRepr   (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ ProcedureTypeRepr (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ RealTypeRepr      (_,srcSize,..),TypeRepr(_,dstSize,..),.. ;
+ LongrealTypeRepr  (_,srcSize,..),TypeRepr(_,dstSize,..),.. => {retypecode} ?{ TRACE(CodeSysValSource.StandardType); 
+    CodeRExpr(srcType,expr,OB.cmtCoercion,dcode); 
+    Cons.Data2Retype(srcSize,dstSize,tmpOfs,dcode,retypecode); 
+ };.
+
+ StringTypeRepr(_,srcSize,..),TypeRepr(_,dstSize,..),Exprs(_,_,srcVal),..  => {retypecode} ?{ TRACE(CodeSysValSource.String); 
+    CodeValue(srcVal,srcType,OB.cmtCoercion,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    Cons.Addr2Retype(1+V.LengthOfString(srcVal),dstSize,tmpOfs,acode,retypecode); 
+ };.
+ 
+ TypeRepr(_,srcSize,..),TypeRepr(_,dstSize,..),DesignExpr(_,_,_,src:Designator,_),.. => {retypecode} ?
+ { TRACE(CodeSysValSource.Structured); 
+    CodeLDesignator(src,acode); 
+    Cons.Addr2Retype(srcSize,dstSize,tmpOfs,acode,retypecode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeSysValSource: failed'); };.
+
+/*END CodeSysValSource */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeSysValRDestination ( dstType:TypeReprs , retypecode:RetypeCode => DCode )
+LOCAL{ VAR dcode:DCode; }
+
+ ByteTypeRepr      ,.. ;
+ PtrTypeRepr       ,.. ;
+ BooleanTypeRepr   ,.. ;
+ CharTypeRepr      ,.. ;
+ SetTypeRepr       ,.. ;
+ ShortintTypeRepr  ,.. ;
+ IntegerTypeRepr   ,.. ;
+ LongintTypeRepr   ,.. ;
+ PointerTypeRepr   ,.. ;
+ ProcedureTypeRepr ,.. => {dcode} ?{ TRACE(CodeSysValRDestination.Registered); 
+    Cons.Retype2Data(retypecode,dcode); 
+ };.
+
+ RealTypeRepr    ,.. ;
+ LongrealTypeRepr,.. => {dcode} ?{ TRACE(CodeSysValRDestination.Longreal); 
+    Cons.Retype2Float(retypecode,dcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeSysValRDestination: failed'); };.
+
+/*END CodeSysValRDestination */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeSecondShiftOperand ( ValueReprs , type:TypeReprs , expr:Exprs => DCode )
+LOCAL{ VAR dcode:DCode; }
+
+ IntegerValue(v),.. => {dcode} ?{                  /* This rule assures that ALL integer constants get Cons-tructed as LONGINTs */
+    Cons.LongintConst(v,dcode);                    /* so that in the CGD one special rule suffices to handle constant shifts.   */
+ };.
+
+ .. => {dcode} ?{
+    CodeRExpr(type,expr,OB.cmtCoercion,dcode); 
+ };.
+
+/*END CodeSecondShiftOperand */
+
+/********************************************************************************************************************************/
+/*** Predeclared procedures                                                                                                   ***/
+/********************************************************************************************************************************/
+PROCEDURE CodePredeclProcs ( PredeclArgumenting )
+LOCAL{ VAR acode,srcAcode,dstAcode:ACode; dcode,srcDcode,dstDcode,lenDcode:DCode; len:LONGINT; }
+
+ AssertArgumenting(_,_,_,_,_,_,expr:Exprs(_,_,exprVal),Exprs(_,_,value),_,_,_)?{ TRACE(CodePredeclProcs.AssertArgumenting);
+    IF ARG.OptionAssertionChecking THEN 
+       CodeAssert(exprVal,expr,V.ValueOfInteger(value)); 
+    END;
+ };.
+ 
+ CopyArgumenting(_,_,_,_,_,_,srcExpr:Exprs(_,srcType,srcVal)
+                            ,DesignExpr(_,dstType,_,dst:Designator(_,_,_,_,_,dstEntry,_,_,_),_),_,_,_)?
+                            { TRACE(CodePredeclProcs.COPY);
+    CodeStringCopy(srcVal,srcExpr,dstType,srcType,dst);
+ };.
+
+ DecArgumenting(_,_,_,_,_,_,DesignExpr(_,type,_,d:Designator,_),mtExpr,_,_,_)?{ TRACE(CodePredeclProcs.DEC(v));
+    CodeLDesignator(d,acode);
+    Cons.IntConst(1,ASM.SizeTab[T.SizeOfType(type)],dcode); 
+    Cons.IncOrDec(sub,acode,dcode); 
+ };.
+
+ DecArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),expr:Exprs(_,type,_),_,_,coercion)?
+ { TRACE(CodePredeclProcs.DEC(v,x));
+    CodeLDesignator(d,acode);
+    CodeRExpr(type,expr,coercion,dcode); 
+    Cons.IncOrDec(sub,acode,dcode); 
+ };.
+
+ ExclArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),expr:Exprs(_,type,_),_,_,coercion)?{ TRACE(CodePredeclProcs.EXCL);
+    CodeLDesignator(d,acode);
+    CodeRExpr(type,expr,coercion,dcode); 
+    Cons.Excl(acode,dcode); 
+ };.
+
+ HaltArgumenting(_,_,_,_,_,_,Exprs(_,_,value),_)?{ TRACE(CodePredeclProcs.HALT);
+    ASM.C1 ( pushl  ,  i(V.ValueOfInteger(value)) ); 
+    ASM.C1 ( call   ,  L(LAB.Halt)                ); 
+    ASM.CS2( add,l  ,  i(4),R(esp)                ); 
+ };.
+
+ IncArgumenting(_,_,_,_,_,_,DesignExpr(_,type,_,d:Designator,_),mtExpr,_,_,_)?{ TRACE(CodePredeclProcs.INC(v));
+    CodeLDesignator(d,acode);
+    Cons.IntConst(1,ASM.SizeTab[T.SizeOfType(type)],dcode); 
+    Cons.IncOrDec(add,acode,dcode); 
+ };.
+
+ IncArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),expr:Exprs(_,type,_),_,_,coercion)?
+ { TRACE(CodePredeclProcs.INC(v,x));
+    CodeLDesignator(d,acode);
+    CodeRExpr(type,expr,coercion,dcode); 
+    Cons.IncOrDec(add,acode,dcode); 
+ };.
+
+ InclArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),expr:Exprs(_,type,_),_,_,coercion)?{ TRACE(CodePredeclProcs.INCL);
+    CodeLDesignator(d,acode);
+    CodeRExpr(type,expr,coercion,dcode); 
+    Cons.Incl(acode,dcode); 
+ };.
+
+ NewArgumenting(_,_,_,_,_,_,DesignExpr(_,type,_,d:Designator,_),mtNewExprList)?{ TRACE(CodePredeclProcs.staticNEW);
+    CodeStaticNew(type,d); 
+ };.
+ 
+ NewArgumenting(_,_,_,_,_,_,DesignExpr(_,type,_,d:Designator,_),exprList:NewExprLists)?{ TRACE(CodePredeclProcs.openNEW);
+    CodeOpenNew(type,d,exprList); 
+ };.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ SysGetArgumenting(_,_,_,_,_,_,adrExpr:Exprs(_,adrType,_),DesignExpr(_,dstType,_,dst:Designator,_),_,_,_)?
+ { TRACE(CodePredeclProcs.SYSTEM.GET);
+    CodeRExpr(adrType,adrExpr,CO.GetCoercion(adrType,OB.cLongintTypeRepr),dcode); 
+    Cons.PointerFrom(dcode,srcAcode); 
+    
+    CodeLDesignator(dst,dstAcode);
+    Cons.MemCopy(T.SizeOfType(dstType),(*isStringCopy:=*)FALSE,dstAcode,srcAcode); 
+ };.
+
+ SysPutArgumenting(_,_,_,_,_,_,adrExpr:Exprs(_,adrType,_),srcExpr:Exprs(_,srcType,srcVal),_,_,_)?
+ { TRACE(CodePredeclProcs.SYSTEM.PUT);
+    CodeRExpr(adrType,adrExpr,CO.GetCoercion(adrType,OB.cLongintTypeRepr),dcode); 
+    Cons.PointerFrom(dcode,dstAcode); 
+    
+    CodeAssign(srcType,srcType,srcVal,dstAcode,srcExpr,OB.cmtCoercion); 
+ };.
+
+ SysGetregArgumenting(_,_,_,_,_,_,Exprs(_,_,value),DesignExpr(_,dstType,_,dst:Designator,_),_,_,_)?
+ { TRACE(CodePredeclProcs.SYSTEM.GETREG);
+    CodeLDesignator(dst,dstAcode);
+    Cons.Getreg(V.ValueOfInteger(value),T.SizeOfType(dstType),dstAcode); 
+ };.
+ 
+ SysPutregArgumenting(_,_,_,_,_,_,Exprs(_,_,value),srcExpr:Exprs(_,srcType,_),_,_,_)?
+ { TRACE(CodePredeclProcs.SYSTEM.PUTREG);
+    CodeRExpr(srcType,srcExpr,OB.cmtCoercion,dcode); 
+    Cons.Putreg(V.ValueOfInteger(value),dcode); 
+ };.
+ 
+ SysMoveArgumenting(_,_,_,_,_,_,srcExpr:Exprs(_,srcType,_),dstExpr:Exprs(_,dstType,_),lenExpr:Exprs(_,lenType,lenVal),_,_)?
+ { TRACE(CodePredeclProcs.SYSTEM.MOVE);
+    CodeRExpr(srcType,srcExpr,CO.GetCoercion(srcType,OB.cLongintTypeRepr),srcDcode); 
+    CodeRExpr(dstType,dstExpr,CO.GetCoercion(dstType,OB.cLongintTypeRepr),dstDcode); 
+    CodeRExpr(lenType,lenExpr,CO.GetCoercion(lenType,OB.cLongintTypeRepr),lenDcode); 
+    Cons.Move(srcDcode,dstDcode,lenDcode); 
+ };.
+
+ SysNewArgumenting(_,_,_,_,_,_,DesignExpr(_,_,_,d:Designator,_),expr:Exprs(_,type,_),_,_,coercion)?
+ { TRACE(CodePredeclProcs.SYSTEM.NEW);
+    CodeLDesignator(d,acode);
+    CodeRExpr(type,expr,coercion,dcode); 
+    Cons.SystemNew(dcode,acode); 
+ };.
+ 
+ .. ?{ ERR.Fatal('CODE.CodePredeclProcs: failed'); };.
+
+/*END CodePredeclProcs */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeAssert ( exprVal:ValueRepr , expr:Exprs , errorcode:LONGINT )
+LOCAL{ VAR boolcode:BoolCode; trueLabel,falseLabel:tLabel; }
+
+ BooleanValue(v),..?{ TRACE(CodeAssert.Const); 
+    IF ~v THEN 
+       ASM.C1 ( pushl  ,  i(errorcode)      ); 
+       ASM.C1 ( call   ,  L(LAB.AssertFail) ); 
+       ASM.CS2( add,l  ,  i(4),R(esp)       ); 
+    END;
+ };.
+ 
+ ..?{ TRACE(CodeAssert);
+    CodeBooleanExpr(expr,exprVal,LAB.MT,LAB.New(trueLabel),LAB.New(falseLabel),boolcode); 
+    Cons.NoBoolVal(boolcode); 
+
+    ASM.Label(falseLabel); 
+    ASM.C1 ( pushl  ,  i(errorcode)      ); 
+    ASM.C1 ( call   ,  L(LAB.AssertFail) ); 
+    ASM.CS2( add,l  ,  i(4),R(esp)       ); 
+    ASM.Label(trueLabel); 
+ };.
+ 
+/*END CodeAssert */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeStringCopy ( srcVal:ValueReprs , srcExpr:Exprs , dstType:TypeReprs , srcType:TypeReprs , dst:Designator )
+LOCAL{ VAR srcLen,dstLen,li:LONGINT; srcAcode,dstAcode:ACode; dcode,srcDcode,dstDcode:DCode; strcpycode:Cons.StrCopyArgs; }
+
+ CharValue(v),_,ArrayTypeRepr(_,_,_,_,_,dstLen,_),.. ? (dstLen>0);{
+    CodeLDesignator(dst,dstAcode);
+    IF (v=0) OR (dstLen=1) THEN 
+       Cons.CharConst(0,dcode); 
+    ELSE 
+       Cons.IntegerConst(v MOD 256,dcode); 
+    END;
+    Cons.SimpleAssignment(dstAcode,dcode);
+ };.
+
+ StringValue(v),_,ArrayTypeRepr(_,_,_,_,_,dstLen,_),.. ? (dstLen>0);{
+    CodeLDesignator(dst,dstAcode); 
+    srcLen:=OT.LengthOfoSTRING(v); 
+    IF (dstLen=1) OR (srcLen=0) THEN 
+       Cons.CharConst(0,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+    ELSE 
+       (* ! (dstLen >= 2) & (srcLen > 0) *)
+       CASE srcLen OF
+       |1:   OT.SplitoSTRING(v,li); Cons.IntegerConst(li,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+       |2,3: OT.SplitoSTRING(v,li); 
+             CASE dstLen OF
+             |2:  Cons.IntegerConst(li MOD 256,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+             |3:  Cons.MemSet3(li MOD 65536,dstAcode); 
+             ELSE Cons.LongintConst(li,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+             END;
+       ELSE  IF srcLen<dstLen THEN 
+                CodeLongstringAssignment(srcVal,srcExpr,dstAcode); 
+             ELSE 
+                Cons.GlobalVariable(CV.String(OT.ShortenoSTRING(v,dstLen-1)),0,Idents.NoIdent,srcAcode); 
+                Cons.MemCopy(dstLen,(*isStringCopy:=*)TRUE,dstAcode,srcAcode); 
+             END;
+       END;
+    END;
+ };.
+
+ CharValue(v),.. ?{
+    CodeStringCopyVariableOperand(dstType,dst,dstDcode); 
+    Cons.ShortConstStrCopy(v,ORD(v>0),dstDcode); 
+ };.
+
+ StringValue(v),.. ?{
+    srcLen:=OT.LengthOfoSTRING(v); 
+    IF srcLen=0 THEN 
+       CodeStringCopyVariableOperand(dstType,dst,dstDcode); 
+       Cons.ShortConstStrCopy(0,0,dstDcode); 
+    ELSE 
+       Cons.GlobalVariable(V.LabelOfMemValue(srcVal),0,Idents.NoIdent,srcAcode); 
+       Cons.ImplicifyConst(1+srcLen,srcAcode,srcDcode);
+   
+       CodeStringCopyVariableOperand(dstType,dst,dstDcode); 
+   
+       Cons.StrCopyArguments(srcDcode,dstDcode,strcpycode); 
+       Cons.StrCopy(strcpycode); 
+    END;
+ };.
+
+ _,DesignExpr(_,_,_,src:Designator,_),.. ?{ TRACE(CodeStringCopy.Default);
+    CodeStringCopyVariableOperand(srcType,src,srcDcode); 
+    CodeStringCopyVariableOperand(dstType,dst,dstDcode); 
+
+    Cons.StrCopyArguments(srcDcode,dstDcode,strcpycode); 
+    Cons.StrCopy(strcpycode); 
+ };.
+ 
+ .. ?{ ERR.Fatal('CODE.CodeStringCopy: failed'); };.
+
+/*END CodeStringCopy */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeStringCopyVariableOperand ( type:TypeReprs , designator:Designator => DCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; idData:tImplicitDesignationData; }
+
+ ArrayTypeRepr(_,_,_,_,_,len,_),_ => {dcode} ? (len#OB.OPENARRAYLEN); { TRACE(CodeStringCopyVariableOperand.Fixed); 
+    CodeLDesignator(designator,acode); 
+    Cons.ImplicifyConst(len,acode,dcode);
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,_),_ => {dcode} ?{ TRACE(CodeStringCopyVariableOperand.Open); 
+    CodeImplicitLDesignator(designator,idData,acode); 
+
+    IF idData.codeToOpenIndexedElem=NIL THEN
+       Cons.Implicify((* lenOfs := *) idData.ofsOfLEN0+4*idData.nofOpenIndexings
+                     ,                idData.isStackObject
+                     ,(* objOfs := *) idData.ofsOfObject
+                     ,                idData.acodeToObjHeader
+                     ,                dcode);
+    ELSE
+       Cons.ImplicifyOpenIndexed((* lenOfs := *) idData.ofsOfLEN0+4*idData.nofOpenIndexings
+                                ,                idData.isStackObject
+                                ,(* objOfs := *) idData.ofsOfObject
+                                ,                idData.codeToOpenIndexedElem
+                                ,                dcode);
+    END;
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeStringCopyVariableOperand: failed'); };.
+
+/*END CodeStringCopyVariableOperand */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeStaticNew ( type:TypeReprs , designator:Designator )
+LOCAL{ VAR acode:ACode; }
+
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,TypeRepr(_,size,_,_,label))),_ ?{
+    CodeLDesignator(designator,acode);
+    Cons.StaticNew(size,LAB.AppS(label,'$D'),LAB.AppS(label,'$I'),acode); 
+ };.
+ 
+ .. ?{ ERR.Fatal('CODE.CodeStaticNew: failed'); };.
+
+/*END CodeStaticNew */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenNew ( type:TypeReprs , designator:Designator , exprList:NewExprLists )
+LOCAL{ VAR acode:ACode; argcode:ArgCode; nofLens:LONGINT; }
+
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,elemType:TypeRepr(_,_,_,_,label))),.. ?{
+    Cons.NoParam(argcode); 
+    CodeOpenNewExprs(exprList,argcode,argcode,nofLens); 
+    
+    CodeLDesignator(designator,acode);
+    Cons.OpenNew(T.ElemSizeOfOpenArrayType(elemType),LAB.AppS(label,'$D'),LAB.AppS(label,'$I'),nofLens,argcode,acode); 
+ };.
+ 
+ .. ?{ ERR.Fatal('CODE.CodeOpenNew: failed'); };.
+
+/*END CodeOpenNew */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenNewExprs ( exprList:NewExprLists , argcodeIn:ArgCode => ArgCode , LONGINT )
+LOCAL{ VAR dcode:DCode; argcode:ArgCode; nofLens:LONGINT; }
+
+ NewExprList(next:NewExprLists,expr:Exprs(_,type,_),coercion),_ => {argcode},{nofLens+1} ?{ TRACE(CodeOpenNewExprs.Expr); 
+    CodeOpenNewExprs(next,argcodeIn,argcode,nofLens); 
+
+    CodeRExpr(type,expr,coercion,dcode); 
+    IF ARG.OptionRangeChecking THEN Cons.LenCheck(dcode,dcode); END;
+    Cons.Param(argcode,dcode,argcode);
+ };.
+ 
+ .. => argcodeIn,0 ?.
+
+/*END CodeOpenNewExprs */
+
+/********************************************************************************************************************************/
+/*** Predeclared predicates                                                                                                   ***/
+/********************************************************************************************************************************/
+PROCEDURE CodePredeclPredicates ( PredeclArgumenting , exprLabel:tLabel , trueLabel:tLabel , falseLabel:tLabel => BoolCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; condcode:CondCode; boolcode:BoolCode; labelcode:Cons.Label; retypecode:RetypeCode; }
+
+ OddArgumenting(_,_,_,_,_,_,e:Exprs(_,t,_),_),.. => {boolcode} ?{ TRACE(CodePredeclPredicates.ODD); 
+    CodeRExpr(t,e,OB.cmtCoercion,dcode); 
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Odd(trueLabel,falseLabel,labelcode,dcode,boolcode); 
+ };.
+
+ SysBitArgumenting(_,_,_,_,_,_,e1:Exprs(_,t1,_),e2:Exprs(_,t2,_),_,_,_),.. => {boolcode} ?
+ { TRACE(CodePredeclPredicates.SYSTEM.BIT); 
+    CodeRExpr(t1,e1,OB.cmtCoercion,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    
+    CodeRExpr(t2,e2,CO.GetCoercion(t2,OB.cLongintTypeRepr),dcode); 
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Bit(trueLabel,falseLabel,labelcode,acode,dcode,boolcode); 
+ };.
+
+ SysCcArgumenting(_,_,_,_,_,_,Exprs(_,_,value),_),.. => {boolcode} ?{ TRACE(CodePredeclPredicates.SYSTEM.CC); 
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Cc(V.ValueOfInteger(value),trueLabel,falseLabel,labelcode,boolcode);
+ };.
+ 
+ SysValArgumenting(_,_,_,_,_,_,_,_,expr:Exprs(_,sType,_),dType,tmpOfs),.. => {boolcode} ?
+ { TRACE(CodePredeclPredicates.SYSTEM.VAL); 
+    CodeSysValSource(sType,dType,expr,tmpOfs,retypecode); 
+    CodeSysValRDestination(dType,retypecode,dcode); 
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Flag(ASM.unequal,labelcode,dcode,condcode); 
+    Cons.Branch((*isSigned:=*)TRUE,trueLabel,falseLabel,condcode,boolcode); 
+ };.
+ 
+ .. => NIL ?{ ERR.Fatal('CODE.CodePredeclPredicates: failed'); };.
+
+/*END CodePredeclPredicates */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.Predecls                                                                                                    ***/
+/********************************************************************************************************************************/
+

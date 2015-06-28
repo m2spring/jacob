@@ -1,0 +1,6 @@
+MODULE Halt;
+IMPORT SysLib;
+BEGIN (* Halt *)
+ SysLib.exit(12); 
+ HALT;
+END Halt.

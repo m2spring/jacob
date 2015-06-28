@@ -1,0 +1,9 @@
+#!/bin/sh
+
+case $1 in
+'-elf' ) AS=/usr/bin/as ; shift ;;
+*      ) AS=/usr/i486-linuxaout/bin/as ;;
+esac;
+
+$AS -L -o $1.o $1.s
+

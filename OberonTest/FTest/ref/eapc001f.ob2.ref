@@ -1,0 +1,21 @@
+Compiling eapc001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+b   VALPARAM  SYSTEM$BYTE
+-------------------------------------------------------------------------------
+
+'MODULE' eapc001f
+-------------------------------------------------------------------------------
+SYS   SERVER    SYSTEM
+c     VAR       CHAR
+si    VAR       SHORTINT
+b     VAR       SYSTEM$BYTE
+i     VAR       INTEGER
+r     VAR       REAL
+lr    VAR       LONGREAL
+P     PROCEDURE (b:SYSTEM$BYTE)
+-------------------------------------------------------------------------------
+
+eapc001f.ob2: 20,6: Expression not assignment compatible
+eapc001f.ob2: 24,6: Expression not assignment compatible
+eapc001f.ob2: 28,6: Expression not assignment compatible

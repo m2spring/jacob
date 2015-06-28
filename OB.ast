@@ -1,0 +1,532 @@
+/********************************************************************************************************************************/
+/*** OB.ast / Evaluator object specification                                                                                  ***/
+/********************************************************************************************************************************/
+MODULE OB TREE OB
+
+IMPORT{ IMPORT Idents                 ,
+	       LAB                    ,
+               OT                     ,
+               POS                    ,
+               STR                    ,
+               StringMem              ;
+
+        TYPE   tIdent                 = Idents.tIdent        ;        (* These types are re-declared due to the fact that       *)
+               oBOOLEAN               = OT.oBOOLEAN          ;        (* qualidents are illegal in an ast specification.        *)
+               oCHAR                  = OT.oCHAR             ;
+               oSTRING                = OT.oSTRING           ;
+               oSET                   = OT.oSET              ;
+               oLONGINT               = OT.oLONGINT          ;
+               oREAL                  = OT.oREAL             ;
+               oLONGREAL              = OT.oLONGREAL         ;
+               tPosition              = POS.tPosition        ; }
+
+EXPORT{ TYPE   tLevel                 = SHORTINT             ;        (* Used to keep track of scope nesting                    *)
+               tParMode               = SHORTCARD            ;        (* Used to represent the kind of a parameter              *)
+               tExportMode            = SHORTCARD            ;        (* Used to represent the export mode                      *)
+               tDeclStatus            = SHORTCARD            ;        (* Used to represent the declaration status               *)
+               tSize                  = LONGINT              ;
+               tAddress               = LONGINT              ;        (* for storage allocation                                 *)
+               tLabel                 = LAB.T                ;
+
+        CONST  NOPROCNUM              = -1                   ;        (* Bound procedures are numbered...                       *)
+               ALLLEVELS              = {0..31}              ;        (* All possible nesting levels                            *)
+               NOLEVELS               = {}                   ;
+
+        (*** Pseudo constants ***)                           
+                                                             
+        VAR    MODULELEVEL            ,                               (* The scope of a module block has this level             *)
+               ROOTEXTLEVEL           ,                               (* The extension level of a record which has no base type *)
+               FIELDLEVEL             : tLevel               ;        (* The "scope level" of record fields                     *)
+                                                             
+               REFPAR                 ,                               (* Kind of a variable parameter                           *)
+               VALPAR                 : tParMode             ;        (* Kind of a value parameter                              *)
+                                                             
+               PRIVATE                ,                               (* The three possible export modes                        *)
+               PUBLIC                 ,                      
+               READONLY               : tExportMode          ;
+                                                             
+               UNDECLARED             ,                               (* The possible states of an entry                        *)
+               TOBEDECLARED           ,                      
+               FORWARDDECLARED        ,                      
+               DECLARED               : tDeclStatus          ;
+                                                             
+                                                             
+               OPENARRAYLEN           : oLONGINT             ;        (* "Length" that identifies open arrays                   *)
+
+        (*** A few constant objects ***)
+
+        VAR    cmtObject              ,
+               cNonameEntry           ,
+               cmtEntry               ,
+               cErrorEntry            ,
+               cPredeclModuleEntry    ,
+               cSystemModuleEntry     ,
+
+               cNoBlocklist           ,
+               cPointerBlocklist      ,
+               cProcedureBlocklist    ,
+               cmtTypeBlocklist       ,
+
+               cmtTypeReprList        ,
+
+               cmtTypeRepr            ,
+               cErrorTypeRepr         ,
+               cNilTypeRepr           ,
+               cByteTypeRepr          ,
+               cPtrTypeRepr           ,
+               cBooleanTypeRepr       ,
+               cCharTypeRepr          ,
+               cCharStringTypeRepr    ,
+               cStringTypeRepr        ,
+               cSetTypeRepr           ,
+               cShortintTypeRepr      ,
+               cIntegerTypeRepr       ,
+               cLongintTypeRepr       ,
+               cRealTypeRepr          ,
+               cLongrealTypeRepr      ,
+
+               cmtValue               ,
+               cErrorValue            ,
+               cProcedureValue        ,
+               cFalseValue            ,
+               cTrueValue             ,
+               cZeroIntegerValue      ,
+               cEmptySetValue         ,
+               cNilValue              ,
+               cNilPointerValue       ,
+               cNilProcedureValue     ,
+
+               cmtSignature           ,
+               cErrorSignature        ,
+               cGenericSignature      ,                               (* Used for predeclared procedures                        *)
+
+               cmtCoercion            ,
+               cShortint2Integer      ,
+               cShortint2Longint      ,
+               cShortint2Real         ,
+               cShortint2Longreal     ,
+               cInteger2Longint       ,
+               cInteger2Real          ,
+               cInteger2Longreal      ,
+               cLongint2Real          ,
+               cLongint2Longreal      ,
+               cReal2Longreal         ,
+               cChar2String           ,
+
+               cmtLabelRange          ,
+	       cmtNamePath            ,
+               cmtTDescElem           : tOB; }
+
+GLOBAL{ IMPORT CO                     ,
+	       LAB                    ,
+               OT                     ,
+               PR                     ,
+               STR                    ; }
+
+BEGIN{  MODULELEVEL           := 1;
+        ROOTEXTLEVEL          := 0;
+        FIELDLEVEL            := MIN(tLevel);
+
+        REFPAR                := 0;
+        VALPAR                := 1;
+
+        PRIVATE               := 0;
+        READONLY              := 1;
+        PUBLIC                := 2;
+
+        UNDECLARED            := 0;
+        TOBEDECLARED          := 1;
+        FORWARDDECLARED       := 2;
+        DECLARED              := 3;
+
+        OPENARRAYLEN          := -1;
+        
+        cmtObject             := mmtObject          (                                      );
+        cPredeclModuleEntry   := mModuleEntry       (\PR.\IdentPREDECL,LAB.MT,FALSE        ); 
+        cSystemModuleEntry    := mModuleEntry       (\PR.\IdentSYSTEM ,LAB.MT,FALSE        ); 
+        cNonameEntry          := mDataEntry         ((* prevEntry   := *) NIL              
+                                                    ,(* module      := *) cPredeclModuleEntry
+                                                    ,(* ident       := *) \Idents.\NoIdent                  
+                                                    ,(* exportMode  := *) PRIVATE                           
+                                                    ,(* level       := *) 0                                 
+                                                    ,(* declStatus  := *) DECLARED         );
+
+        cmtEntry              := mmtEntry           ();
+        cErrorEntry           := mErrorEntry        ();
+                                                                                                            
+        cNoBlocklist          := mNoBlocklist       (                                 ); 
+        cPointerBlocklist     := mBlocklist         (cNoBlocklist,cNoBlocklist,0,1,4,0); 
+        cProcedureBlocklist   := mBlocklist         (cNoBlocklist,cNoBlocklist,0,1,4,0); 
+        cmtTypeBlocklist      := mTypeBlocklists    (cNoBlocklist,cNoBlocklist); 
+                                                                                                            
+        cmtTypeReprList       := mmtTypeReprList    ();
+                                                                                                            
+        cmtTypeRepr           := mmtTypeRepr        (                                                           );
+        cErrorTypeRepr        := mErrorTypeRepr     (                                                           );
+        cNilTypeRepr          := mNilTypeRepr       (cNonameEntry,OT.SIZEoPOINTER ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cByteTypeRepr         := mByteTypeRepr      (cNonameEntry,OT.SIZEoBYTE    ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cPtrTypeRepr          := mPtrTypeRepr       (cNonameEntry,OT.SIZEoPTR     ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cBooleanTypeRepr      := mBooleanTypeRepr   (cNonameEntry,OT.SIZEoBOOLEAN ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cCharTypeRepr         := mCharTypeRepr      (cNonameEntry,OT.SIZEoCHAR    ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cCharStringTypeRepr   := mCharStringTypeRepr(cNonameEntry,0               ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cStringTypeRepr       := mStringTypeRepr    (cNonameEntry,0               ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cSetTypeRepr          := mSetTypeRepr       (cNonameEntry,OT.SIZEoSET     ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cShortintTypeRepr     := mShortintTypeRepr  (cNonameEntry,OT.SIZEoSHORTINT,cmtTypeBlocklist,FALSE,LAB.MT);
+        cIntegerTypeRepr      := mIntegerTypeRepr   (cNonameEntry,OT.SIZEoINTEGER ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cLongintTypeRepr      := mLongintTypeRepr   (cNonameEntry,OT.SIZEoLONGINT ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cRealTypeRepr         := mRealTypeRepr      (cNonameEntry,OT.SIZEoREAL    ,cmtTypeBlocklist,FALSE,LAB.MT);
+        cLongrealTypeRepr     := mLongrealTypeRepr  (cNonameEntry,OT.SIZEoLONGREAL,cmtTypeBlocklist,FALSE,LAB.MT);
+
+        cmtValue              := mmtValue           (           );
+        cErrorValue           := mErrorValue        (           );
+        cProcedureValue       := mProcedureValue    (           );
+        cFalseValue           := mBooleanValue      (FALSE      );
+        cTrueValue            := mBooleanValue      (TRUE       );
+        cZeroIntegerValue     := mIntegerValue      (0          );
+        cEmptySetValue        := mSetValue          (OT.EmptySet);
+        cNilValue             := mNilValue          (           ); 
+        cNilPointerValue      := mNilPointerValue   (           ); 
+        cNilProcedureValue    := mNilProcedureValue (           ); 
+
+        cmtSignature          := mmtSignature       ();
+        cErrorSignature       := mErrorSignature    ();
+        cGenericSignature     := mGenericSignature  ();
+
+        cmtCoercion           := mmtCoercion        ();
+        cShortint2Integer     := mShortint2Integer  ();
+        cShortint2Longint     := mShortint2Longint  ();
+        cShortint2Real        := mShortint2Real     ();
+        cShortint2Longreal    := mShortint2Longreal ();
+        cInteger2Longint      := mInteger2Longint   ();
+        cInteger2Real         := mInteger2Real      ();
+        cInteger2Longreal     := mInteger2Longreal  ();
+        cLongint2Real         := mLongint2Real      ();
+        cLongint2Longreal     := mLongint2Longreal  ();
+        cReal2Longreal        := mReal2Longreal     ();
+        cChar2String          := mChar2String       ();
+
+        cmtLabelRange         := mmtLabelRange      (); 
+	cmtNamePath           := mmtNamePath        (); 
+        cmtTDescElem          := mmtTDescElem       (); }
+
+/********************************************************************************************************************************/
+PROPERTY INPUT RULE
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+mtObject                      =
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Entries                       =                                                  /* ... are the elements of the symbol table    */
+<
+   mtEntry                    =                                                  /* a non-existent entry                        */
+                              .
+   ErrorEntry                 =
+                              .
+   ModuleEntry                = [ name            : tIdent        ]              /* Not linked to any symbol table              */
+                                [ globalLabel     : tLabel        ]
+                                [ isForeign       : BOOLEAN       ]
+                              .
+   Entry                      =   prevEntry       : Entries                      /* Links to the previous entered entry         */
+   <
+      ScopeEntry              =                                                  /* Indicates the scope boundary                */
+                              .
+      DataEntry               =   module          : ModuleEntry                  /* The declaring module                        */
+                                [ ident           : tIdent        ]              /* Name of the declared object                 */
+                                [ exportMode      : tExportMode   ]              /* Export mode of the declared object          */
+                                [ level           : tLevel        ]              /* Scope nesting level                         */
+                                [ declStatus      : tDeclStatus   ]              /* ... object declaration status               */
+      <
+         ServerEntry          =   serverTable     : Entries                      /* All objects declared in a server module     */
+                                [ serverId        : tIdent        ]              /* Real (unaliased) name of the server module  */
+                              .
+         ConstEntry           =   typeRepr        : TypeReprs                    /* Type of a constant declaration              */
+                                  value           : ValueReprs                   /* Value of a constant declaration             */
+                                [ label           : tLabel        ]              /* Only used for named memory constants        */
+                              .
+         TypeEntry            =   typeRepr        : TypeReprs                    /* Type of a type declaration                  */
+                              .
+         VarEntry             =   typeRepr        : TypeReprs                    /* Type of a variable/parameter declaration    */
+                                [ isParam         : BOOLEAN       ]              /* ... variable is a parameter                 */
+                                [ isReceiverPar   : BOOLEAN       ]              /* ... variable is a receiver parameter        */
+                                [ parMode         : tParMode      ]              /* Kind of a parameter                         */
+                                [ address         : tAddress      ]              /* For storage allocation                      */
+                                [ refMode         : tParMode      ]              /* Effective kind of the variable access       */
+                                [ isWithed        : BOOLEAN       ]              /* Static type of variable is affected by WITH */
+                                [ isLaccessed     : BOOLEAN       ]              /* A parameter maybe gets changed              */
+                              .
+         ProcedureEntry       =   typeRepr        : TypeReprs                    /* (Procedure) type of a procedure entry       */
+                                [ complete        : BOOLEAN       ]              /* ... forwarded procedure is completed        */
+                                [ position        : tPosition     ]              /* Source position of the procedure name       */
+                                [ label           : tLabel        ]              /* Label of the procedure                      */
+                                  namePath        : NamePaths                    /* Fully qualified name                        */
+                                  env             : Environment                  /* Holds additional information                */
+                              .
+         BoundProcEntry       =   receiverSig     : SignatureRepr                /* Signature of the receiver parameter         */
+                                  typeRepr        : TypeReprs                    /* (Procedure) type of a bound procedure entry */
+                                [ complete        : BOOLEAN       ]              /* ... forwarded procedure is completed        */
+                                [ position        : tPosition     ]              /* Source position of the procedure name       */
+                                [ label           : tLabel        ]              /* Label of the procedure                      */
+                                  namePath        : NamePaths                    /* Fully qualified name                        */
+                                  redefinedProc   : Entries                      /* Links to the redefined procedure            */
+                                [ procNum         : LONGINT       ]
+                                  env             : Environment                  /* Holds additional information                */
+                              .
+         InheritedProcEntry   =   boundProcEntry  : Entries                      /* Pointer to the origin bound procedure       */
+                              .
+      >.
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Environment                   =   entry           : Entries                      /* Procedure entry to which the env belongs    */
+                                [ callDstLevels   : BITSET        ]              /* Levels of all call targets                  */
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+TypeReprLists                 =                                                  /* Used to hold the direct extensions of a     */
+<                                                                                /* record type                                 */
+   mtTypeReprList             =
+                              .
+   TypeReprList               =   prev            : TypeReprLists
+                                  typeRepr        : TypeReprs
+                              .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Blocklists                    =
+<
+   NoBlocklist                =
+                              .
+   Blocklist                  =   prev            : Blocklists
+                                  sub             : Blocklists
+                                [ ofs             : tAddress      ]
+                                [ count           : LONGINT       ]              /* <0 --> =odim of "open" blocklist            */
+                                [ incr            : tSize         ]
+				[ height          : LONGINT       ]
+                              .  
+>.
+TypeBlocklists                =
+                                  ptrBlocklist    : Blocklists                   /* The pointer block list of the type          */
+                                  procBlocklist   : Blocklists                   /* The procedure block list of the type        */
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+TypeReprs                     =                                                  /* Used to represent types                     */
+<
+   mtTypeRepr                 =                                                  /* A non-existent type                         */
+                              .
+   ErrorTypeRepr              =
+                              .
+   TypeRepr                   =   entry           : Entries                      /* Links to the appropriate type entry         */
+                                [ size            : tSize         ]              /* The size of the type                        */
+                                  typeBlocklists  : TypeBlocklists
+                                [ isInTDescList   : BOOLEAN       ]
+                                [ label           : tLabel        ]
+   <
+      ForwardTypeRepr         = [ position        : tPosition     ]              /* Represents an undeclared pointer base type  */
+                              .
+      NilTypeRepr             =                                                  /* The type of NIL                             */
+                              .
+      ByteTypeRepr            =                                                  /*  "   "   "  SYSTEM.BYTE                     */
+                              .
+      PtrTypeRepr             =                                                  /*  "   "   "  SYSTEM.PTR                      */
+                              .
+      BooleanTypeRepr         =                                                  /*  "   "   "  BOOLEAN                         */
+                              .
+      CharTypeRepr            =                                                  /*  "   "   "  CHAR                            */
+                              .
+      CharStringTypeRepr      =                                                  /*  "   "   "  a char constant                 */
+                              .
+      StringTypeRepr          =                                                  /*  "   "   "  a string constant               */
+                              .
+      SetTypeRepr             =                                                  /*  "   "   "  SET                             */
+                              .
+      IntTypeRepr             =
+      <
+         ShortintTypeRepr     =                                                  /*  "   "   "  SHORTINT                        */
+                              .
+         IntegerTypeRepr      =                                                  /*  "   "   "  INTEGER                         */
+                              .
+         LongintTypeRepr      =                                                  /*  "   "   "  LONGINT                         */
+                              .
+      >.
+      FloatTypeRepr           =
+      <
+         RealTypeRepr         =                                                  /*  "   "   "  REAL                            */
+                              .
+         LongrealTypeRepr     =                                                  /*  "   "   "  LONGREAL                        */
+                              .
+      >.
+      ArrayTypeRepr           = [ len             : oLONGINT      ]              /* Length of an array (open array length = -1) */
+                                  elemTypeRepr    : TypeReprs                    /* Element type of an array                    */
+                              .
+      RecordTypeRepr          = [ extLevel        : tLevel        ]              /* Extension level of a record                 */
+                                  baseTypeRepr    : TypeReprs                    /* Direct base type                            */
+                                  extTypeReprList : TypeReprLists                /* List of direct extensions                   */
+                                  fields          : Entries                      /* Record fields, bound & inherited procedures */
+                                [ nofBoundProcs   : LONGINT       ]
+                              .
+      PointerTypeRepr         =   baseTypeEntry   : Entries                      /* Entry of the pointer base type              */
+                              .
+      ProcedureTypeRepr       =   signatureRepr   : SignatureRepr                /* Signature of a procedure type               */
+                                  resultType      : TypeReprs                    /* Result type                                 */
+                                [ paramSpace      : tSize         ]
+      <
+         PreDeclProcTypeRepr  =                                                  /* Predeclared & SYSTEM-declared procedures    */
+         <
+            CaseFaultTypeRepr = .                                                /* Called from a missing CASE-ELSE part        */
+            WithFaultTypeRepr = .                                                /* Called from a missing WITH-ELSE part        */
+
+            AbsTypeRepr       = .                                                /* Predeclared function procedure     ABS      */
+            AshTypeRepr       = .                                                /*      "         "         "         ASH      */
+            CapTypeRepr       = .                                                /*      "         "         "         CAP      */
+            ChrTypeRepr       = .                                                /*      "         "         "         CHR      */
+            EntierTypeRepr    = .                                                /*      "         "         "         ENTIER   */
+            LenTypeRepr       = .                                                /*      "         "         "         LEN      */
+            LongTypeRepr      = .                                                /*      "         "         "         LONG     */
+            MaxTypeRepr       = .                                                /*      "         "         "         MAX      */
+            MinTypeRepr       = .                                                /*      "         "         "         MIN      */
+            OddTypeRepr       = .                                                /*      "         "         "         ODD      */
+            OrdTypeRepr       = .                                                /*      "         "         "         ORD      */
+            ShortTypeRepr     = .                                                /*      "         "         "         SHORT    */
+            SizeTypeRepr      = .                                                /*      "         "         "         SIZE     */
+
+            AssertTypeRepr    = .                                                /* Predeclared proper procedure       ASSERT   */
+            CopyTypeRepr      = .                                                /*      "        "        "           COPY     */
+            DecTypeRepr       = .                                                /*      "        "        "           DEC      */
+            ExclTypeRepr      = .                                                /*      "        "        "           EXCL     */
+            HaltTypeRepr      = .                                                /*      "        "        "           HALT     */
+            IncTypeRepr       = .                                                /*      "        "        "           INC      */
+            InclTypeRepr      = .                                                /*      "        "        "           INCL     */
+            NewTypeRepr       = .                                                /*      "        "        "           NEW      */
+
+            SysAdrTypeRepr    = .                                                /* SYSTEM-declared function procedure ADR      */
+            SysBitTypeRepr    = .                                                /*   "       "        "         "     BIT      */
+            SysCcTypeRepr     = .                                                /*   "       "        "         "     CC       */
+            SysLshTypeRepr    = .                                                /*   "       "        "         "     LSH      */
+            SysRotTypeRepr    = .                                                /*   "       "        "         "     ROT      */
+            SysValTypeRepr    = .                                                /*   "       "        "         "     VAL      */
+
+            SysGetTypeRepr    = .                                                /* SYSTEM-declared proper procedure   GET      */
+            SysPutTypeRepr    = .                                                /*   "       "       "        "       PUT      */
+            SysGetregTypeRepr = .                                                /*   "       "       "        "       GETREG   */
+            SysPutregTypeRepr = .                                                /*   "       "       "        "       PUTREG   */
+            SysMoveTypeRepr   = .                                                /*   "       "       "        "       MOVE     */
+            SysNewTypeRepr    = .                                                /*   "       "       "        "       NEW      */
+            SysAsmTypeRepr    = .                                                /*   "       "       "        "       ASM      */
+         >.
+      >.
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+SignatureRepr                 =                                                  /* Represents parameter lists                  */
+<
+  mtSignature                 =                                                  /* An empty parameter list                     */
+                              .
+  ErrorSignature              =
+                              .
+  GenericSignature            =                                                  /* Only pre- & SYS-declared procs have this    */
+                              .
+  Signature                   =   next            : SignatureRepr                /* Next parameter                              */
+                                  VarEntry                                       /* Related parameter entry                     */
+                              .                                                    
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ValueReprs                    =                                                  /* Represents constant values                  */
+<
+   mtValue                    =                                                  /* A non-existing value                        */
+                              .
+   ErrorValue                 =
+                              .
+   ProcedureValue             =                                                  /* A ()-less procedure has this in an expr     */
+                              .
+   ValueRepr                  =
+   <
+      BooleanValue            = [ v               : oBOOLEAN      ]
+                              .
+      CharValue               = [ v               : oCHAR         ]
+                              .
+      SetValue                = [ v               : oSET          ]
+                              .
+      IntegerValue            = [ v               : oLONGINT      ]              /* All integer types!                          */
+                              .
+      MemValueRepr            =
+      <
+         StringValue          = [ v               : oSTRING       ]
+                              .
+         RealValue            = [ v               : oREAL         ]
+                              .
+         LongrealValue        = [ v               : oLONGREAL     ]
+                              .
+      >.
+      NilValue                =                                                  /* Unspecified value of NIL                    */
+                              .
+      NilPointerValue         =                                                  /* Value of NIL for pointers                   */
+                              .
+      NilProcedureValue       =                                                  /* Value of NIL for procedures                 */
+                              .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Coercion                      =                                                  /* All necessary coercions                     */
+<
+   mtCoercion                 = .
+
+   Shortint2Integer           = .
+   Shortint2Longint           = .
+   Shortint2Real              = .
+   Shortint2Longreal          = .
+   Integer2Longint            = .
+   Integer2Real               = .
+   Integer2Longreal           = .
+   Longint2Real               = .
+   Longint2Longreal           = .
+   Real2Longreal              = .
+   Char2String                = .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+LabelRanges                   =                                                  /* Used to represent CASE labels               */
+<
+   mtLabelRange               =
+                              .
+   CharRange                  =   Next            : LabelRanges
+                                [ a               : oCHAR         ]
+                                [ b               : oCHAR         ]
+                              .
+   IntegerRange               =   Next            : LabelRanges
+                                [ a               : oLONGINT      ]
+                                [ b               : oLONGINT      ]
+                              .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NamePaths                     =                                                  /* A fully qualified name consists of:         */
+<
+   mtNamePath                 =
+                              .
+   NamePath                   =   prev            : NamePaths
+   <
+      IdentNamePath           = [ id              : tIdent        ]              /* identifiers                                 */
+                              .
+      SelectNamePath          =                                                  /* .                                           */ 
+                              .
+      IndexNamePath           =                                                  /* []                                          */
+                              .
+      DereferenceNamePath     =                                                  /* ^                                           */
+                              .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+TDescList                     =   TDescElems                                     /* List of types for which descriptors must be */
+.                                                                                /* created.                                    */
+TDescElems                    =
+<
+   mtTDescElem                =
+                              .
+   TDescElem                  =   prev            : TDescElems
+				  namePath        : NamePaths
+                                  TypeReprs
+			      .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+END OB
+
+/********************************************************************************************************************************/
+/*** END OB.ast                                                                                                               ***/
+/********************************************************************************************************************************/
+

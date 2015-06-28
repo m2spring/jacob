@@ -1,0 +1,13 @@
+MODULE FormalParam;
+IMPORT InOut;
+
+TYPE T=ARRAY [0..10] OF CHAR;
+
+PROCEDURE P(v:T);
+BEGIN (* P *)
+ InOut.WriteString(v); InOut.WriteLn;
+END P;
+
+BEGIN (* FormalParam *)
+ P('Laber'); 
+END FormalParam.

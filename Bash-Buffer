@@ -1,0 +1,18 @@
+bashrc...
+bash$ make
+PatchJacobDate
+echo p Jacob | mc -nog -nogc -index -range -info
+Options in effect:  index, range, blip, noS, nog, nogc
+  Current Library       : .
+  Secondary Libraries   :  /usr/cctb/reuse/src /usr/mocka/lib
+  List  Script          : /usr/mocka/sys/merge
+  Edit  Script          : /usr/mocka/sys/edit
+  Link  Script          : /usr/mocka/sys/link-static
+  Asm   Script          : /usr/mocka/sys/asm
+Mocka 9409
+>> .. Compiling Implementation of FIL 7654321
+.. Linking Jacob
+>> 
+echo -e "\a"
+
+bash$ 

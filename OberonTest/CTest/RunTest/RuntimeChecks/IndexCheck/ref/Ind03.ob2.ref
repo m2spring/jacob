@@ -1,0 +1,9 @@
+1
+2
+3
+
+*** RUNTIME ERROR: Index out of bounds
+*** procedure stack:
+Ind03.Check.Print
+Ind03.Check
+Ind03$I

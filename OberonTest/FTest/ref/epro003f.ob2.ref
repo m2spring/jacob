@@ -1,0 +1,28 @@
+Compiling epro003f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r    REFPARAM  T1
+i    VALPARAM  INTEGER
+T1   VALPARAM  BOOLEAN
+f    VALPARAM  <ErrorType>
+s    VAR       REAL
+x    VAR       <ErrorType>
+-------------------------------------------------------------------------------
+
+'MODULE' epro003f
+-------------------------------------------------------------------------------
+c    CONST     SHORTINT = 1
+i    VAR       REAL
+s    VAR       SET
+b    VAR       BOOLEAN
+T1   TYPE      RECORD
+                f   VAR       INTEGER
+               END
+t    VAR       T1
+P    PROCEDURE (VAR r:T1; i:INTEGER; T1:BOOLEAN; f:<ErrorType>)
+-------------------------------------------------------------------------------
+
+epro003f.ob2: 24,48: Type expected
+epro003f.ob2: 29,4: Type expected
+epro003f.ob2: 33,5: Expression not assignment compatible
+epro003f.ob2: 36,5: Expression not assignment compatible

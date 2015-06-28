@@ -1,0 +1,26 @@
+Compiling edec002t
+'PROCEDURE' proc
+-------------------------------------------------------------------------------
+fa      VALPARAM  a
+a       VALPARAM  CHAR
+fy      VALPARAM  y
+array   VAR       x
+x       TYPE      SHORTINT
+szahl   VAR       SHORTINT
+-------------------------------------------------------------------------------
+
+'MODULE' edec002t
+-------------------------------------------------------------------------------
+x      TYPE      ARRAY 2 OF SHORTINT
+a      TYPE      RECORD
+                  i   VAR       INTEGER
+                  c   VAR       CHAR
+                  s   VAR       SHORTINT
+                  r   VAR       REAL
+                  n   VAR       x
+                  a   VAR       LONGINT
+                 END
+y      TYPE      ARRAY 2 OF a
+proc   PROCEDURE (fa:a; a:CHAR; fy:y)
+-------------------------------------------------------------------------------
+

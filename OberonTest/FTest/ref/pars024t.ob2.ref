@@ -1,0 +1,10 @@
+MODULE pars024t;
+
+ PROCEDURE laber;
+
+ END laber;
+
+ PROCEDURE ^ laber;
+
+END pars024t.
+

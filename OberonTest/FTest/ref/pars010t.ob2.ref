@@ -1,0 +1,6 @@
+MODULE pars010t;
+IMPORT
+   LULL    ;
+
+END pars010t.
+

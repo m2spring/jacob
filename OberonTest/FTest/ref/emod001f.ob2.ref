@@ -1,0 +1,13 @@
+Compiling edec001t
+Compiling emod001f
+'MODULE' emod001f
+-------------------------------------------------------------------------------
+edec001t   SERVER    edec001t
+short      CONST     SHORTINT = 10
+si         VAR       <ErrorType>
+T          TYPE      RECORD(<ErrorType>)
+                     END
+-------------------------------------------------------------------------------
+
+emod001f.ob2: 14,7: Identifier not declared
+emod001f.ob2: 18,17: Identifier not declared

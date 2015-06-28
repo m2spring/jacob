@@ -1,0 +1,25 @@
+Compiling eate001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r   REFPARAM  TB
+-------------------------------------------------------------------------------
+
+'MODULE' eate001f
+-------------------------------------------------------------------------------
+T    TYPE      RECORD
+               END
+TA   TYPE      RECORD
+                s   VAR       SET
+               END
+               (-->TB)
+
+TB   TYPE      RECORD(TA)
+                s   VAR       SET
+                i   VAR       INTEGER
+               END
+P    PROCEDURE (VAR r:TB)
+-------------------------------------------------------------------------------
+
+eate001f.ob2: 33,3: Guard not applicable
+eate001f.ob2: 37,3: Guard not applicable
+eate001f.ob2: 37,7: Record field not found

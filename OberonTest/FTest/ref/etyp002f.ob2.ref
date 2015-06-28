@@ -1,0 +1,99 @@
+Compiling etyp002f
+'PROCEDURE' PR1
+-------------------------------------------------------------------------------
+TR   TYPE      RECORD
+                f   VAR       TR
+               END
+TA   TYPE      ARRAY 1 OF TA
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR2
+-------------------------------------------------------------------------------
+T   TYPE      RECORD
+               f   VAR       POINTER TO T
+               g   VAR       (p:T)
+               h   VAR       (VAR p:T)
+              END
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR3
+-------------------------------------------------------------------------------
+T1   TYPE      RECORD
+                f   VAR       POINTER TO RECORD
+                                          f   VAR       T1
+                                         END
+                g   VAR       SET
+               END
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR4
+-------------------------------------------------------------------------------
+T2   TYPE      RECORD
+                f   VAR       POINTER TO ARRAY OF CHAR
+                g   VAR       SET
+               END
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR5
+-------------------------------------------------------------------------------
+T3   TYPE      POINTER TO RECORD
+                           f   VAR       T3
+                          END
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR6
+-------------------------------------------------------------------------------
+T4   TYPE      RECORD
+                f   VAR       ARRAY 1 OF RECORD
+                                          f   VAR       POINTER TO RECORD
+                                                                    f   VAR       ARRAY 1 OF RECORD
+                                                                                              f   VAR       T4
+                                                                                             END
+                                                                   END
+                                         END
+                g   VAR       SET
+               END
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR7
+-------------------------------------------------------------------------------
+v   VAR       ARRAY 1 OF ARRAY OF CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PR8
+-------------------------------------------------------------------------------
+v   VAR       ARRAY OF ARRAY 1 OF CHAR
+-------------------------------------------------------------------------------
+
+'MODULE' etyp002f
+-------------------------------------------------------------------------------
+R1    TYPE      RECORD(R1)
+                END
+P1    TYPE      POINTER TO RECORD
+                            f   VAR       P1
+                           END
+P2    TYPE      POINTER TO ARRAY OF P2
+PR1   PROCEDURE ()
+PR2   PROCEDURE ()
+PR3   PROCEDURE ()
+PR4   PROCEDURE ()
+PR5   PROCEDURE ()
+PR6   PROCEDURE ()
+PR7   PROCEDURE ()
+PR8   PROCEDURE ()
+-------------------------------------------------------------------------------
+
+etyp002f.ob2: 8,14: Illegal recursive type application
+etyp002f.ob2: 12,28: Illegal recursive type application
+etyp002f.ob2: 16,27: Illegal recursive type application
+etyp002f.ob2: 22,25: Illegal recursive type application
+etyp002f.ob2: 26,25: Illegal recursive type application
+etyp002f.ob2: 35,30: Illegal recursive type application
+etyp002f.ob2: 46,33: Illegal recursive type application
+etyp002f.ob2: 57,34: Invalid length of array
+etyp002f.ob2: 67,28: Illegal recursive type application
+etyp002f.ob2: 79,65: Illegal recursive type application
+etyp002f.ob2: 91,24: Identifier not declared
+etyp002f.ob2: 91,24: Actual parameter not compatible with formal
+etyp002f.ob2: 98,22: Identifier not declared
+etyp002f.ob2: 98,22: Actual parameter not compatible with formal

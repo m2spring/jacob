@@ -1,0 +1,13 @@
+Compiling eeop001t
+'MODULE' eeop001t
+-------------------------------------------------------------------------------
+c1        CONST     SHORTINT = 0
+c2        CONST     SHORTINT = 3
+t1array   TYPE      ARRAY 3 OF INTEGER
+t2array   TYPE      ARRAY 2 OF ARRAY 2 OF INTEGER
+t3array   TYPE      ARRAY 4 OF ARRAY 4 OF ARRAY 4 OF INTEGER
+a1        VAR       t1array
+a2        VAR       t2array
+a3        VAR       t3array
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,1441 @@
+IMPLEMENTATION MODULE ASM;
+
+FROM   Storage IMPORT ALLOCATE; 
+IMPORT ADR, ARG, ASMOP, Cons, ERR, Idents, LAB, LIM, O, OT, STR, StringMem, Strings, Strings1, SYSTEM, TextIO, UTI;
+FROM   ASMOP IMPORT align,asciz,byte,comm,data,globl,long,text,and,call,cld,cmp,imul,jmp,jnz,lea,mov,movs,movzbw,movzbl,
+                    movzwl,neg,nop,repz,shl,stos,xchg,xor;
+
+(************************************************************************************************************************)
+PROCEDURE IsBaseAdrmode(VAR loc:tLocation):BOOLEAN; 
+BEGIN (* IsBaseAdrmode *)
+ RETURN (loc.label = LAB.MT)
+      & (loc.ofs   = 0)
+      & (loc.breg  # NoReg)
+      & (loc.ireg  = NoReg); 
+END IsBaseAdrmode;
+
+(************************************************************************************************************************)
+PROCEDURE AreEqualVariables(VAR v1,v2:tVariable):BOOLEAN; 
+BEGIN (* AreEqualVariables *)
+ RETURN LAB.Equal(v1.label,v2.label)
+      & (v1.frame=v2.frame)
+      & (v1.ofs=v2.ofs); 
+END AreEqualVariables;
+
+(************************************************************************************************************************)
+(*** operand definitions and operand output                                                                           ***)
+(************************************************************************************************************************)
+TYPE tOpID     = (ID_
+                 ,ID_S
+                 ,ID_i     
+                 ,ID_x
+                 ,ID_iL    
+                 ,ID_ioL   
+                 ,ID_R     
+                 ,ID_oLBIf 
+                 ,ID_oLBI  
+                 ,ID_oLB   
+                 ,ID_oLIf  
+                 ,ID_oL    
+                 ,ID_o
+                 ,ID_oBIf  
+                 ,ID_oBI   
+                 ,ID_oB    
+                 ,ID_oIf   
+                 ,ID_LBIf  
+                 ,ID_LBI   
+                 ,ID_LB    
+                 ,ID_LIf   
+                 ,ID_L     
+                 ,ID_BIf   
+                 ,ID_BI    
+                 ,ID_B     
+                 ,ID_If);
+TYPE tOp       = POINTER TO tOpRec;
+     tOpRec    = RECORD 
+                  ID     : tOpID;
+                  str    : STR.tStr;
+                  int    : LONGINT;  (* immediate value / offset *)
+                  crd    : LONGCARD; (* immediate value          *)
+                  label  : tLabel;
+                  reg    ,           (* base register / register *)
+                  ireg   : tReg;     (* index register           *)
+                  factor : LONGINT;  (* index factor             *)
+                 END;
+VAR  OpProcTab : ARRAY tOpID OF RECORD
+                                 Out : PROCEDURE(VAR tOpRec); 
+                                END;
+
+PROCEDURE Out_(VAR op:tOpRec);
+BEGIN (* Out_ *) 
+END Out_;
+
+PROCEDURE Out_S(VAR op:tOpRec);
+BEGIN (* Out_S *)
+ OutCh('"'); OutS(op.str^); OutCh('"'); 
+ STR.Free(op.str); 
+END Out_S;
+                   
+PROCEDURE Out_i(VAR op:tOpRec);
+BEGIN (* Out_i *) 
+ OutCh('$'); OutI(op.int); 
+END Out_i;
+                   
+PROCEDURE Out_x(VAR op:tOpRec);
+BEGIN (* Out_x *) 
+ OutS('$0x'); OutX(op.crd); 
+END Out_x;
+                   
+PROCEDURE Out_iL(VAR op:tOpRec);
+BEGIN (* Out_iL *) 
+ OutCh('$'); OutS(op.label^); 
+END Out_iL;
+                   
+PROCEDURE Out_ioL(VAR op:tOpRec);
+BEGIN (* Out_ioL *) 
+ OutCh('$'); 
+ IF op.int#0 THEN OutI(op.int); OutCh('+'); END; (* IF *)
+ OutS(op.label^); 
+END Out_ioL;
+                   
+PROCEDURE Out_R(VAR op:tOpRec);
+BEGIN (* Out_R *) 
+ OutR(op.reg); 
+END Out_R;
+                   
+PROCEDURE Out_oLBIf(VAR op:tOpRec);
+BEGIN (* Out_oLBIf *) 
+ IF op.int#0 THEN 
+    OutI(op.int); 
+ ELSIF (op.label=NIL) & (op.reg=Cons.RegNil) & (op.ireg=Cons.RegNil) THEN
+    OutCh('0'); RETURN; 
+ END; (* IF *)
+ 
+ IF op.label#NIL THEN 
+    IF op.int#0 THEN OutCh('+'); END; (* IF *)
+    OutS(op.label^); 
+ END; (* IF *)          
+ 
+ IF (op.reg#Cons.RegNil) OR (op.ireg#Cons.RegNil) THEN 
+    OutCh('('); 
+    IF (op.reg=Cons.RegNil) & (op.factor=1) THEN 
+       OutR(op.ireg); 
+    ELSE 
+       IF op.reg#Cons.RegNil THEN OutR(op.reg); END; (* IF *)
+       IF op.ireg#Cons.RegNil THEN 
+          OutCh(','); OutR(op.ireg); 
+          IF op.factor>1 THEN OutCh(','); OutCh(CHR(48+op.factor)); END; (* IF *)
+       END; (* IF *)
+    END; (* IF *)
+    OutCh(')'); 
+ END; (* IF *)
+END Out_oLBIf;
+                   
+(************************************************************************************************************************)
+PROCEDURE InitOperands;
+VAR odi:tOpID;
+BEGIN (* InitOperands *) 
+ FOR odi:=MIN(tOpID) TO MAX(tOpID) DO OpProcTab[odi].Out:=Out_; END; (* FOR *)
+ OpProcTab[ID_S    ].Out := Out_S    ; 
+ OpProcTab[ID_i    ].Out := Out_i    ; 
+ OpProcTab[ID_x    ].Out := Out_x    ; 
+ OpProcTab[ID_iL   ].Out := Out_iL   ; 
+ OpProcTab[ID_ioL  ].Out := Out_ioL  ; 
+ OpProcTab[ID_R    ].Out := Out_R    ; 
+ OpProcTab[ID_oLBIf].Out := Out_oLBIf; 
+ OpProcTab[ID_oLBI ].Out := Out_oLBIf; 
+ OpProcTab[ID_oLB  ].Out := Out_oLBIf; 
+ OpProcTab[ID_oLIf ].Out := Out_oLBIf; 
+ OpProcTab[ID_oL   ].Out := Out_oLBIf; 
+ OpProcTab[ID_o    ].Out := Out_oLBIf; 
+ OpProcTab[ID_oBIf ].Out := Out_oLBIf; 
+ OpProcTab[ID_oBI  ].Out := Out_oLBIf; 
+ OpProcTab[ID_oB   ].Out := Out_oLBIf; 
+ OpProcTab[ID_oIf  ].Out := Out_oLBIf; 
+ OpProcTab[ID_LBIf ].Out := Out_oLBIf; 
+ OpProcTab[ID_LBI  ].Out := Out_oLBIf; 
+ OpProcTab[ID_LB   ].Out := Out_oLBIf; 
+ OpProcTab[ID_LIf  ].Out := Out_oLBIf; 
+ OpProcTab[ID_L    ].Out := Out_oLBIf; 
+ OpProcTab[ID_BIf  ].Out := Out_oLBIf; 
+ OpProcTab[ID_BI   ].Out := Out_oLBIf; 
+ OpProcTab[ID_B    ].Out := Out_oLBIf; 
+ OpProcTab[ID_If   ].Out := Out_oLBIf; 
+END InitOperands;
+
+(************************************************************************************************************************)
+(*** operation definitions and operation buffer                                                                       ***)
+(************************************************************************************************************************)
+CONST MaxNofDelayedOperations = 1024;      
+(*$*)
+      MaxLenOfComment         = 200;
+TYPE  tOperationBuf           = RECORD
+                                 operId    : LONGINT; 
+                                 obsolete  : BOOLEAN; 
+                                 operation : ASMOP.tOper;
+                                 size      : tSize;
+                                 operand1  ,
+                                 operand2  ,
+                                 operand3  : tOp;
+                                 comment   : ARRAY [0..MaxLenOfComment] OF CHAR; 
+                                END;
+VAR   OperationBuf            : ARRAY [0..MaxNofDelayedOperations-1] OF tOperationBuf;
+      NofOpersInBuf           ,
+      OperHeadIdx             , 
+      OperTailIdx             : CARDINAL; 
+      opern                   : POINTER TO tOperationBuf;
+      nextOperCmtIdent        : Idents.tIdent;
+      LastOperId              : LONGINT; 
+
+(************************************************************************************************************************)
+PROCEDURE NewOper(oper:ASMOP.tOper);
+BEGIN (* NewOper *) 
+ IF NofOpersInBuf=MaxNofDelayedOperations THEN 
+    OutOper(OperationBuf[OperHeadIdx]); 
+    OperHeadIdx:=(OperHeadIdx+1) MOD MaxNofDelayedOperations; 
+ ELSE 
+    INC(NofOpersInBuf); 
+ END; (* IF *)
+
+ OperTailIdx:=(OperTailIdx+1) MOD MaxNofDelayedOperations; 
+ opern:=SYSTEM.ADR(OperationBuf[OperTailIdx]); 
+ 
+ INC(LastOperId); 
+ WITH opern^ DO
+  operId    := LastOperId; 
+  obsolete  := FALSE; 
+  operation := oper; 
+  comment   := ''; 
+ END; (* WITH *)
+END NewOper;
+
+(************************************************************************************************************************)
+(*** operand buffer                                                                                                   ***)
+(************************************************************************************************************************)
+CONST MaxNofOpBufs  = 4*MaxNofDelayedOperations; (* Ok, we have only a maximum of 3 operands, but MOD (n*4) works faster*)
+VAR   OpBuf         : ARRAY [0..MaxNofOpBufs-1] OF tOpRec;
+      nextFreeOpIdx : LONGINT; 
+VAR   opn           : tOp;
+
+PROCEDURE NewOp(odi:tOpID);
+BEGIN (* NewOp *) 
+ opn           := SYSTEM.ADR(OpBuf[nextFreeOpIdx]); 
+ opn^          := EmptyOp^; 
+ opn^.ID       := odi;
+ nextFreeOpIdx := (nextFreeOpIdx+1) MOD MaxNofOpBufs; 
+END NewOp;
+
+PROCEDURE InitOperandBuffers;
+BEGIN (* InitOperandBuffers *) 
+ NEW(EmptyOp); 
+ EmptyOp^.ID     := ID_; 
+ EmptyOp^.int    := 0; 
+ EmptyOp^.label  := NIL; 
+ EmptyOp^.reg    := Cons.RegNil; 
+ EmptyOp^.ireg   := Cons.RegNil; 
+ EmptyOp^.factor := 1; 
+
+ nextFreeOpIdx:=0; 
+END InitOperandBuffers;
+                        
+(************************************************************************************************************************)
+(*** operand constructors                                                                                             ***)
+(************************************************************************************************************************)
+PROCEDURE S(s:ARRAY OF CHAR):tOp; 
+BEGIN 
+ NewOp(ID_S); opn^.str:=STR.Alloc(s); RETURN opn; 
+END S;
+
+PROCEDURE i(v:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_i); opn^.int:=v; RETURN opn; 
+END i;
+
+PROCEDURE x(v:LONGCARD):tOp; 
+BEGIN 
+ NewOp(ID_x); opn^.crd:=v; RETURN opn; 
+END x;
+
+PROCEDURE iL(l:tLabel):tOp; 
+BEGIN 
+ NewOp(ID_iL); opn^.label:=l; RETURN opn; 
+END iL;
+
+PROCEDURE ioL(o:LONGINT;l:tLabel):tOp; 
+BEGIN 
+ NewOp(ID_ioL); opn^.int:=o; opn^.label:=l; RETURN opn; 
+END ioL;
+
+PROCEDURE R(r:tReg):tOp; 
+BEGIN 
+ NewOp(ID_R); opn^.reg:=r; RETURN opn; 
+END R;
+
+PROCEDURE oLBIf(o:LONGINT;l:tLabel;br,ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_oLBIf); opn^.int:=o; opn^.label:=l; opn^.reg:=br; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END oLBIf;
+
+PROCEDURE oLBI(o:LONGINT;l:tLabel;br,ir:tReg):tOp; 
+BEGIN 
+ NewOp(ID_oLBI); opn^.int:=o; opn^.label:=l; opn^.reg:=br; opn^.ireg:=ir; RETURN opn; 
+END oLBI;
+
+PROCEDURE oLB(o:LONGINT;l:tLabel;br:tReg):tOp; 
+BEGIN 
+ NewOp(ID_oLB); opn^.int:=o; opn^.label:=l; opn^.reg:=br; RETURN opn; 
+END oLB;
+
+PROCEDURE oLIf(o:LONGINT;l:tLabel;ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_oLIf); opn^.int:=o; opn^.label:=l; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END oLIf;
+
+PROCEDURE oL(o:LONGINT;l:tLabel):tOp; 
+BEGIN 
+ NewOp(ID_oL); opn^.int:=o; opn^.label:=l; RETURN opn; 
+END oL;
+
+PROCEDURE o(o:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_o); opn^.int:=o; RETURN opn; 
+END o;
+
+PROCEDURE oBIf(o:LONGINT; br,ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_oBIf); opn^.int:=o; opn^.reg:=br; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END oBIf;
+
+PROCEDURE oBI(o:LONGINT; br,ir:tReg):tOp; 
+BEGIN 
+ NewOp(ID_oBI); opn^.int:=o; opn^.reg:=br; opn^.ireg:=ir; RETURN opn; 
+END oBI;
+
+PROCEDURE oB(o:LONGINT; br:tReg):tOp; 
+BEGIN 
+ NewOp(ID_oB); opn^.int:=o; opn^.reg:=br; RETURN opn; 
+END oB;
+
+PROCEDURE oIf(o:LONGINT; ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_oIf); opn^.int:=o; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END oIf;
+
+PROCEDURE LBIf(l:tLabel;br,ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_LBIf); opn^.label:=l; opn^.reg:=br; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END LBIf;
+
+PROCEDURE LBI(l:tLabel;br,ir:tReg):tOp; 
+BEGIN 
+ NewOp(ID_LBI); opn^.label:=l; opn^.reg:=br; opn^.ireg:=ir; RETURN opn; 
+END LBI;
+
+PROCEDURE LB(l:tLabel;br:tReg):tOp; 
+BEGIN 
+ NewOp(ID_LB); opn^.label:=l; opn^.reg:=br; RETURN opn; 
+END LB;
+
+PROCEDURE LIf(l:tLabel;ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_LIf); opn^.label:=l; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END LIf;
+
+PROCEDURE L(l:tLabel):tOp; 
+BEGIN 
+ NewOp(ID_L); opn^.label:=l; RETURN opn; 
+END L;
+
+PROCEDURE BIf(br,ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_BIf); opn^.reg:=br; opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END BIf;
+
+PROCEDURE BI(br,ir:tReg):tOp; 
+BEGIN 
+ NewOp(ID_BI); opn^.reg:=br; opn^.ireg:=ir; RETURN opn; 
+END BI;
+
+PROCEDURE B(br:tReg):tOp; 
+BEGIN 
+ NewOp(ID_B); opn^.reg:=br; RETURN opn; 
+END B;
+
+PROCEDURE If(ir:tReg;f:LONGINT):tOp; 
+BEGIN 
+ NewOp(ID_If); opn^.ireg:=ir; opn^.factor:=f; RETURN opn; 
+END If;
+
+(************************************************************************************************************************)
+PROCEDURE Loc(VAR loc:tLocation):tOp;
+VAR op:tOp;
+BEGIN (* Loc *)
+ MultR(loc.ireg,loc.factor); 
+ op:=oLBIf(loc.ofs,loc.label,loc.breg,loc.ireg,loc.factor); 
+ IF ARG.OptionCommentsInAsm & (loc.cmtIdent#Idents.NoIdent) THEN nextOperCmtIdent:=loc.cmtIdent; END; (* IF *)
+ RETURN op; 
+END Loc;
+
+(************************************************************************************************************************)
+PROCEDURE Operand(VAR oper:tOperand):tOp;
+BEGIN (* Operand *)
+ CASE oper.kind OF
+ |okImmediate: RETURN i(oper.val); 
+ |okRegister : RETURN R(oper.reg); 
+ |okMemory   : RETURN Loc(oper.loc); 
+ ELSE          ERR.Fatal('ASM.Operand: CASE fault'); 
+ END; (* CASE *)
+END Operand;
+
+(************************************************************************************************************************)
+PROCEDURE Variable(VAR v:tVariable):tOp; 
+VAR op:tOp;
+BEGIN (* Variable *)
+ IF    v.label#LAB.MT THEN op:=oL(v.ofs,v.label); 
+ ELSIF v.frame=0      THEN op:=oB(v.ofs,ebp); 
+                      ELSE CS2( ASMOP.mov,l  ,  oB(v.frame,ebp),R(v.tmpreg) ); 
+                           op:=oB(v.ofs,v.tmpreg); 
+ END; (* IF *)
+ IF ARG.OptionCommentsInAsm & (v.cmtIdent#Idents.NoIdent) THEN nextOperCmtIdent:=v.cmtIdent; END; (* IF *)
+ RETURN op; 
+END Variable;
+
+(************************************************************************************************************************)
+PROCEDURE Dup(op:tOp):tOp; 
+BEGIN (* Dup *)
+ NewOp(op^.ID); 
+ opn^:=op^; 
+ RETURN opn; 
+END Dup;
+
+(************************************************************************************************************************)
+PROCEDURE AddOfs(op:tOp; ofs:LONGINT):tOp;
+BEGIN (* AddOfs *)
+ NewOp(op^.ID); 
+ opn^:=op^;                         
+ INC(opn^.int,ofs); 
+ RETURN opn; 
+END AddOfs;
+
+(************************************************************************************************************************)
+(*** output buffer                                                                                                    ***)
+(************************************************************************************************************************)
+CONST OutputBufMaxSize = 2*MaxLenOfComment;
+VAR   OutputBuf        : ARRAY [0..OutputBufMaxSize+1] OF CHAR; (* plus "\n" plus 0X  *)
+      OutputIdx        : CARDINAL; 
+      OutputFile       : TextIO.File;
+      
+(************************************************************************************************************************)
+PROCEDURE OutCh(c:CHAR);
+BEGIN (* OutCh *) 
+ IF OutputIdx<OutputBufMaxSize THEN 
+    OutputBuf[OutputIdx]:=c; INC(OutputIdx); 
+ END; (* IF *)
+END OutCh;
+
+(************************************************************************************************************************)
+PROCEDURE OutS(VAR s:ARRAY OF CHAR);
+VAR i:CARDINAL; 
+BEGIN (* OutS *) 
+ FOR i:=0 TO HIGH(s) DO
+  IF (s[i]=0C) OR (OutputIdx>=OutputBufMaxSize) THEN RETURN; END; (* IF *)
+  OutputBuf[OutputIdx]:=s[i]; INC(OutputIdx); 
+ END; (* FOR *)
+END OutS;
+
+(************************************************************************************************************************)
+PROCEDURE OutI(i:LONGINT);
+VAR buf:ARRAY [0..50] OF CHAR; dst:LONGINT; 
+BEGIN (* OutI *) 
+ IF i=MIN(LONGINT) THEN buf:='-2147483648'; OutS(buf); RETURN; END; (* IF *)
+ 
+ IF i<0 THEN 
+    IF OutputIdx<OutputBufMaxSize THEN OutputBuf[OutputIdx]:='-'; INC(OutputIdx); END; (* IF *)
+    i:=ABS(i); 
+ END; (* IF *)
+ 
+ dst:=0; 
+ REPEAT
+  buf[dst]:=CHR(48+(i MOD 10)); i:=i DIV 10; INC(dst); 
+ UNTIL i=0;                                         
+
+ WHILE (dst>0) & (OutputIdx<OutputBufMaxSize) DO
+  DEC(dst); 
+  OutputBuf[OutputIdx]:=buf[dst]; INC(OutputIdx); 
+ END; (* WHILE *)
+END OutI;
+
+(************************************************************************************************************************)
+PROCEDURE OutX(v:LONGCARD);
+VAR i:CARDINAL; w:SHORTCARD; 
+BEGIN (* OutX *) 
+ IF OutputIdx+8>=OutputBufMaxSize THEN RETURN; END; (* IF *)
+ 
+ FOR i:=OutputIdx+7 TO OutputIdx BY -1 DO
+  w:=v MOD 16; v:=v DIV 16; 
+  IF w>9 THEN INC(w,39); END; (* IF *)
+  OutputBuf[i]:=CHR(48+w); 
+ END; (* FOR *)         
+ INC(OutputIdx,8); 
+END OutX;
+
+(************************************************************************************************************************)
+PROCEDURE OutR(r:tReg);
+BEGIN (* OutR *) 
+ OutS(RegStrTab[r]); 
+END OutR;
+
+(************************************************************************************************************************)
+PROCEDURE OutOper(VAR oper:tOperationBuf);
+
+ PROCEDURE OutCmt;
+ VAR i:CARDINAL; s:STR.tStr;
+ BEGIN (* OutCmt *)
+  IF (oper.comment[0]='-') & (oper.comment[1]='-') THEN 
+     OutCh('#'); OutS(oper.comment); 
+  ELSE                            
+     i:=0; 
+     WHILE oper.comment[i]=CHR(9) DO OutCh(CHR(9)); INC(i); END; (* WHILE *)
+     s:=SYSTEM.ADR(oper.comment[i]); 
+     OutS('# '); OutS(s^); 
+  END; (* IF *)
+ END OutCmt;
+
+BEGIN (* OutOper *) 
+ OutputIdx:=0; 
+
+ IF ARG.OptionCommentsInAsm THEN 
+    IF oper.obsolete THEN OutCh('#'); END; (* IF *)
+    CASE oper.operation OF
+    |ASMOP.NoOper: 
+       IF oper.comment[0]#0C THEN OutCmt; END; (* IF *)
+    |ASMOP.label: 
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); OutCh(':'); 
+       IF oper.comment[0]#0C THEN OutCh(CHR(9)); OutCmt; END; (* IF *)
+    |ASMOP.labelDef: 
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); OutCh('='); 
+       OutCh(CHR(9)); 
+       OpProcTab[oper.operand2^.ID].Out(oper.operand2^); 
+       IF oper.comment[0]#0C THEN OutCh(CHR(9)); OutCmt; END; (* IF *)
+    ELSE
+       OutCh(CHR(9)); 
+       OutS(ASMOP.OperStrTab[oper.operation]); 
+       IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
+   
+       IF (oper.operand1^.ID#ID_) OR (oper.comment[0]#0C) THEN 
+          OutCh(CHR(9)); 
+       END; (* IF *)
+       
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); 
+       IF oper.operand2^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand2^.ID].Out(oper.operand2^); END; (* IF *)
+       IF oper.operand3^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand3^.ID].Out(oper.operand3^); END; (* IF *)
+       IF oper.comment[0]#0C   THEN OutCh(CHR(9)); OutCmt; END; (* IF *)
+    END; (* CASE *)
+ ELSE 
+    IF oper.obsolete THEN RETURN; END; (* IF *)
+    CASE oper.operation OF
+    |ASMOP.NoOper: RETURN; 
+    |ASMOP.label: 
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); OutCh(':'); 
+    |ASMOP.labelDef: 
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); OutCh('='); 
+       OpProcTab[oper.operand2^.ID].Out(oper.operand2^); 
+    ELSE
+       OutS(ASMOP.OperStrTab[oper.operation]); 
+       IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
+   
+       IF oper.operand1^.ID#ID_ THEN OutCh(' '); END; (* IF *)
+       
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); 
+       IF oper.operand2^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand2^.ID].Out(oper.operand2^); END; (* IF *)
+       IF oper.operand3^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand3^.ID].Out(oper.operand3^); END; (* IF *)
+    END; (* CASE *)
+ END; (* IF *)
+ 
+ OutputBuf[OutputIdx]:=CHR(10); INC(OutputIdx); 
+ OutputBuf[OutputIdx]:=0C; 
+ TextIO.PutString(OutputFile,OutputBuf); 
+END OutOper;
+
+(************************************************************************************************************************)
+(*** operations                                                                                                       ***)
+(************************************************************************************************************************)
+CONST NoSection   = 0;
+      DataSection = 1;
+      TextSection = 2;
+VAR   curSection  : SHORTCARD; 
+      is_cld      : BOOLEAN; 
+
+(************************************************************************************************************************)
+PROCEDURE OperCmtId;
+BEGIN (* OperCmtId *)
+ IF nextOperCmtIdent#Idents.NoIdent THEN 
+    CmtId(nextOperCmtIdent); nextOperCmtIdent:=Idents.NoIdent; 
+    CmtS(' '); 
+ END; (* IF *)
+END OperCmtId;
+
+(************************************************************************************************************************)
+PROCEDURE Ln;
+BEGIN (* Ln *)
+ NewOper(ASMOP.NoOper); 
+ opern^.size     := NoSize; 
+ opern^.operand1 := EmptyOp; 
+ opern^.operand2 := EmptyOp; 
+ opern^.operand3 := EmptyOp; 
+END Ln;
+
+(************************************************************************************************************************)
+PROCEDURE C0(oper:ASMOP.tOper);
+BEGIN (* C0 *) 
+ NewOper(oper); 
+ opern^.size     := NoSize; 
+ opern^.operand1 := EmptyOp; 
+ opern^.operand2 := EmptyOp; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+
+ CASE oper OF
+ |cld: IF is_cld THEN opern^.obsolete:=TRUE; ELSE is_cld:=TRUE; END; (* IF *)
+ ELSE 
+ END; (* CASE *)
+END C0;
+
+(************************************************************************************************************************)
+PROCEDURE CS0(oper:ASMOP.tOper; s:tSize);
+BEGIN (* CS0 *) 
+ NewOper(oper); 
+ opern^.size     := s; 
+ opern^.operand1 := EmptyOp; 
+ opern^.operand2 := EmptyOp; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END CS0;
+
+(************************************************************************************************************************)
+PROCEDURE C1(oper:ASMOP.tOper; op:tOp);
+VAR last0,last1:LONGINT; invbranch:ASMOP.tOper; 
+BEGIN (* C1 *) 
+ CASE oper OF
+ |ASMOP.label: 
+    IF op^.label=LAB.MT THEN RETURN; END;
+    last0:=OperTailIdx; 
+    
+
+    (*
+     *     jmp Lx  # 1
+     * Lx: 
+     * ==========>
+     * #   jmp Lx
+     * Lx: 
+     *)
+    IF (NofOpersInBuf>0) 
+    &  (OperationBuf[last0].operation=jmp) 
+    &  HasEqualLabels(OperationBuf[last0].operand1,op) 
+    THEN OperationBuf[last0].obsolete:=TRUE; END;
+
+    (*
+     *     jCOND    Lx  # 1
+     *     jmp      Ly  # 0
+     * Lx: 
+     * ===============>
+     * #   jCOND    Lx
+     * #   jmp      Ly
+     *     jINVCOND Ly
+     * Lx: 
+     *)
+
+    IF NofOpersInBuf>1 THEN 
+       last1:=last0-1; IF last1<0 THEN last1:=MaxNofDelayedOperations-1; END;
+       IF (OperationBuf[last0].operation=jmp) 
+       &  HasEqualLabels(OperationBuf[last1].operand1,op) THEN
+          invbranch:=ASMOP.InvBranchTab[OperationBuf[last1].operation]; 
+          IF invbranch # OperationBuf[last1].operation THEN 
+             OperationBuf[last1].obsolete:=TRUE; 
+             OperationBuf[last0].obsolete:=TRUE; 
+             C1(invbranch,OperationBuf[last0].operand1); 
+          END;
+       END;
+    END;
+
+    is_cld:=FALSE; 
+
+ |call:
+    is_cld:=FALSE; 
+ ELSE 
+ END; (* CASE *)
+ 
+ NewOper(oper); 
+ opern^.size     := NoSize; 
+ opern^.operand1 := op; 
+ opern^.operand2 := EmptyOp; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END C1;
+
+(************************************************************************************************************************)
+PROCEDURE CS1(oper:ASMOP.tOper; s:tSize; op:tOp);
+BEGIN (* CS1 *) 
+ NewOper(oper); 
+ opern^.size     := s; 
+ opern^.operand1 := op; 
+ opern^.operand2 := EmptyOp; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END CS1;
+
+(************************************************************************************************************************)
+PROCEDURE C2(oper:ASMOP.tOper; op1,op2:tOp);
+BEGIN (* C2 *) 
+ NewOper(oper); 
+ opern^.size     := NoSize; 
+ opern^.operand1 := op1; 
+ opern^.operand2 := op2; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END C2;
+
+(************************************************************************************************************************)
+PROCEDURE CS2(oper:ASMOP.tOper; s:tSize; op1,op2:tOp);
+VAR obsolete:BOOLEAN; 
+BEGIN (* CS2 *) 
+ obsolete:=FALSE; 
+ CASE oper OF
+ |ASMOP.imul:
+    IF (op1^.ID=ID_i) & (op2^.ID=ID_R) & MultConstToReg(op1^.int,op2^.reg) THEN obsolete:=TRUE; END;
+ |ASMOP.add:
+    IF op1^.ID=ID_i THEN 
+       IF    op1^.int=-1 THEN oper:=ASMOP.dec; op1:=op2; op2:=EmptyOp; 
+       ELSIF op1^.int= 0 THEN obsolete:=TRUE; 
+       ELSIF op1^.int= 1 THEN oper:=ASMOP.inc; op1:=op2; op2:=EmptyOp; 
+       END; (* IF *)
+    END; (* IF *)
+ |ASMOP.sub:
+    IF op1^.ID=ID_i THEN 
+       IF    op1^.int=-1 THEN oper:=ASMOP.inc; op1:=op2; op2:=EmptyOp; 
+       ELSIF op1^.int= 0 THEN obsolete:=TRUE; 
+       ELSIF op1^.int= 1 THEN oper:=ASMOP.dec; op1:=op2; op2:=EmptyOp; 
+       END; (* IF *)
+    END; (* IF *)
+ ELSE 
+ END; (* CASE *)
+
+ NewOper(oper); 
+ opern^.obsolete := obsolete; 
+ opern^.size     := s; 
+ opern^.operand1 := op1; 
+ opern^.operand2 := op2; 
+ opern^.operand3 := EmptyOp; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END CS2;
+
+(************************************************************************************************************************)
+PROCEDURE CS3(oper:ASMOP.tOper; s:tSize; op1,op2,op3:tOp);
+BEGIN (* CS3 *) 
+ CASE oper OF
+ |imul:
+    IF (op1^.ID=ID_i) & (op3^.ID=ID_R) & MultConstAndOpToReg(op1^.int,op2,op3^.reg) THEN RETURN; END; (* IF *)
+ ELSE 
+ END; (* CASE *)
+
+ NewOper(oper); 
+ opern^.size     := s; 
+ opern^.operand1 := op1; 
+ opern^.operand2 := op2; 
+ opern^.operand3 := op3; 
+ IF ARG.OptionCommentsInAsm THEN OperCmtId; END; (* IF *)
+END CS3;
+
+(************************************************************************************************************************)
+PROCEDURE Comm(l:tLabel; v:LONGINT); 
+BEGIN (* Comm *)
+ C2( comm , L(l) , o(v) );
+END Comm;
+
+(************************************************************************************************************************)
+PROCEDURE Align(a:LONGINT);
+BEGIN (* Align *)
+ IF curSection=DataSection THEN 
+    C1( align , o(a) ); 
+ ELSE 
+    C2( align , o(a),o(90H) ); 
+ END; (* IF *)
+END Align;
+
+(************************************************************************************************************************)
+PROCEDURE Data;
+BEGIN (* Data *)
+ IF curSection=DataSection THEN RETURN; END; (* IF *)
+ 
+ C0( data ); 
+ curSection:=DataSection; 
+END Data;
+
+(************************************************************************************************************************)
+PROCEDURE Text;
+BEGIN (* Text *)
+ IF curSection=TextSection THEN RETURN; END; (* IF *)
+
+ C0( text ); 
+ curSection:=TextSection; 
+END Text;
+
+(************************************************************************************************************************)
+PROCEDURE Asciz(s:ARRAY OF CHAR); 
+BEGIN (* Asciz *)
+ C1( asciz , S(s) ); 
+END Asciz;
+
+(************************************************************************************************************************)
+PROCEDURE ByteI(i:LONGINT); 
+BEGIN (* ByteI *)
+ C1( byte , o(i) ); 
+END ByteI;
+
+(************************************************************************************************************************)
+PROCEDURE LongI(i:LONGINT); 
+BEGIN (* LongI *)
+ C1( long , o(i) ); 
+END LongI;
+
+(************************************************************************************************************************)
+PROCEDURE LongI2(i,j:LONGINT); 
+BEGIN (* LongI2 *)
+ C2( long , o(i) , o(j) ); 
+END LongI2;
+
+(************************************************************************************************************************)
+PROCEDURE LongL(l:tLabel); 
+BEGIN (* LongL *)
+ C1( long , L(l) ); 
+END LongL;
+
+(************************************************************************************************************************)
+PROCEDURE Globl(l:tLabel); 
+BEGIN (* Globl *)
+ C1( globl , L(l) ); 
+END Globl;
+
+(************************************************************************************************************************)
+PROCEDURE Label(l:tLabel); 
+BEGIN (* Label *)
+ C1( ASMOP.label , L(l) ); 
+END Label;
+
+(************************************************************************************************************************)
+PROCEDURE GLabel(l:tLabel); 
+BEGIN (* GLabel *)
+ C1( globl       , L(l) ); 
+ C1( ASMOP.label , L(l) ); 
+END GLabel;
+
+(************************************************************************************************************************)
+PROCEDURE LabelDef(l:tLabel; v:LONGINT); 
+BEGIN (* LabelDef *)
+ C2( ASMOP.labelDef , L(l),o(v) ); 
+END LabelDef;
+
+(************************************************************************************************************************)
+PROCEDURE RegCopy(src,dst:tReg);
+VAR sz,dz:tSize; tmp:tReg;
+
+ PROCEDURE Cmt;
+ BEGIN (* Cmt *)
+  CmtR(src); CmtS(' --> '); CmtR(dst); 
+ END Cmt;
+
+ PROCEDURE Nop;
+ BEGIN (* Nop *)
+  IF ARG.OptionCommentsInAsm THEN Ln; CmtS('	'); Cmt; END;
+ END Nop;
+
+BEGIN (* RegCopy *)
+ IF src=dst THEN Nop; RETURN; END;
+
+ sz:=RegSizeTab[src]; dz:=RegSizeTab[dst]; 
+ IF sz=dz THEN CS2                  ( mov,sz  ,  R(src),R(dst)                 ); Cmt; RETURN; END;
+                                                                 
+ IF sz<dz THEN                                                   
+    IF SizedRegTab[dst,sz]=src THEN                              
+       IF (dz=w) & ((src=al) OR (src=bl) OR (src=cl) OR (src=dl)) THEN                                              
+          CASE src OF                                            
+          |al: CS2                  ( xor,b   ,  R(ah),R(ah)                   );
+          |bl: CS2                  ( xor,b   ,  R(bh),R(bh)                   );
+          |cl: CS2                  ( xor,b   ,  R(ch),R(ch)                   );
+          |dl: CS2                  ( xor,b   ,  R(dh),R(dh)                   );
+          END;
+       ELSIF sz=b THEN CS2          ( and,dz  ,  x(0FFH),R(dst)                );
+                  ELSE CS2          ( and,l   ,  x(0FFFFH),R(dst)              );
+       END;
+    ELSE 
+       IF    (sz=b) & (dz=w) THEN C2( movzbw  ,  R(src),R(dst)                 ); 
+       ELSIF (sz=b) & (dz=l) THEN C2( movzbl  ,  R(src),R(dst)                 ); 
+                             ELSE C2( movzwl  ,  R(src),R(dst)                 ); 
+       END;
+    END;
+
+ ELSE 
+    IF SizedRegTab[src,dz]=dst THEN 
+       Nop; RETURN; 
+    ELSIF (dz=b) & ((src=si) OR (src=di) OR (src=esi) OR (src=edi)) THEN
+       IF (dst=al) OR (dst=ah) THEN tmp:=ebx; ELSE tmp:=eax; END;
+       IF ARG.OptionCommentsInAsm THEN Ln; END;
+       CS2                          ( xchg,l  ,  R(SizedRegTab[src,l]),R(tmp)  );
+       CS2                          ( mov,dz  ,  R(SizedRegTab[tmp,dz]),R(dst) );
+       CS2                          ( xchg,l  ,  R(tmp),R(SizedRegTab[src,l])  );
+    ELSE
+       CS2                          ( mov,dz  ,  R(SizedRegTab[src,dz]),R(dst) );
+    END;
+ END;
+
+ IF ARG.OptionCommentsInAsm THEN Cmt; END;
+END RegCopy;
+
+(************************************************************************************************************************)
+PROCEDURE MemCopy(src,dst:tOp; size:LONGINT; isStringCopy:BOOLEAN);
+VAR ii:LONGINT; tmp:tReg; 
+
+ PROCEDURE CalcTmp;
+ VAR regs:ARRAY tReg OF BOOLEAN; r:tReg;
+ BEGIN (* CalcTmp *)                    
+  FOR r:=al TO edi DO regs[r]:=TRUE; END;
+  regs[src^.reg]:=FALSE; regs[src^.ireg]:=FALSE; 
+  regs[dst^.reg]:=FALSE; regs[dst^.ireg]:=FALSE; 
+  
+  FOR r:=eax TO edx DO
+   IF regs[r] THEN tmp:=r; RETURN; END;
+  END; (* FOR *)   
+  
+  tmp:=NoReg; 
+  IF (size MOD 2)=0 THEN 
+     IF regs[esi] THEN tmp:=esi; RETURN; END;
+     IF regs[edi] THEN tmp:=edi; RETURN; END;
+  ELSE 
+     IF    regs[esi] THEN tmp:=esi; 
+     ELSIF regs[edi] THEN tmp:=edi; 
+                     ELSE RETURN; 
+     END; (* IF *)
+
+     IF    src^.reg =eax THEN src^.reg  := tmp; 
+     ELSIF src^.ireg=eax THEN src^.ireg := tmp; 
+     ELSIF dst^.reg =eax THEN dst^.reg  := tmp; 
+     ELSIF dst^.ireg=eax THEN dst^.ireg := tmp; 
+                         ELSE RETURN; 
+     END; (* IF *)
+     
+     CS2( mov,l  ,  R(eax),R(tmp) ); 
+     tmp:=eax; 
+  END; (* IF *)
+ END CalcTmp;
+
+BEGIN (* MemCopy *)
+ IF size<=0 THEN RETURN; END;
+ 
+ IF size<=LIM.MaxNofBytesToUseRegdMemCopy THEN 
+    CalcTmp;
+
+    FOR ii:=1 TO size DIV 4 DO
+     CS2     ( mov,l  ,  src,R(tmp)                ); src:=AddOfs(src,4); 
+     CS2     ( mov,l  ,  R(tmp),dst                ); dst:=AddOfs(dst,4); 
+    END;                                          
+                                                  
+    IF (size MOD 4)>1 THEN                        
+       CS2   ( mov,w  ,  src,R(SizedRegTab[tmp,w]) ); src:=AddOfs(src,2); 
+       CS2   ( mov,w  ,  R(SizedRegTab[tmp,w]),dst ); dst:=AddOfs(dst,2); 
+    END;                                          
+                                                  
+    IF (size MOD 2)>0 THEN                        
+       IF isStringCopy THEN                       
+          CS2( mov,b  ,  i(0),dst                  ); 
+       ELSE                                       
+          CS2( mov,b  ,  src,R(SizedRegTab[tmp,b]) ); 
+          CS2( mov,b  ,  R(SizedRegTab[tmp,b]),dst ); 
+       END;
+    END; 
+ ELSE 
+    CS2      ( lea,l  ,  dst,R(edi)                ); 
+    CS2      ( lea,l  ,  src,R(esi)                ); 
+
+    CS2      ( mov,l  ,  i(size DIV 4),R(ecx)      ); 
+    C0       ( cld                                 ); 
+    C0       ( repz                                ); 
+    CS0      ( movs,l                              ); 
+    IF (size MOD 4)>1 THEN                         
+       CS0   ( movs,w                              ); 
+    END;                                           
+    IF (size MOD 2)>0 THEN                         
+       IF isStringCopy THEN                        
+          CS2( mov,b  ,  i(0),B(edi)               ); 
+       ELSE                                        
+          CS0( movs,b                              ); 
+       END;
+    END;
+ END;
+END MemCopy;
+
+(************************************************************************************************************************)
+PROCEDURE FillZ(dst:tOp; tmp:tReg; size:LONGINT);
+VAR ii:LONGINT; 
+BEGIN (* FillZ *)
+ IF size<=0 THEN RETURN; END;
+
+ CASE size OF
+ |1: CS2                           ( mov,b   ,  i(0),dst                  ); 
+ |2: CS2                           ( mov,w   ,  i(0),dst                  ); 
+ |3: CS2                           ( mov,w   ,  i(0),dst                  ); dst:=AddOfs(dst,2); 
+     CS2                           ( mov,b   ,  i(0),dst                  ); 
+ |4: CS2                           ( mov,l   ,  i(0),dst                  ); 
+ |5..LIM.MaxNofBytesToUseRegdMemCopy:                                     
+     CS2                           ( xor,l   ,  R(tmp),R(tmp)             ); 
+     FOR ii:=1 TO size DIV 4 DO CS2( mov,l   ,  R(tmp),dst                ); dst:=AddOfs(dst,4); END; 
+     IF (size MOD 4)>1 THEN CS2    ( mov,w   ,  R(SizedRegTab[tmp,w]),dst ); dst:=AddOfs(dst,2); END;
+     IF (size MOD 2)>0 THEN CS2    ( mov,b   ,  R(SizedRegTab[tmp,b]),dst ); END;                    
+ ELSE
+     IF tmp#eax THEN CS2           ( xchg,l  ,  R(tmp),R(eax)             ); END;
+     CS2                           ( xor,l   ,  R(eax),R(eax)             ); 
+     CS2                           ( lea,l   ,  dst,R(edi)                ); 
+     CS2                           ( mov,l   ,  i(size DIV 4),R(ecx)      ); 
+     C0                            ( cld                                  ); 
+     C0                            ( repz                                 ); 
+     CS0                           ( stos,l                               ); 
+     IF (size MOD 4)>1 THEN CS0    ( stos,w                               ); END;                                            
+     IF (size MOD 2)>0 THEN CS0    ( stos,b                               ); END;
+     IF tmp#eax THEN CS2           ( xchg,l  ,  R(tmp),R(eax)             ); END;
+ END;
+END FillZ;
+
+(************************************************************************************************************************)
+PROCEDURE ConstStringCompare(VAR str:OT.oSTRING; reg:tReg); 
+VAR string:Strings.tString; arr:ARRAY [0..Strings.cMaxStrLength] OF CHAR; ii,len:LONGINT; label:LAB.T;
+BEGIN (* ConstStringCompare *)       
+ StringMem.GetString(str,string); Strings.StringToArray(string,arr); 
+ 
+ len:=STR.Length(arr); label:=LAB.NewLocal(); 
+ FOR ii:=0 TO len-1 DO
+  CS2( cmp,b  ,  i(ORD(arr[ii])),oB(ii,reg) ); 
+  C1 ( jnz    ,  L(label)                   );
+ END;
+ CS2 ( cmp,b  ,  i(0),oB(len,reg)           ); 
+ Label(label); 
+END ConstStringCompare;
+
+(************************************************************************************************************************)
+PROCEDURE CmtFactor(reg:tReg; f:LONGINT);
+BEGIN (* CmtFactor *)
+ CmtR(reg); CmtS(':='); CmtI(f); CmtS('*'); CmtR(reg); CmtS('; ');  
+END CmtFactor;
+
+(************************************************************************************************************************)
+PROCEDURE MultConstToReg(factor:LONGINT; reg:tReg):BOOLEAN; 
+VAR sz:tSize; f,shift:LONGINT; 
+BEGIN (* MultConstToReg *)
+ sz:=RegSizeTab[reg]; f:=ABS(factor); 
+
+ IF factor=0 THEN
+    CS2        ( xor,sz  ,  R(reg),R(reg)         ); 
+ ELSIF f=1 THEN 
+
+ ELSIF (sz=l) & (f<10) & (f IN {2,3,4,5,8,9}) THEN 
+    CASE factor OF
+    |2,4,8: CS2( lea,sz  ,  If(reg,f),R(reg)      ); 
+    |3    : CS2( lea,sz  ,  BIf(reg,reg,2),R(reg) ); 
+    |5    : CS2( lea,sz  ,  BIf(reg,reg,4),R(reg) ); 
+    |9    : CS2( lea,sz  ,  BIf(reg,reg,8),R(reg) ); 
+    ELSE    ERR.Fatal('ASM.MultConstToReg: CASE failed'); 
+    END; (* CASE *)
+ ELSIF ADR.IntLog2(f,shift) THEN 
+    CS2        ( shl,sz   ,  i(shift),R(reg)      ); 
+ ELSE 
+    RETURN FALSE; 
+ END; (* IF *)
+
+ IF factor<0 THEN 
+    CS1        ( neg,sz  ,  R(reg)                ); 
+ END; (* IF *)
+   
+ IF ARG.OptionCommentsInAsm THEN CmtFactor(reg,factor); END; (* IF *)
+ RETURN TRUE; 
+END MultConstToReg;
+
+(************************************************************************************************************************)
+PROCEDURE MultConstAndOpToReg(factor:LONGINT; op:tOp; reg:tReg):BOOLEAN; 
+VAR sz:tSize; f,shift:LONGINT; 
+BEGIN (* MultConstAndOpToReg *)
+ sz:=RegSizeTab[reg]; f:=ABS(factor); 
+ IF factor=0 THEN
+    CS2        ( xor,sz   ,  R(reg),R(reg)         ); 
+ ELSIF f=1 THEN 
+    CS2        ( mov,sz   ,  op,R(reg)             ); 
+ ELSIF (sz=l) & (f<10) & (f IN {2,3,4,5,8,9}) THEN 
+    CS2        ( mov,sz   ,  op,R(reg)             ); 
+    CASE factor OF
+    |2,4,8: CS2( lea,sz   ,  If(reg,f),R(reg)      ); 
+    |3    : CS2( lea,sz   ,  BIf(reg,reg,2),R(reg) ); 
+    |5    : CS2( lea,sz   ,  BIf(reg,reg,4),R(reg) ); 
+    |9    : CS2( lea,sz   ,  BIf(reg,reg,8),R(reg) ); 
+    ELSE    ERR.Fatal('ASM.MultConstAndOpToReg: CASE failed'); 
+    END; (* CASE *)
+ ELSIF ADR.IntLog2(f,shift) THEN 
+    CS2        ( mov,sz   ,  op,R(reg)             ); 
+    CS2        ( shl,sz   ,  i(shift),R(reg)       ); 
+ ELSE  
+    RETURN FALSE; 
+ END; (* IF *)
+
+ IF factor<0 THEN 
+    CS1        ( neg,sz   ,  R(reg)                ); 
+ END; (* IF *)
+
+ IF ARG.OptionCommentsInAsm THEN CmtR(reg); CmtS(':='); CmtI(factor); CmtS(' * '); CmtOp(op); CmtS('; '); END; (* IF *)
+ RETURN TRUE; 
+END MultConstAndOpToReg;
+
+(************************************************************************************************************************)
+PROCEDURE MultR(reg:tReg; VAR factor:LONGINT); 
+VAR leaFactor,shift:LONGINT; 
+BEGIN (* MultR *)
+ CASE factor OF
+ |0            : CS2   ( xor,l   ,  R(reg),R(reg)       ); 
+ |1,2,4,8      : RETURN; 
+ |3,3*2,3*4,3*8: leaFactor:=(3-1); factor:=factor DIV 3; 
+ |5,5*2,5*4,5*8: leaFactor:=(5-1); factor:=factor DIV 5; 
+ |9,9*2,9*4,9*8: leaFactor:=(9-1); factor:=factor DIV 9; 
+ ELSE      	 IF ADR.IntLog2(factor,shift) THEN
+                    CS2( shl,l   ,  i(shift),R(reg)  ); 
+                    IF ARG.OptionCommentsInAsm THEN CmtFactor(reg,factor); END; (* IF *)
+                 ELSE 
+                    CS2( imul,l  ,  i(factor),R(reg) ); 
+                 END; (* IF *)	
+                 factor:=1; RETURN; 
+ END; (* CASE *)
+
+ CS2                   ( lea,l  ,  BIf(reg,reg,leaFactor),R(reg) ); 
+ IF ARG.OptionCommentsInAsm THEN CmtFactor(reg,leaFactor+1); END; (* IF *)
+END MultR;
+
+(************************************************************************************************************************)
+PROCEDURE HasEqualLabels(op1,op2:tOp):BOOLEAN; 
+BEGIN (* HasEqualLabels *) 
+ RETURN (op1^.ID=ID_L) & (op2^.ID=ID_L) & Strings1.StrEq(op1^.label^,op2^.label^); 
+END HasEqualLabels;
+
+(************************************************************************************************************************)
+PROCEDURE GetLastOperId(VAR oid:tOperId); 
+BEGIN (* GetLastOperId *)
+ oid.id  := opern^.operId; 
+ oid.adr := opern; 
+END GetLastOperId;
+
+(************************************************************************************************************************)
+PROCEDURE NoOperId(VAR oid:tOperId); 
+BEGIN (* NoOperId *)
+ oid.id  := 0; 
+ oid.adr := NIL; 
+END NoOperId;
+
+(************************************************************************************************************************)
+PROCEDURE MakeObsolete(VAR oid:tOperId); 
+VAR p:POINTER TO tOperationBuf;
+BEGIN (* MakeObsolete *)
+ p:=oid.adr; 
+ IF (p#NIL) & (p^.operId=oid.id) THEN 
+    p^.obsolete:=TRUE; 
+ END; (* IF *)
+END MakeObsolete;
+
+(************************************************************************************************************************)
+(*** comments                                                                                                         ***)
+(************************************************************************************************************************)
+PROCEDURE CmtLnS(s:ARRAY OF CHAR); 
+BEGIN (* CmtLnS *)
+ Ln; 
+ CmtS(s); 
+END CmtLnS;
+
+(************************************************************************************************************************)
+PROCEDURE CmtS(s:ARRAY OF CHAR); 
+BEGIN (* CmtS *) 
+ STR.Append(OperationBuf[OperTailIdx].comment,s); 
+END CmtS;
+
+(************************************************************************************************************************)
+PROCEDURE CmtI(i:LONGINT); 
+VAR s:ARRAY [0..50] OF CHAR; 
+BEGIN (* CmtI *) 
+ UTI.Longint2Arr(i,s); CmtS(s); 
+END CmtI;
+
+(************************************************************************************************************************)
+PROCEDURE CmtId(id:Idents.tIdent); 
+VAR str:Strings.tString; s:ARRAY [0..Strings.cMaxStrLength+1] OF CHAR; 
+BEGIN (* CmtId *) 
+ Idents.GetString(id,str); Strings.StringToArray(str,s); CmtS(s); 
+END CmtId;
+
+(************************************************************************************************************************)
+PROCEDURE CmtR(r:tReg); 
+BEGIN (* CmtR *)
+ CmtS(RegStrTab[r]); 
+END CmtR;
+
+(************************************************************************************************************************)
+PROCEDURE CmtOp(op:tOp);
+BEGIN (* CmtOp *)
+ IF op^.int#0 THEN 
+    CmtI(op^.int); 
+ ELSIF (op^.label=NIL) & (op^.reg=Cons.RegNil) & (op^.ireg=Cons.RegNil) THEN
+    CmtS('0'); RETURN; 
+ END; (* IF *)
+ 
+ IF op^.label#NIL THEN 
+    IF op^.int#0 THEN CmtS('+'); END; (* IF *)
+    CmtS(op^.label^); 
+ END; (* IF *)          
+ 
+ IF (op^.reg#Cons.RegNil) OR (op^.ireg#Cons.RegNil) THEN 
+    CmtS('('); 
+    IF (op^.reg=Cons.RegNil) & (op^.factor=1) THEN 
+       CmtR(op^.ireg); 
+    ELSE 
+       IF op^.reg#Cons.RegNil THEN CmtR(op^.reg); END; (* IF *)
+       IF op^.ireg#Cons.RegNil THEN 
+          CmtS(','); CmtR(op^.ireg); 
+          IF op^.factor>1 THEN CmtS(','); CmtI(op^.factor); END; (* IF *)
+       END; (* IF *)
+    END; (* IF *)
+    CmtS(')'); 
+ END; (* IF *)
+END CmtOp;
+
+(************************************************************************************************************************)
+PROCEDURE SepLine;
+BEGIN (* SepLine *)
+ CmtLnS('------------------------------------------------------------------------------'); 
+END SepLine;
+
+(************************************************************************************************************************)
+PROCEDURE WrLn;
+BEGIN (* WrLn *)
+ FlushBuffer;
+ TextIO.PutLn(OutputFile); 
+END WrLn;
+
+(************************************************************************************************************************)
+PROCEDURE WrS(s:ARRAY OF CHAR); 
+BEGIN (* WrS *)
+ FlushBuffer;
+ TextIO.PutString(OutputFile,s); 
+END WrS;
+
+(************************************************************************************************************************)
+PROCEDURE WrI(i:LONGINT);
+VAR s:ARRAY [0..30] OF CHAR; 
+BEGIN (* WrI *)
+ UTI.Longint2Arr(i,s); WrS(s); 
+END WrI;
+
+(************************************************************************************************************************)
+PROCEDURE WrId(id:Idents.tIdent); 
+VAR str:Strings.tString; s:ARRAY [0..Strings.cMaxStrLength+1] OF CHAR; 
+BEGIN (* WrId *)
+ Idents.GetString(id,str); Strings.StringToArray(str,s); WrS(s); 
+END WrId;
+
+(************************************************************************************************************************)
+PROCEDURE WrL(l:tLabel);
+BEGIN (* WrL *)
+ FlushBuffer;
+ TextIO.PutString(OutputFile,l^); 
+END WrL;
+
+(************************************************************************************************************************)
+(*** root actions                                                                                                     ***)
+(************************************************************************************************************************)
+PROCEDURE Begin(outFile:TextIO.File);
+BEGIN (* Begin *) 
+ OutputFile    := outFile; 
+ NofOpersInBuf := 0; 
+ OperHeadIdx   := 0; 
+ OperTailIdx   := MaxNofDelayedOperations-1; 
+ nextFreeOpIdx := 0; 
+ curSection    := NoSection; 
+ is_cld        := FALSE; 
+ LastOperId    := 0; 
+END Begin;
+
+(************************************************************************************************************************)
+PROCEDURE FlushBuffer;
+BEGIN (* FlushBuffer *)
+ WHILE NofOpersInBuf>0 DO
+  OutOper(OperationBuf[OperHeadIdx]); 
+  OperHeadIdx:=(OperHeadIdx+1) MOD MaxNofDelayedOperations; 
+  DEC(NofOpersInBuf); 
+ END; (* WHILE *)  
+ is_cld:=FALSE; 
+END FlushBuffer;
+
+(************************************************************************************************************************)
+PROCEDURE End;
+BEGIN (* End *) 
+ FlushBuffer;
+END End;
+
+(************************************************************************************************************************)
+VAR reg:tReg;
+BEGIN (* ASM *) 
+ InitOperands;
+ InitOperandBuffers;
+ 
+ FOR reg:=MIN(tReg) TO MAX(tReg) DO 
+  LoRegTab[reg]:=NoReg; HiRegTab[reg]:=NoReg; 
+  RegSizeTab[reg]:=NoSize; RegStrTab[reg]:='%reg'; 
+ END;
+ 
+ RegStrTab[al ] := '%al'   ; RegSizeTab[al ] := b; 
+ RegStrTab[ah ] := '%ah'   ; RegSizeTab[ah ] := b; 
+ RegStrTab[bl ] := '%bl'   ; RegSizeTab[bl ] := b; 
+ RegStrTab[bh ] := '%bh'   ; RegSizeTab[bh ] := b; 
+ RegStrTab[cl ] := '%cl'   ; RegSizeTab[cl ] := b; 
+ RegStrTab[ch ] := '%ch'   ; RegSizeTab[ch ] := b; 
+ RegStrTab[dl ] := '%dl'   ; RegSizeTab[dl ] := b; 
+ RegStrTab[dh ] := '%dh'   ; RegSizeTab[dh ] := b; 
+ RegStrTab[ax ] := '%ax'   ; RegSizeTab[ax ] := w; LoRegTab[ax ] := al; HiRegTab[ax ] := ah; 
+ RegStrTab[bx ] := '%bx'   ; RegSizeTab[bx ] := w; LoRegTab[bx ] := bl; HiRegTab[bx ] := bh; 
+ RegStrTab[cx ] := '%cx'   ; RegSizeTab[cx ] := w; LoRegTab[cx ] := cl; HiRegTab[cx ] := ch; 
+ RegStrTab[dx ] := '%dx'   ; RegSizeTab[dx ] := w; LoRegTab[dx ] := dl; HiRegTab[dx ] := dh; 
+ RegStrTab[si ] := '%si'   ; RegSizeTab[si ] := w; 			                    
+ RegStrTab[di ] := '%di'   ; RegSizeTab[di ] := w; 			                    
+ RegStrTab[eax] := '%eax'  ; RegSizeTab[eax] := l; LoRegTab[eax] := ax;
+ RegStrTab[ebx] := '%ebx'  ; RegSizeTab[ebx] := l; LoRegTab[ebx] := bx;
+ RegStrTab[ecx] := '%ecx'  ; RegSizeTab[ecx] := l; LoRegTab[ecx] := cx;
+ RegStrTab[edx] := '%edx'  ; RegSizeTab[edx] := l; LoRegTab[edx] := dx;
+ RegStrTab[esi] := '%esi'  ; RegSizeTab[esi] := l; LoRegTab[esi] := si;
+ RegStrTab[edi] := '%edi'  ; RegSizeTab[edi] := l; LoRegTab[edi] := di;
+ RegStrTab[ebp] := '%ebp'  ; RegSizeTab[ebp] := l; 
+ RegStrTab[esp] := '%esp'  ; RegSizeTab[esp] := l; 
+ RegStrTab[st ] := '%st'   ;                       
+ RegStrTab[st1] := '%st(1)';                       
+ RegStrTab[st2] := '%st(2)';                       
+ RegStrTab[st3] := '%st(3)';                       
+ RegStrTab[st4] := '%st(4)';                       
+ RegStrTab[st5] := '%st(5)';                       
+ RegStrTab[st6] := '%st(6)';                       
+ RegStrTab[st7] := '%st(7)';                       
+ 						   
+ CodeRegTab[codeEAX   ] := eax  ; 		   
+ CodeRegTab[codeEBX   ] := ebx  ; 
+ CodeRegTab[codeECX   ] := ecx  ; 
+ CodeRegTab[codeEDX   ] := edx  ; 
+ CodeRegTab[codeESI   ] := esi  ; 
+ CodeRegTab[codeEDI   ] := edi  ; 
+ CodeRegTab[codeEBP   ] := ebp  ; 
+ CodeRegTab[codeESP   ] := esp  ; 
+ CodeRegTab[codeEFLAGS] := NoReg; 
+ CodeRegTab[codeST0   ] := st   ; 
+ CodeRegTab[codeST1   ] := st1  ; 
+ CodeRegTab[codeST2   ] := st2  ; 
+ CodeRegTab[codeST3   ] := st3  ; 
+ CodeRegTab[codeST4   ] := st4  ; 
+ CodeRegTab[codeST5   ] := st5  ; 
+ CodeRegTab[codeST6   ] := st6  ; 
+ CodeRegTab[codeST7   ] := st7  ; 
+
+ mtLocation.label    := LAB.MT; 
+ mtLocation.ofs      := 0; 
+ mtLocation.breg     := NoReg; 
+ mtLocation.ireg     := NoReg; 
+ mtLocation.factor   := 1; 
+ mtLocation.cmtIdent := Idents.NoIdent; 
+
+ SizeTab[0] := NoSize; 
+ SizeTab[1] := b; 
+ SizeTab[2] := w; 
+ SizeTab[3] := NoSize; 
+ SizeTab[4] := l; 
+
+ FloatSizeTab[0] := NoSize; 
+ FloatSizeTab[1] := NoSize; 
+ FloatSizeTab[2] := NoSize; 
+ FloatSizeTab[3] := NoSize; 
+ FloatSizeTab[4] := s; 
+ FloatSizeTab[5] := NoSize; 
+ FloatSizeTab[6] := NoSize; 
+ FloatSizeTab[7] := NoSize; 
+ FloatSizeTab[8] := l; 
+
+ SizeStrTab[NoSize] := ' '; 
+ SizeStrTab[b     ] := 'b'; 
+ SizeStrTab[w     ] := 'w'; 
+ SizeStrTab[l     ] := 'l'; 
+ SizeStrTab[s     ] := 's'; 
+ 
+ BitSizeTab[b     ] := 8; 
+ BitSizeTab[w     ] := 16; 
+ BitSizeTab[l     ] := 32; 
+ 
+ ByteSizeTab[b     ] := 1; 
+ ByteSizeTab[w     ] := 2; 
+ ByteSizeTab[l     ] := 4; 
+ 
+ FloatByteSizeTab[s] := 4; 
+ FloatByteSizeTab[l] := 8; 
+ 
+ FOR reg:=MIN(tReg) TO MAX(tReg) DO 
+  SizedRegTab[reg,b]:=NoReg; SizedRegTab[reg,w]:=NoReg; SizedRegTab[reg,l]:=NoReg; 
+ END;
+
+ SizedRegTab[al ,b]:=al   ; SizedRegTab[al ,w]:=ax; SizedRegTab[al ,l]:=eax; 
+ SizedRegTab[ah ,b]:=ah   ; SizedRegTab[ah ,w]:=ax; SizedRegTab[ah ,l]:=eax; 
+ SizedRegTab[bl ,b]:=bl   ; SizedRegTab[bl ,w]:=bx; SizedRegTab[bl ,l]:=ebx; 
+ SizedRegTab[bh ,b]:=bh   ; SizedRegTab[bh ,w]:=bx; SizedRegTab[bh ,l]:=ebx; 
+ SizedRegTab[cl ,b]:=cl   ; SizedRegTab[cl ,w]:=cx; SizedRegTab[cl ,l]:=ecx; 
+ SizedRegTab[ch ,b]:=ch   ; SizedRegTab[ch ,w]:=cx; SizedRegTab[ch ,l]:=ecx; 
+ SizedRegTab[dl ,b]:=dl   ; SizedRegTab[dl ,w]:=dx; SizedRegTab[dl ,l]:=edx; 
+ SizedRegTab[dh ,b]:=dh   ; SizedRegTab[dh ,w]:=dx; SizedRegTab[dh ,l]:=edx; 
+ SizedRegTab[ax ,b]:=al   ; SizedRegTab[ax ,w]:=ax; SizedRegTab[ax ,l]:=eax; 
+ SizedRegTab[bx ,b]:=bl   ; SizedRegTab[bx ,w]:=bx; SizedRegTab[bx ,l]:=ebx; 
+ SizedRegTab[cx ,b]:=cl   ; SizedRegTab[cx ,w]:=cx; SizedRegTab[cx ,l]:=ecx; 
+ SizedRegTab[dx ,b]:=dl   ; SizedRegTab[dx ,w]:=dx; SizedRegTab[dx ,l]:=edx; 
+                            SizedRegTab[si ,w]:=si; SizedRegTab[si ,l]:=esi; 
+                            SizedRegTab[di ,w]:=di; SizedRegTab[di ,l]:=edi; 
+ SizedRegTab[eax,b]:=al   ; SizedRegTab[eax,w]:=ax; SizedRegTab[eax,l]:=eax; 
+ SizedRegTab[ebx,b]:=bl   ; SizedRegTab[ebx,w]:=bx; SizedRegTab[ebx,l]:=ebx; 
+ SizedRegTab[ecx,b]:=cl   ; SizedRegTab[ecx,w]:=cx; SizedRegTab[ecx,l]:=ecx; 
+ SizedRegTab[edx,b]:=dl   ; SizedRegTab[edx,w]:=dx; SizedRegTab[edx,l]:=edx; 
+                            SizedRegTab[esi,w]:=si; SizedRegTab[esi,l]:=esi; 
+                            SizedRegTab[edi,w]:=di; SizedRegTab[edi,l]:=edi; 
+ 
+ BranchOperTab [NoRelation    ,FALSE] := ASMOP.NoOper; BranchOperTab [NoRelation    ,TRUE] := ASMOP.NoOper; 
+ BranchOperTab [equal         ,FALSE] := ASMOP.jz    ; BranchOperTab [equal         ,TRUE] := ASMOP.jz    ; 
+ BranchOperTab [unequal       ,FALSE] := ASMOP.jnz   ; BranchOperTab [unequal       ,TRUE] := ASMOP.jnz   ; 
+ BranchOperTab [less          ,FALSE] := ASMOP.jb    ; BranchOperTab [less          ,TRUE] := ASMOP.jl    ; 
+ BranchOperTab [lessORequal   ,FALSE] := ASMOP.jbe   ; BranchOperTab [lessORequal   ,TRUE] := ASMOP.jle   ; 
+ BranchOperTab [greater       ,FALSE] := ASMOP.ja    ; BranchOperTab [greater       ,TRUE] := ASMOP.jg    ; 
+ BranchOperTab [greaterORequal,FALSE] := ASMOP.jae   ; BranchOperTab [greaterORequal,TRUE] := ASMOP.jge   ; 
+
+ FlagSetOperTab[NoRelation    ,FALSE] := ASMOP.NoOper; FlagSetOperTab[NoRelation    ,TRUE] := ASMOP.NoOper;
+ FlagSetOperTab[equal         ,FALSE] := ASMOP.setz  ; FlagSetOperTab[equal         ,TRUE] := ASMOP.setz  ;
+ FlagSetOperTab[unequal       ,FALSE] := ASMOP.setnz ; FlagSetOperTab[unequal       ,TRUE] := ASMOP.setnz ;
+ FlagSetOperTab[less          ,FALSE] := ASMOP.setb  ; FlagSetOperTab[less          ,TRUE] := ASMOP.setl  ;
+ FlagSetOperTab[lessORequal   ,FALSE] := ASMOP.setbe ; FlagSetOperTab[lessORequal   ,TRUE] := ASMOP.setle ;
+ FlagSetOperTab[greater       ,FALSE] := ASMOP.seta  ; FlagSetOperTab[greater       ,TRUE] := ASMOP.setg  ;
+ FlagSetOperTab[greaterORequal,FALSE] := ASMOP.setae ; FlagSetOperTab[greaterORequal,TRUE] := ASMOP.setge ;
+
+ InvRelTab[NoRelation    ] := NoRelation    ; 
+ InvRelTab[equal         ] := unequal       ; 
+ InvRelTab[unequal       ] := equal         ; 
+ InvRelTab[less          ] := greaterORequal; 
+ InvRelTab[lessORequal   ] := greater       ; 
+ InvRelTab[greater       ] := lessORequal   ; 
+ InvRelTab[greaterORequal] := less          ; 
+ 
+ RevRelTab[NoRelation    ] := NoRelation    ; 
+ RevRelTab[equal         ] := equal         ; 
+ RevRelTab[unequal       ] := unequal       ; 
+ RevRelTab[less          ] := greater       ; 
+ RevRelTab[lessORequal   ] := greaterORequal; 
+ RevRelTab[greater       ] := less          ; 
+ RevRelTab[greaterORequal] := lessORequal   ; 
+ 
+ OutputFile:=0; nextOperCmtIdent:=Idents.NoIdent; 
+END ASM.

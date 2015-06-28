@@ -1,0 +1,312 @@
+/********************************************************************************************************************************/
+/*** ADR.pum / Address related functions                                                                                      ***/
+/********************************************************************************************************************************/
+TRAFO ADR TREE OB PUBLIC
+
+ /*** "Modula-2 exported" functions ***
+
+ Align4                         (* Yields the 4-aligned argument                                                                *)
+ Align8                         (* Yields the 8-aligned argument                                                                *)
+ IntLog2                        (* TRUE iff argument is power of 2 --> second param := log2(argument)                           *)
+ MaxSize2                       (* Maximum over 2 sizes                                                                         *)
+ MaxSize3                       (* Maximum over 3 sizes                                                                         *)
+ MinSize2                       (* Minimum over 2 sizes                                                                         *)
+ MinSize3                       (* Minimum over 3 sizes                                                                         *)
+ MinSize4                       (* Minimum over 4 sizes                                                                         *)
+
+ *** Proper puma functions ***/
+
+ OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr
+ ArrayOfsFromODim               /* Offset of an open array according from the number of open dimensions                         */
+ ArrayOfs                       /* Offset of an open array type representation according to its dimensionality                  */
+ LenOfsFromOpenParamType        /* Offset of the implicit LEN parameter relative to the open array parameter                    */
+ LenOfsFromOpenPointerBaseType  /* Offset of the implicit LEN field relative to the open array pointer base                     */
+ LenOfsFromTypeOfOpenEntry      /* Offset of the implicit LEN parameter/field relative to the open array parameter/pointer base */
+ LocalVarBase                   /* Offset of first local variable according to the procedure nesting depth                      */
+ NextVarAddr                    /* Calculates the address of the next global/local variable                                     */
+ NextParAddr                    /* Calculates the address of the next formal parameter                                          */
+ TTableElemOfsInTDesc           /* Offset of an element in the base type table of a type descriptor                             */
+
+/********************************************************************************************************************************/
+IMPORT{ TYPE   tAddress       = OB.tAddress;   (* These types are re-declared due to the fact that                              *)
+               tSize          = OB.tSize;      (* qualidents are illegal in a puma specification.                               *)
+               tLevel         = OB.tLevel; 
+               tParMode       = OB.tParMode; }
+                              
+EXPORT{ CONST  GlobalVarBase  = 8;
+               ProcParBase    = 8; 
+               GlobalTmpBase  = -4;
+        VAR    BitRangeTab    : ARRAY [0..32] OF LONGCARD;
+               InvBitRangeTab : ARRAY [0..32] OF LONGCARD;
+
+        PROCEDURE Align4(v:tSize):tSize; 
+        PROCEDURE Align8(v:tSize):tSize; 
+        PROCEDURE IntLog2(v:LONGINT; VAR r:LONGINT):BOOLEAN;
+        PROCEDURE MaxSize2(a,b:tSize):tSize;
+        PROCEDURE MaxSize3(a,b,c:tSize):tSize;
+        PROCEDURE MinSize2(a,b:tSize):tSize;
+        PROCEDURE MinSize3(a,b,c:tSize):tSize;
+        PROCEDURE MinSize4(a,b,c,d:tSize):tSize; }
+
+GLOBAL{ IMPORT LIM, T;
+
+        PROCEDURE InitBitRangeTab;
+        VAR bits,i:LONGCARD; 
+        BEGIN (* InitBitRangeTab *)
+         bits:=0FFFFFFFFH; 
+         FOR i:=32 TO 0 BY -1 DO
+          BitRangeTab[i]:=bits; InvBitRangeTab[i]:=LONGCARD({0..31}-BITSET(bits)); 
+          bits:=bits DIV 2; 
+         END; (* FOR *)
+        END InitBitRangeTab;
+
+        PROCEDURE Align4(v:tSize):tSize; 
+        BEGIN (* Align4 *)
+         RETURN LONGINT(BITSET(v+3)*BITSET(-4)); 
+        END Align4;
+
+        PROCEDURE Align8(v:tSize):tSize; 
+        BEGIN (* Align8 *)
+         RETURN LONGINT(BITSET(v+7)*BITSET(-8)); 
+        END Align8;
+
+        PROCEDURE IntLog2(v:LONGINT; VAR r:LONGINT):BOOLEAN;
+        BEGIN (* IntLog2 *)
+         IF    v=00000001H THEN r :=  0;
+         ELSIF v=00000002H THEN r :=  1;
+         ELSIF v=00000004H THEN r :=  2;
+         ELSIF v=00000008H THEN r :=  3;
+         ELSIF v=00000010H THEN r :=  4;
+         ELSIF v=00000020H THEN r :=  5;
+         ELSIF v=00000040H THEN r :=  6;
+         ELSIF v=00000080H THEN r :=  7;
+         ELSIF v=00000100H THEN r :=  8;
+         ELSIF v=00000200H THEN r :=  9;
+         ELSIF v=00000400H THEN r := 10;
+         ELSIF v=00000800H THEN r := 11;
+         ELSIF v=00001000H THEN r := 12;
+         ELSIF v=00002000H THEN r := 13;
+         ELSIF v=00004000H THEN r := 14;
+         ELSIF v=00008000H THEN r := 15;
+         ELSIF v=00010000H THEN r := 16;
+         ELSIF v=00020000H THEN r := 17;
+         ELSIF v=00040000H THEN r := 18;
+         ELSIF v=00080000H THEN r := 19;
+         ELSIF v=00100000H THEN r := 20;
+         ELSIF v=00200000H THEN r := 21;
+         ELSIF v=00400000H THEN r := 22;
+         ELSIF v=00800000H THEN r := 23;
+         ELSIF v=01000000H THEN r := 24;
+         ELSIF v=02000000H THEN r := 25;
+         ELSIF v=04000000H THEN r := 26;
+         ELSIF v=08000000H THEN r := 27;
+         ELSIF v=10000000H THEN r := 28;
+         ELSIF v=20000000H THEN r := 29;
+         ELSIF v=40000000H THEN r := 30;
+      (* ELSIF v=80000000H THEN r := 31; *) (* forget it... *)
+                           ELSE RETURN FALSE;
+         END; (* IF *)
+         RETURN TRUE;                  
+        END IntLog2;
+
+        PROCEDURE pAligned(a:tAddress; s:tSize):tAddress; 
+        BEGIN (* pAligned *)
+         CASE s OF
+         |0,1,3: RETURN a; 
+         |2    : RETURN LONGINT(BITSET(a+1)*BITSET(-2)); 
+         ELSE    RETURN LONGINT(BITSET(a+3)*BITSET(-4)); 
+         END; (* CASE *)
+        END pAligned; 
+
+        PROCEDURE nAligned(a:tAddress; s:tSize):tAddress; 
+        BEGIN (* nAligned *)
+         CASE s OF
+         |0,1,3: RETURN a; 
+         |2    : RETURN LONGINT(BITSET(a)*BITSET(-2)); 
+         ELSE    RETURN LONGINT(BITSET(a)*BITSET(-4)); 
+         END; (* CASE *)
+        END nAligned; 
+
+        PROCEDURE MaxSize2(a,b:tSize):tSize;
+        BEGIN (* MaxSize2 *)
+         IF a>b THEN RETURN a; ELSE RETURN b; END; (* IF *)
+        END MaxSize2;
+
+        PROCEDURE MaxSize3(a,b,c:tSize):tSize;
+        BEGIN (* MaxSize3 *)
+         IF a>b THEN 
+            IF a>c THEN RETURN a; END; (* IF *)
+         ELSE 
+            IF b>c THEN RETURN b; END; (* IF *)
+         END; (* IF *)
+         RETURN c; 
+        END MaxSize3;
+
+        PROCEDURE MinSize2(a,b:tSize):tSize;
+        BEGIN (* MinSize2 *)
+         IF a<b THEN RETURN a; ELSE RETURN b; END; (* IF *)
+        END MinSize2;
+
+        PROCEDURE MinSize3(a,b,c:tSize):tSize;
+        BEGIN (* MinSize3 *)
+         IF a<b THEN 
+            IF a<c THEN RETURN a; END; (* IF *)
+         ELSE 
+            IF b<c THEN RETURN b; END; (* IF *)
+         END; (* IF *)
+         RETURN c; 
+        END MinSize3;
+
+        PROCEDURE MinSize4(a,b,c,d:tSize):tSize;
+        BEGIN (* MinSize4 *)
+         RETURN MinSize2(MinSize2(a,b),MinSize2(c,d)); 
+        END MinSize4; }
+
+BEGIN{  InitBitRangeTab; }        
+
+/********************************************************************************************************************************/
+FUNCTION OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr ( type:TypeReprs ) LONGINT
+ PointerTypeRepr(_,_,_,_,_
+                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN T.OpenDimOfArrayType(baseType)               ?.
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr(elemType) ? (len>OB.OPENARRAYLEN);.
+ ArrayTypeRepr(_,_,_,_,_,_  ,elemType)            RETURN T.OpenDimOfArrayType(type)                   ?.
+ _                                                RETURN 0                                            ?.
+
+/********************************************************************************************************************************/
+FUNCTION ArrayOfsFromODim ( odim:LONGINT ) tAddress
+
+ _ RETURN {odim}? { CASE odim OF
+                    |0:  ;
+                    |1:  odim:=4; 
+                    ELSE odim:=4*odim+4; 
+                    END; };.
+
+/********************************************************************************************************************************/
+FUNCTION ArrayOfs ( type:TypeReprs ) tAddress
+
+ _ RETURN ArrayOfsFromODim({T.OpenDimOfArrayType(type)}) ?.
+
+/********************************************************************************************************************************/
+FUNCTION LenOfsFromOpenParamType ( type:TypeReprs ) tAddress
+
+ _ RETURN 4+LenOfsFromOpenPointerBaseType(type) ?.
+
+/********************************************************************************************************************************/
+FUNCTION LenOfsFromOpenPointerBaseType ( type:TypeReprs ) tAddress
+
+ ArrayTypeRepr(_,_,_,_,_,len0,ArrayTypeRepr(_,_,_,_,_,len1,_)) RETURN 4 ? ( (len0=OB.OPENARRAYLEN) 
+                                                                          & (len1=OB.OPENARRAYLEN));.
+ 
+ _                                                             RETURN 0 ?.
+
+/********************************************************************************************************************************/
+FUNCTION LenOfsFromTypeOfOpenEntry ( type:TypeReprs ) tAddress
+
+ /* consider LEN(a[i,j,k]) with a:ARRAY L1,L2,L3 OF POINTER TO ARRAY OF aType */
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN LenOfsFromTypeOfOpenEntry(elemType)     ? (len>OB.OPENARRAYLEN);.
+
+ PointerTypeRepr(_,_,_,_,_
+                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN LenOfsFromOpenPointerBaseType(baseType) ?.
+ 
+ _                                                RETURN LenOfsFromOpenPointerBaseType(type)     ?.
+
+/********************************************************************************************************************************/
+FUNCTION LocalVarBase ( level:tLevel ) tAddress
+ _ RETURN { -4-4*(level-OB.MODULELEVEL) } ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE NextVarAddr (  level    : tLevel
+                      ,  oldAddr  : tAddress
+                      ,  typesize : tSize
+                      => varAddr  : tAddress
+                      ,  newAddr  : tAddress )
+LOCAL{ VAR a:tAddress; }                      
+
+   /* level   =: */ {OB.MODULELEVEL},.. 
+=> /* varAddr := */ a
+,  /* newAddr := */ a+typesize          ?  { a:=pAligned(oldAddr,typesize); };.
+
+   /* level   =: */ {OB.FIELDLEVEL},.. 
+=> /* varAddr := */ oldAddr
+,  /* newAddr := */ oldAddr+typesize    ?.
+
+   /* level   =: */ .. 
+=> /* varAddr := */ a
+,  /* newAddr := */ a                   ?  { a:=nAligned(oldAddr-typesize,typesize); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE NextParAddr (  parMode  : tParMode
+                      ,  type     : TypeReprs
+                      ,  oldAddr  : tAddress
+                      => parAddr  : tAddress 
+                      ,  refMode  : tParMode
+                      ,  newAddr  : tAddress )
+LOCAL{ VAR od:LONGINT; a:tAddress; r:tParMode; }                      
+
+   /* parMode =: */ {OB.REFPAR}
+,  /* type    =: */ RecordTypeRepr
+,  /* oldAddr =: */ _
+=> /* parAddr := */ oldAddr+4
+,  /* refMode := */ {OB.REFPAR}
+,  /* newAddr := */ oldAddr+8 ?.
+                                                                
+   /* parMode =: */ _
+,  /* type    =: */ RecordTypeRepr
+,  /* oldAddr =: */ _
+=> /* parAddr := */ oldAddr
+,  /* refMode := */ r          
+,  /* newAddr := */ {a} ? { CASE T.SizeOfType(type) OF
+                            |0      : r:=OB.VALPAR; a:=oldAddr; 
+                            |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
+                            ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
+                            END; };.
+                                                                
+   /* parMode =: */ _
+,  /* type    =: */ ArrayTypeRepr(_,_,_,_,_,len,_)
+,  /* oldAddr =: */ _
+=> /* parAddr := */ oldAddr
+,  /* refMode := */ {OB.REFPAR}
+,  /* newAddr := */ {a} ? (len=OB.OPENARRAYLEN); 
+                          { od:=T.OpenDimOfArrayType(type); a:=oldAddr+4+4*od;
+			    IF od>1 THEN INC(a,4); END; };.
+   
+   /* parMode =: */ _
+,  /* type    =: */ ArrayTypeRepr
+,  /* oldAddr =: */ _
+=> /* parAddr := */ oldAddr
+,  /* refMode := */ r          
+,  /* newAddr := */ {a} ? { IF parMode=OB.REFPAR THEN 
+                               r:=OB.REFPAR; a:=oldAddr+4; 
+                            ELSE
+                               CASE T.SizeOfType(type) OF
+                               |0      : r:=OB.VALPAR; a:=oldAddr; 
+			       |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
+			       ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
+                               END;
+                            END; };.
+   
+   /* parMode =: */ {OB.REFPAR}
+,  /* type    =: */ ..
+=> /* parAddr := */ oldAddr
+,  /* refMode := */ {OB.REFPAR}
+,  /* newAddr := */ oldAddr+4 ?.
+   
+   /* parMode =: */ _
+,  /* type    =: */ ..
+=> /* parAddr := */ oldAddr
+,  /* refMode := */ {OB.VALPAR}
+,  /* newAddr := */ {oldAddr+Align4(T.SizeOfType(type))} ?.
+   
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION TTableElemOfsInTDesc ( staticType:TypeReprs , testType:TypeReprs => tAddress ) BOOLEAN
+
+ RecordTypeRepr(_,_,_,_,_,staticLevel,_,_,_,_),RecordTypeRepr(_,_,_,_,_,testLevel,_,_,_,_) 
+ => (4*(testLevel-LIM.MaxExtensionLevel-3)) ? RETURN (testLevel>staticLevel);.
+
+ .. => 0 ? RETURN FALSE;.
+
+/********************************************************************************************************************************/
+/*** END ADR.pum                                                                                                              ***/
+/********************************************************************************************************************************/
+

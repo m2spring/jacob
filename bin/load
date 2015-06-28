@@ -1,0 +1,9 @@
+#!/bin/sh
+cd ~/oberon
+make totalclean
+rm oberon.old.zip 2>/dev/null
+zip -mr9y /tmp/oberon.old.zip * .??*
+mount /a
+tar xvzf /a/oberon.tgz
+umount /a
+

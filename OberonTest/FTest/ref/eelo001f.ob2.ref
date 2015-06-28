@@ -1,0 +1,11 @@
+Compiling eelo001f
+'MODULE' eelo001f
+-------------------------------------------------------------------------------
+T   CONST     BOOLEAN = TRUE
+F   CONST     BOOLEAN = FALSE
+A   CONST     BOOLEAN = TRUE
+B   CONST     BOOLEAN = FALSE
+-------------------------------------------------------------------------------
+
+eelo001f.ob2: 10,13: Invalid type of expression
+eelo001f.ob2: 14,12: Invalid type of expression

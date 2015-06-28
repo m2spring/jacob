@@ -1,0 +1,12 @@
+MODULE Mm1;
+VAR a:LONGINT; 
+
+PROCEDURE P(VAR i:LONGINT);
+VAR b:LONGINT; 
+BEGIN (* P *)  
+ P(b); 
+END P;
+
+BEGIN (* Mm1 *)
+ P(a); 
+END Mm1.

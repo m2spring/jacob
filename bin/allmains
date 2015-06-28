@@ -1,0 +1,21 @@
+#!/bin/sh
+
+for i in `find . -type d`
+do  
+   if test -e "$i/Main.ob2"
+   then
+      (
+      cd $i  
+      echo -e "\n$i:"
+#      rm *.s *.lst *.o *_errors *.bak @* *~ 2>/dev/null
+#      find . -perm 770 -exec rm {} \;
+
+      if test -f compile-args
+      then
+         oc Main `cat compile-args` $*
+      else
+         oc Main $*
+      fi
+      )
+   fi
+done

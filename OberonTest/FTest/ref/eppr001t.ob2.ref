@@ -1,0 +1,183 @@
+Compiling eppr001t
+'PROCEDURE' PAssert
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PCopy
+-------------------------------------------------------------------------------
+v   VAR       ARRAY 10 OF CHAR
+x   VAR       ARRAY 5 OF CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PDec
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PExcl
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+s    VAR       SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PHalt
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PInc
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PIncl
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+s    VAR       SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PNew
+-------------------------------------------------------------------------------
+trecord       TYPE      RECORD
+                        END
+tarray        TYPE      ARRAY 4 OF CHAR
+tarrpointer   TYPE      POINTER TO tarray
+trecpointer   TYPE      POINTER TO trecord
+topen1        TYPE      POINTER TO ARRAY OF CHAR
+topen2        TYPE      POINTER TO ARRAY OF ARRAY OF INTEGER
+topen3        TYPE      POINTER TO ARRAY OF ARRAY OF ARRAY OF SHORTINT
+parr          VAR       tarrpointer
+prec          VAR       trecpointer
+popen1        VAR       topen1
+popen2        VAR       topen2
+popen3        VAR       topen3
+-------------------------------------------------------------------------------
+
+'MODULE' eppr001t
+-------------------------------------------------------------------------------
+csiabs       CONST     SHORTINT = -1
+ciabs        CONST     INTEGER = -1
+cliabs       CONST     LONGINT = -2147483647
+crabs        CONST     REAL = 4.10000E0
+clrabs       CONST     LONGREAL = 2.5000000000000D0
+abs1         CONST     SHORTINT = 1
+abs2         CONST     SHORTINT = 1
+abs3         CONST     LONGINT = MAX(LONGINT)
+abs4         CONST     REAL = 4.10000E0
+abs5         CONST     LONGREAL = 2.5000000000000D0
+csiash       CONST     SHORTINT = -2
+ciash        CONST     INTEGER = 1024
+cliash       CONST     LONGINT = 2
+ash1         CONST     SHORTINT = 0
+ash2         CONST     SHORTINT = -8
+ash3         CONST     INTEGER = 256
+ash4         CONST     INTEGER = 4096
+ash5         CONST     SHORTINT = 0
+ash6         CONST     SHORTINT = 8
+ccap1        CONST     <Char> = 'a'
+ccap2        CONST     <Char> = 0X
+ccap3        CONST     <Char> = 'E'
+cap1         CONST     <Char> = 'A'
+cap2         CONST     <Char> = 0X
+cap3         CONST     <Char> = 'E'
+csichr       CONST     SHORTINT = 65
+cichr        CONST     INTEGER = 65
+clichr       CONST     LONGINT = 49
+chr1         CONST     <Char> = 'A'
+chr2         CONST     <Char> = 'A'
+chr3         CONST     <Char> = '1'
+cent1        CONST     REAL = -2.30000E0
+cent2        CONST     LONGREAL = 4.4300000000000D1
+cent3        CONST     REAL = 2.23000E3
+cent4        CONST     LONGREAL = 1.0500000000000D7
+ent1         CONST     SHORTINT = -4
+ent2         CONST     SHORTINT = 44
+ent3         CONST     INTEGER = 2230
+ent4         CONST     LONGINT = 10500000
+csilong      CONST     SHORTINT = -12
+cilong       CONST     INTEGER = MIN(INTEGER)
+crlong       CONST     REAL = 2.40000E0
+long1        CONST     INTEGER = -12
+long2        CONST     LONGINT = MIN(INTEGER)
+long3        CONST     LONGREAL = 2.3999998569489D0
+max1         CONST     BOOLEAN = TRUE
+max2         CONST     <Char> = 0FFX
+max3         CONST     SHORTINT = MAX(SHORTINT)
+max4         CONST     INTEGER = MAX(INTEGER)
+max5         CONST     LONGINT = MAX(LONGINT)
+max6         CONST     REAL = MAX(REAL)
+max7         CONST     LONGREAL = MAX(LONGREAL)
+max8         CONST     SHORTINT = 31
+min1         CONST     BOOLEAN = FALSE
+min2         CONST     <Char> = 0X
+min3         CONST     SHORTINT = MIN(SHORTINT)
+min4         CONST     INTEGER = MIN(INTEGER)
+min5         CONST     LONGINT = MIN(LONGINT)
+min6         CONST     REAL = MIN(REAL)
+min7         CONST     LONGREAL = MIN(LONGREAL)
+min8         CONST     SHORTINT = 0
+csiodd       CONST     SHORTINT = 1
+ciodd        CONST     INTEGER = -300
+cliodd       CONST     LONGINT = MAX(LONGINT)
+odd1         CONST     BOOLEAN = TRUE
+odd2         CONST     BOOLEAN = FALSE
+odd3         CONST     BOOLEAN = TRUE
+ord1         CONST     SHORTINT = 65
+ord2         CONST     SHORTINT = 0
+ord3         CONST     SHORTINT = 65
+ord4         CONST     SHORTINT = 65
+ord5         CONST     SHORTINT = 49
+clishort     CONST     LONGINT = 500
+cishort      CONST     LONGINT = 200
+clrshort     CONST     LONGREAL = 5.0000000000000D0
+short1       CONST     INTEGER = 500
+short2       CONST     INTEGER = 200
+short3       CONST     REAL = 5.00000E0
+trecord      TYPE      RECORD
+                        f   VAR       SHORTINT
+                       END
+tpointer     TYPE      POINTER TO trecord
+tprocedure   TYPE      (A:SET)
+tarray       TYPE      ARRAY 10 OF CHAR
+size1        CONST     SHORTINT = 1
+size2        CONST     SHORTINT = 1
+size3        CONST     SHORTINT = 1
+size4        CONST     SHORTINT = 2
+size5        CONST     SHORTINT = 4
+size6        CONST     SHORTINT = 4
+size7        CONST     SHORTINT = 8
+size8        CONST     SHORTINT = 4
+size9        CONST     SHORTINT = 1
+size10       CONST     SHORTINT = 4
+size11       CONST     SHORTINT = 4
+size12       CONST     SHORTINT = 10
+vlen1        VAR       ARRAY 3 OF CHAR
+vlen2        VAR       ARRAY 3 OF ARRAY 4 OF ARRAY 5 OF INTEGER
+vlen3        VAR       ARRAY 1 OF ARRAY 4 OF ARRAY 8 OF ARRAY 10 OF BOOLEAN
+len1         CONST     SHORTINT = 3
+len2         CONST     SHORTINT = 3
+len3         CONST     SHORTINT = 1
+len4         CONST     SHORTINT = 3
+len5         CONST     SHORTINT = 4
+len6         CONST     SHORTINT = 5
+len7         CONST     SHORTINT = 1
+len8         CONST     SHORTINT = 4
+len9         CONST     SHORTINT = 8
+len10        CONST     SHORTINT = 10
+PAssert      PROCEDURE ()
+PCopy        PROCEDURE ()
+PDec         PROCEDURE ()
+PExcl        PROCEDURE ()
+PHalt        PROCEDURE ()
+PInc         PROCEDURE ()
+PIncl        PROCEDURE ()
+PNew         PROCEDURE ()
+-------------------------------------------------------------------------------
+

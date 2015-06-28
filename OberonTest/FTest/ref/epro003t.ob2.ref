@@ -1,0 +1,22 @@
+Compiling epro003t
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r    REFPARAM  T1
+i    VALPARAM  REAL
+T1   VALPARAM  BOOLEAN
+s    VAR       REAL
+-------------------------------------------------------------------------------
+
+'MODULE' epro003t
+-------------------------------------------------------------------------------
+c    CONST     SHORTINT = 1
+i    VAR       INTEGER
+s    VAR       SET
+b    VAR       BOOLEAN
+T1   TYPE      RECORD
+                f   VAR       INTEGER
+               END
+t    VAR       T1
+P    PROCEDURE (VAR r:T1; i:REAL; T1:BOOLEAN)
+-------------------------------------------------------------------------------
+

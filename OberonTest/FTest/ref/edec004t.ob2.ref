@@ -1,0 +1,20 @@
+Compiling edec004t
+'MODULE' edec004t
+-------------------------------------------------------------------------------
+ForwardPointer   TYPE      POINTER TO Behind
+<Behind>         TYPE      RECORD
+                            x   VAR       CHAR
+                           END
+AppPtr           VAR       ForwardPointer
+Rec              VAR       RECORD
+                            o      VAR       ForwardPointer
+                            p      VAR       ForwardPointer
+                            q      VAR       ForwardPointer
+                            proc   VAR       (p:ForwardPointer)
+                           END
+l                CONST     SHORTINT = 10
+Behind           TYPE      RECORD
+                            x   VAR       CHAR
+                           END
+-------------------------------------------------------------------------------
+

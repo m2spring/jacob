@@ -1,0 +1,21 @@
+Compiling etpo002t
+'PROCEDURE' Apply
+-------------------------------------------------------------------------------
+p   VALPARAM  t1Ptr
+-------------------------------------------------------------------------------
+
+'MODULE' etpo002t
+-------------------------------------------------------------------------------
+t1Rec   TYPE      RECORD
+                  END
+                  (-->t2Rec)
+
+t2Rec   TYPE      RECORD(t1Rec)
+                  END
+t1Ptr   TYPE      POINTER TO t1Rec
+t2Ptr   TYPE      POINTER TO t2Rec
+p1      VAR       t1Ptr
+p2      VAR       t2Ptr
+Apply   PROCEDURE (p:t1Ptr)
+-------------------------------------------------------------------------------
+

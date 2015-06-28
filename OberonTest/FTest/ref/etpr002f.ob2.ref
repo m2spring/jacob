@@ -1,0 +1,35 @@
+Compiling etpr002f
+'PROCEDURE' proc1
+-------------------------------------------------------------------------------
+a   VALPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'PROCEDURE' proc2
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' proc3
+-------------------------------------------------------------------------------
+a   VALPARAM  INTEGER
+b   VALPARAM  CHAR
+-------------------------------------------------------------------------------
+
+'MODULE' etpr002f
+-------------------------------------------------------------------------------
+t1Proc   TYPE      ()
+t2Proc   TYPE      (x1:INTEGER)
+t3Proc   TYPE      (x1:INTEGER) : BOOLEAN
+t4Proc   TYPE      (VAR x1:INTEGER; x2:CHAR)
+p1       VAR       t1Proc
+p2       VAR       t2Proc
+p3       VAR       t3Proc
+p4       VAR       t4Proc
+proc1    PROCEDURE (a:INTEGER)
+proc2    PROCEDURE ()
+proc3    PROCEDURE (a:INTEGER; b:CHAR)
+-------------------------------------------------------------------------------
+
+etpr002f.ob2: 31,8: Expression not assignment compatible
+etpr002f.ob2: 35,8: Expression not assignment compatible
+etpr002f.ob2: 39,8: Expression not assignment compatible
+etpr002f.ob2: 43,8: Expression not assignment compatible

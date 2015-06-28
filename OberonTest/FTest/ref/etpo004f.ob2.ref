@@ -1,0 +1,31 @@
+Compiling etpo004f
+'MODULE' etpo004f
+-------------------------------------------------------------------------------
+tRec    TYPE      RECORD
+                  END
+tPtr    TYPE      POINTER TO tRec
+tProc   TYPE      ()
+P1      TYPE      POINTER TO BOOLEAN
+P2      TYPE      POINTER TO CHAR
+P3      TYPE      POINTER TO SHORTINT
+P4      TYPE      POINTER TO INTEGER
+P5      TYPE      POINTER TO LONGINT
+P6      TYPE      POINTER TO REAL
+P7      TYPE      POINTER TO LONGREAL
+P8      TYPE      POINTER TO SET
+P9      TYPE      POINTER TO tPtr
+P10     TYPE      POINTER TO tProc
+P11     TYPE      POINTER TO P11
+-------------------------------------------------------------------------------
+
+etpo004f.ob2: 13,23: Wrong type of pointer base
+etpo004f.ob2: 17,23: Wrong type of pointer base
+etpo004f.ob2: 21,23: Wrong type of pointer base
+etpo004f.ob2: 25,23: Wrong type of pointer base
+etpo004f.ob2: 29,23: Wrong type of pointer base
+etpo004f.ob2: 33,23: Wrong type of pointer base
+etpo004f.ob2: 37,23: Wrong type of pointer base
+etpo004f.ob2: 41,23: Wrong type of pointer base
+etpo004f.ob2: 45,23: Wrong type of pointer base
+etpo004f.ob2: 49,23: Wrong type of pointer base
+etpo004f.ob2: 52,23: Wrong type of pointer base

@@ -1,0 +1,139 @@
+Compiling LDes01 (LDes01.ob2) 
+Linking LDes01
+	.comm	LDes01$G,44
+#      8 bo: BOOLEAN
+#      9 ch: CHAR
+#     10 si: SHORTINT
+#     12 in: INTEGER
+#     16 li: LONGINT
+#     20 re: REAL
+#     24 lr: LONGREAL
+#     32 se: SET
+#     36 po: LDes01.TPO
+#     40 pr: LDes01.TPR
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+LDes01$N:
+	.asciz	"LDes01"
+	.align	2,144
+	.long	LDes01$N
+	.long	0
+	.long	_NILPROC
+	.globl	LDes01$D
+LDes01$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# TDesc for LDes01.TPO^
+L1$N:
+	.asciz	"LDes01.TPO^"
+	.align	2,144
+L1$S:
+	movl	(%ebx),%eax
+	leal	15(%ebx,%eax),%ebx
+	andl	$0xfffffff8,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	L1$N	# -12 name
+	.long	-1	# -8  size/odim
+	.long	L1$S	# -4  skipper
+
+L1$D:
+
+#------------------------------------------------------------------------------
+# PROCEDURE P()
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L0$N:
+	.asciz	"LDes01.P"
+	.align	2,144
+	.long	L0$N
+	.long	0
+	.long	_NILPROC
+L0$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L0:
+	pushl	%ebp
+	pushl	$L0$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L2,%esp
+
+	leave
+	ret
+L2=	0
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+LDes01$I$N:
+	.asciz	"LDes01$I"
+	.align	2,144
+	.long	LDes01$I$N
+	.long	0
+	.long	_NILPROC
+LDes01$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	LDes01$I
+LDes01$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$LDes01$I$D
+	subl	$L3,%esp
+
+	# pointer variable init code
+	movl	$0,36+LDes01$G
+
+	# proc variable init code
+	movl	$_NILPROC,40+LDes01$G
+
+	# bo:=TRUE;
+	movb	$1,8+LDes01$G	# bo 
+
+	# ch:=0X;
+	movb	$0,9+LDes01$G	# ch 
+
+	# si:=2;
+	movb	$2,10+LDes01$G	# si 
+
+	# in:=128;
+	movw	$128,12+LDes01$G	# in 
+
+	# li:=2000000;
+	movl	$2000000,16+LDes01$G	# li 
+
+	# re:=2.00000E0;
+	movl	$1073741823,20+LDes01$G	# re 
+
+	# lr:=2.0000000000000D0;
+	movl	$-1,24+LDes01$G	# lr 
+	movl	$1073741823,28+LDes01$G	# lr 
+
+	# se:={};
+	movl	$0,32+LDes01$G	# se 
+
+	# po:=NIL;
+	movl	$0,36+LDes01$G	# po 
+
+	# pr:=P;
+	leal	L0,%eax	# P 
+	movl	%eax,40+LDes01$G	# pr 
+
+	leave
+	ret
+L3=	0
+

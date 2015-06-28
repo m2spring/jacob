@@ -1,0 +1,4 @@
+FOREIGN MODULE MySysLib;
+IMPORT SysLib,SYSTEM;
+PROCEDURE _xstat (ver:SysLib.SIGNED; path: SYSTEM.ADDRESS; VAR buf: SysLib.Stat) : SysLib.SIGNED;
+END MySysLib.

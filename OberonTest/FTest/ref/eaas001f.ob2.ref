@@ -1,0 +1,42 @@
+Compiling eaas001f
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+s   REFPARAM  SET
+-------------------------------------------------------------------------------
+
+'BOUND' P
+-------------------------------------------------------------------------------
+r   RECEIVER  TR1
+e   VAR       TR0
+-------------------------------------------------------------------------------
+
+'MODULE' eaas001f
+-------------------------------------------------------------------------------
+TR0    TYPE      RECORD
+                  f   VAR       INTEGER
+                 END
+                 (-->TR1)
+
+TR1    TYPE      RECORD(TR0)
+                  f   VAR       INTEGER
+                  P   BOUND     VAR r:TR1()
+                 END
+PT0    TYPE      POINTER TO TR0
+PT1    TYPE      POINTER TO TR1
+r1     VAR       TR0
+r2     VAR       TR0
+si     VAR       SHORTINT
+i      VAR       INTEGER
+p0     VAR       PT0
+p1     VAR       PT1
+proc   VAR       (VAR x:SET)
+a      VAR       ARRAY 5 OF CHAR
+Q      PROCEDURE (VAR s:SET)
+-------------------------------------------------------------------------------
+
+eaas001f.ob2: 46,5: Expression not assignment compatible
+eaas001f.ob2: 52,6: Expression not assignment compatible
+eaas001f.ob2: 56,6: Expression not assignment compatible
+eaas001f.ob2: 60,6: Expression not assignment compatible
+eaas001f.ob2: 64,8: Identifier not declared
+eaas001f.ob2: 68,5: Expression not assignment compatible

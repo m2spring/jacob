@@ -1,0 +1,17 @@
+Compiling edec006f
+'PROCEDURE' Laber
+-------------------------------------------------------------------------------
+Deferred   TYPE      RECORD
+                     END
+appPtr     VAR       Forward
+-------------------------------------------------------------------------------
+
+'MODULE' edec006f
+-------------------------------------------------------------------------------
+Forward      TYPE      POINTER TO Deferred
+<Deferred>   TYPE      <Forward>
+appPtr       VAR       Forward
+Laber        PROCEDURE ()
+-------------------------------------------------------------------------------
+
+edec006f.ob2: 5,24: Unresolved forward reference

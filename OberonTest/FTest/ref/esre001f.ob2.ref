@@ -1,0 +1,26 @@
+Compiling esre001f
+'MODULE' esre001f
+-------------------------------------------------------------------------------
+TR    TYPE      RECORD
+                END
+TP    TYPE      POINTER TO TR
+c     VAR       CHAR
+si    VAR       SHORTINT
+i     VAR       INTEGER
+li    VAR       LONGINT
+r     VAR       REAL
+lr    VAR       LONGREAL
+s     VAR       SET
+rec   VAR       TR
+ptr   VAR       TP
+-------------------------------------------------------------------------------
+
+esre001f.ob2: 26,8: Invalid type of expression
+esre001f.ob2: 30,8: Invalid type of expression
+esre001f.ob2: 35,8: Invalid type of expression
+esre001f.ob2: 40,8: Invalid type of expression
+esre001f.ob2: 45,8: Invalid type of expression
+esre001f.ob2: 50,8: Invalid type of expression
+esre001f.ob2: 55,8: Invalid type of expression
+esre001f.ob2: 60,8: Invalid type of expression
+esre001f.ob2: 65,8: Invalid type of expression

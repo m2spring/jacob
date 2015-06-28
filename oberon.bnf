@@ -1,0 +1,166 @@
+Module          = MODULE ident ';' ImportList DeclSection BeginStmts END ident '.'
+                | ForeignModule .
+ImportList      = IMPORT Import Imports ';' | .
+Imports         = ',' Import Imports | .
+Import          = ident | ident ':=' ident .
+DeclSection     = DeclUnits ProcDecls .
+DeclUnits       = DeclUnit DeclUnits | .
+DeclUnit        = CONST ConstDecls | TYPE TypeDecls | VAR VarDecls .
+ConstDecls      = ConstDecl ';' ConstDecls | .
+TypeDecls       = TypeDecl ';' TypeDecls | .
+VarDecls        = VarDecl ';' VarDecls | .
+ConstDecl       = IdentDef '=' ConstExpr .
+TypeDecl        = IdentDef '=' Type .
+VarDecl         = IdentList ':' Type .
+ProcDecls       = ProcDecl ';' ProcDecls | .
+ProcDecl        = PROCEDURE IdentDef FormalPars ';' DeclSection BeginStmts END ident
+                | PROCEDURE '^' IdentDef FormalPars
+                | PROCEDURE Receiver IdentDef FormalPars ';' DeclSection BeginStmts END ident
+                | PROCEDURE '^' Receiver IdentDef FormalPars .
+FormalPars      = '(' ')' FormalResult | '(' FPSections ')' FormalResult | .
+FPSections      = FPSection ';' FPSections | FPSection .
+FPSection       = ParIds ':' Type | VAR ParIds ':' Type .
+ParIds          = ident ',' ParIds | ident .
+FormalResult    = ':' Qualident | .
+Receiver        = '(' ident ':' ident ')' | '(' VAR ident ':' ident ')' .
+Type            = Qualident | PointerBaseType | PointerType | ProcedureType .
+PointerBaseType = ArrayType | RecordType .
+ArrayType       = ARRAY ArrayExprList OF Type | ARRAY OF Type .
+ArrayExprList   = ConstExpr ',' ArrayExprList | ConstExpr .
+RecordType      = RECORD '(' Qualident ')' FieldLists END
+                | RECORD FieldLists END .
+FieldLists      = FieldList ';' FieldLists | ';' FieldLists | FieldList | .
+FieldList       = IdentList ':' Type .
+PointerType     = POINTER TO ident
+                | POINTER TO ident '.' ident
+                | POINTER TO PointerBaseType .
+ProcedureType   = PROCEDURE FormalPars .
+BeginStmts      = 'BEGIN' StatementSeq | .
+StatementSeq    = Statement ';' StatementSeq | ';' StatementSeq | Statement | .
+Statement       = AssignStmt | CallStmt | IfStmt | CaseStmt | WhileStmt
+                | RepeatStmt | ForStmt | LoopStmt | WithStmt
+                | ExitStmt | ReturnStmt .
+AssignStmt      = Designator ':=' Expr .
+CallStmt        = Designator .
+IfStmt          = IF Expr THEN StatementSeq ElsIfs .
+ElsIfs          = ELSIF Expr THEN StatementSeq ElsIfs
+                | ELSE StatementSeq END | END .
+CaseStmt        = CASE Expr OF Cases ELSE StatementSeq END
+                | CASE Expr OF Cases END .
+Cases           = Case '|' Cases | '|' Cases | Case | .
+Case            = CaseLabelList ':' StatementSeq .
+CaseLabelList   = CaseLabels ',' CaseLabelList | CaseLabels .
+CaseLabels      = ConstExpr '..' ConstExpr | ConstExpr .
+WhileStmt       = WHILE Expr DO StatementSeq END .
+RepeatStmt      = REPEAT StatementSeq UNTIL Expr .
+ForStmt         = FOR ident ':=' Expr TO Expr BY ConstExpr DO StatementSeq END
+                | FOR ident ':=' Expr TO Expr DO StatementSeq END .
+LoopStmt        = LOOP StatementSeq END .
+WithStmt        = WITH Guard DO StatementSeq Guards ELSE StatementSeq END
+                | WITH Guard DO StatementSeq Guards END .
+Guards          = '|' Guard DO StatementSeq Guards | .
+Guard           = Qualident ':' Qualident .
+ExitStmt        = EXIT .
+ReturnStmt      = RETURN Expr | RETURN .
+ConstExpr       = Expr .
+Expr            = SimpleExpr Relation SimpleExpr | Designator IS Qualident | SimpleExpr .
+SimpleExpr      = SimpleExpr AddOp Term | '+' Term | '-' Term | Term .
+Term            = Term MulOp Factor | Factor .
+Factor          = Designator | integer | real | longreal | character | string
+                | NIL | Set | '(' Expr ')' | '~' Factor .
+Set             = '{' Elements '}' | '{' '}' .
+Elements        = Element ',' Elements | Element .
+Element         = Expr '..' Expr | Expr .
+Relation        = '=' | '#' | '<' | '<=' | '>' | '>=' | IN .
+AddOp           = '+' | '-' | OR .
+MulOp           = '*' | '/' | DIV | MOD | '&' .
+Designator      = ident Designations .
+Designations    = '.' ident Designations
+                | '[' ExprList ']' Designations
+                | '^' Designations
+                | '(' ExprList ')' Designations
+                | '(' ')' Designations
+                | .
+ExprList        = Expr ',' ExprList | Expr .
+IdentList       = IdentDef ',' IdentList | IdentDef .
+Qualident       = ident | ident '.' ident .
+IdentDef        = ident | ident '*' | ident '-' .
+
+FModule      = FOREIGN MODULE ident ';' ImportList FDeclSection END ident '.' .
+FDeclSection = FDeclUnits .
+FDeclUnits   = FDeclUnit FDeclUnits | FProcDecl FDeclUnits | .
+FDeclUnit    = CONST FConstDecls | TYPE FTypeDecls | VAR FVarDecls .
+FConstDecls  = ConstDecl ';' FConstDecls | .
+FTypeDecls   = TypeDecl ';' FTypeDecls | .
+FVarDecls    = VarDecl ';' FVarDecls | .
+FProcDecl    = PROCEDURE IdentDef FFormalPars ';' .
+FFormalPars  = '(' ')' FormalResult | '(' FFPSections ')' FormalResult | .
+FFPSections  = FPSection ';' FFPSections | FPSection | '..' .
+
+
+
+Module            = MODULE ident ';' [ImportList] DeclSeq [BEGIN StatementSeq] END ident 
+                  | FModule .
+ImportList        = IMPORT [ident ':='] ident {',' [ident ':='] ident} ';' .
+DeclSeq           = { CONST {ConstDecl ';'} | TYPE {TypeDecl ';'} | VAR {VarDecl ';'}}
+                    {ProcDecl ';' | ForwardDecl ';'} .
+ConstDecl         = IdentDef  '=' ConstExpr .
+TypeDecl          = IdentDef  '=' Type .
+VarDecl           = IdentList ':' Type .
+ProcDecl          = PROCEDURE [Receiver] IdentDef [FormalPars] ';' DeclSeq
+                    [BEGIN StatementSeq] END ident .
+ForwardDecl       = PROCEDURE '^' [Receiver] IdentDef [FormalPars] .
+FormalPars        = '(' [FPSection {';' FPSection}] ')' [':' Qualident] .
+FPSection         = [VAR] ident {',' ident ':' Type .
+Receiver          = '(' [VAR] ident ':' ident ')' .
+Type              = Qualident
+                  | ARRAY [ConstExpr {',' ConstExpr}] OF Type
+                  | RECORD ['('Qualident')'] FieldList {';' FieldList} END
+                  | POINTER TO Type
+                  | PROCEDURE [FormalPars] .
+FieldList         = [IdentList ':' Type] .
+StatementSeq      = Statement {; Statement} .
+Statement         = [ Designator ':=' Expr
+                    | Designator ['(' [ExprList] ')']
+                    | IF Expr THEN StatementSeq {ELSIF Expr THEN StatementSeq} [ELSE StatementSeq] END
+                    | CASE Expr OF Case {| Case} [ELSE StatementSeq] END
+                    | WHILE Expr DO StatementSeq END
+                    | REPEAT StatementSeq UNTIL Expr
+                    | FOR ident ':=' Expr TO Expr [BY ConstExpr] DO StatementSeq END
+                    | LOOP StatementSeq END
+                    | WITH Guard DO StatementSeq {'|' Guard DO StatementSeq} [ELSE StatementSeq] END
+                    | EXIT
+                    | RETURN [Expr]
+                    ] .
+Case              = [CaseLabels {',' CaseLabels} ':' StatementSeq] .
+CaseLabels        = ConstExpr ['..' ConstExpr] .
+Guard             = Qualident ':' Qualident .
+ConstExpr         = Expr .
+Expr              = SimpleExpr [Relation SimpleExpr] .
+SimpleExpr        = ['+' | '-'] Term {AddOp Term} .
+Term              = Factor {MulOp Factor} .
+Factor            = Designator ['(' [ExprList] ')'] | number | character | string | NIL | Set
+                  | '(' Expr ')' | '~' Factor .
+Set               = { [Element {',' Element}] } .
+Element           = Expr ['..' Expr] .
+Relation          = '=' | '#' | '<' | '<=' | '>' | '>=' | IN | IS .
+AddOp             = '+' | '-' | OR .
+MulOp             = '*' | '/' | DIV | MOD | '&' .
+Designator        = Qualident {'.' ident | '[' ExprList ']' | '^' | '(' Qualident ')'} .
+ExprList          = Expr {',' Expr} .
+IdentList         = IdentDef {',' IdentDef} .
+Qualident         = [ident '.'] ident .
+IdentDef          = ident ['*' | '-'] .
+
+FModule           = FOREIGN MODULE ident ';' [ImportList] FDeclSeq END ident '.' .
+FDeclSeq          = FDeclUnits .
+FDeclUnits        = { CONST     {ConstDecl ';'} 
+                    | TYPE      {TypeDecl  ';'} 
+                    | VAR       {VarDecl   ';'}
+                    | PROCEDURE IdentDef [FFormalPars] ';' 
+                    } .
+FFormalPars       = '(' [FPSections] ')' [':' Qualident] .
+FFPSections       = FPSection {';' FPSection} 
+                  | FPSection {';' FPSection} ';' '..' 
+                  | '..' .
+

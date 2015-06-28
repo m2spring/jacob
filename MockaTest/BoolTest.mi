@@ -1,0 +1,6 @@
+MODULE BoolTest;
+VAR a,b,c,d,e,f:BOOLEAN; 
+    x,y:REAL;
+BEGIN (* BoolTest *)	    
+ a:=(b OR c); 
+END BoolTest.

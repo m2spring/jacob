@@ -1,0 +1,10 @@
+Compiling edec001t
+Compiling edec005t
+'MODULE' edec005t
+-------------------------------------------------------------------------------
+E   SERVER    edec001t
+i   VAR       INTEGER
+b   VAR       BOOLEAN
+s   VAR       SHORTINT
+-------------------------------------------------------------------------------
+

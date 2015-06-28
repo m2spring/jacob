@@ -1,0 +1,20 @@
+Compiling eeop007t
+'MODULE' eeop007t
+-------------------------------------------------------------------------------
+TA    TYPE      ARRAY 3 OF CHAR
+TR    TYPE      RECORD
+                 i * VAR       INTEGER
+                 s   VAR       SET
+                END
+                (-->TRE)
+
+TRE   TYPE      RECORD(TR)
+                 i * VAR       INTEGER
+                 s   VAR       SET
+                 c * VAR       CHAR
+                END
+a   - VAR       TA
+r   - VAR       TR
+e   * VAR       TRE
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,3 @@
+MODULE M03;
+BEGIN (* M03 *)
+END M03.

@@ -1,0 +1,17 @@
+Compiling eapa001f
+'MODULE' eapa001f
+-------------------------------------------------------------------------------
+tarray   TYPE      ARRAY 3 OF CHAR
+a        VAR       tarray
+si       VAR       SHORTINT
+i        VAR       INTEGER
+r        VAR       REAL
+lr       VAR       LONGREAL
+b        VAR       BOOLEAN
+c        VAR       CHAR
+-------------------------------------------------------------------------------
+
+eapa001f.ob2: 26,4: Invalid type of expression
+eapa001f.ob2: 30,4: Invalid type of expression
+eapa001f.ob2: 34,9: Operator not applicable
+eapa001f.ob2: 38,9: Operator not applicable

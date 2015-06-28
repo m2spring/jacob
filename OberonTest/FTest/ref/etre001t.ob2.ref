@@ -1,0 +1,39 @@
+Compiling edec001t
+Compiling etre001t
+'BOUND' ZuVerteilen
+-------------------------------------------------------------------------------
+r   RECEIVER  tAbgeleitet1
+-------------------------------------------------------------------------------
+
+'BOUND' Gebunden
+-------------------------------------------------------------------------------
+r   RECEIVER  tAbgeleitet2
+-------------------------------------------------------------------------------
+
+'MODULE' etre001t
+-------------------------------------------------------------------------------
+e              SERVER    edec001t
+tAbgeleitet1   TYPE      RECORD(edec001t$t1Record)
+                          edec001t$i  * VAR       INTEGER
+                          edec001t$c  - VAR       CHAR
+                          edec001t$d    VAR       BOOLEAN
+                          x             VAR       CHAR
+                          y             VAR       CHAR
+                          z             VAR       CHAR
+                          ZuVerteilen   BOUND     VAR r:tAbgeleitet1()
+                         END
+                         (-->tAbgeleitet2)
+
+tAbgeleitet2   TYPE      RECORD(tAbgeleitet1)
+                          edec001t$i  * VAR       INTEGER
+                          edec001t$c  - VAR       CHAR
+                          edec001t$d    VAR       BOOLEAN
+                          x             VAR       CHAR
+                          y             VAR       CHAR
+                          z             VAR       CHAR
+                          a             VAR       tAbgeleitet1
+                          ZuVerteilen   INHERITED VAR r:tAbgeleitet1()
+                          Gebunden      BOUND     VAR r:tAbgeleitet2()
+                         END
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,27 @@
+Compiling east001f
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+r   REFPARAM  T2
+-------------------------------------------------------------------------------
+
+'MODULE' east001f
+-------------------------------------------------------------------------------
+T    TYPE      RECORD
+                g   VAR       INTEGER
+                h   VAR       INTEGER
+               END
+T2   TYPE      RECORD
+                g   VAR       INTEGER
+                h   VAR       INTEGER
+               END
+a    VAR       RECORD
+                f   VAR       INTEGER
+               END
+b    VAR       RECORD
+                f   VAR       INTEGER
+               END
+Q    PROCEDURE (VAR r:T)
+-------------------------------------------------------------------------------
+
+east001f.ob2: 34,11: Actual declaration doesn't match with forward decl
+east001f.ob2: 39,5: Expression not assignment compatible

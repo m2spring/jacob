@@ -1,0 +1,40 @@
+#!/bin/sh
+
+echo Checking Front-End...
+echo Deleting directory out...
+dir=`pwd`
+
+rm $dir/out/* $dir/out/.??* 2>/dev/null
+rm $dir/test/*_errors 2>/dev/null
+
+./ctest out
+echo Checking Out-Files with Ref-Files...
+cd $dir/test
+for i in *
+  do
+    if [ -f $dir/ref/$i.ref ]
+       then echo -n "Checking $i...   "
+            if cmp -s $dir/out/$i.out $dir/ref/$i.ref
+               then rm $dir/out/$i.out
+                    echo -ne "\r"
+               else echo DIFFERENT!!!
+                    echo "*********************** $i ***********************" >>$dir/out/differences
+                    diff $dir/ref/$i.ref $dir/out/$i.out >>$dir/out/differences
+                    cp $dir/test/$i $dir/out/
+            fi
+       else name=`basename $i .ob2_errors`
+            if [ $name.ob2_errors != $i ]
+              then echo "*********************** $i ***********************" >>$dir/out/differences
+                   echo $i hat keine Referenz-Datei >>$dir/out/differences
+            fi
+    fi
+  done
+
+echo -ne "\r                                            \r"
+
+echo 
+if [ -f $dir/out/differences ]
+   then echo -e Fehler im Front-End"\a"
+        echo "Fehlerdatei: $dir/out/differences"
+   else echo of ist in Ordnung!
+fi

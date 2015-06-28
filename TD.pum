@@ -1,0 +1,1197 @@
+/********************************************************************************************************************************/
+/*** TD.pum / Various functions which output tree objects (for debugging purposes)                                            ***/
+/********************************************************************************************************************************/
+TRAFO TD TREE OB, CoderTree PUBLIC
+
+ Dump
+
+/********************************************************************************************************************************/
+GLOBAL{ IMPORT ED, Idents, O, OT, UTI, V;
+        CONST  BRACKETS   = TRUE;
+               NOBRACKETS = FALSE;
+        VAR    E          : ED.tEditor;
+
+        PROCEDURE MaxSC(a, b : SHORTCARD) : SHORTCARD;
+        BEGIN
+         IF a>b THEN RETURN a; ELSE RETURN b; END;
+        END MaxSC;
+
+        PROCEDURE NotNilCoerce(co : OB.tOB) : OB.tOB;
+        BEGIN
+         IF co = OB.NoOB THEN RETURN OB.cmtCoercion; ELSE RETURN co END; 
+        END NotNilCoerce; }
+
+/********************************************************************************************************************************/
+FUNCTION MaxImportRefLen ( Imports ) SHORTCARD
+ Import ( next , _ , _ , ident , _ ) RETURN {MaxSC(MaxImportRefLen(next),UTI.IdentLength(ident))} ?.
+ _                                   RETURN 0 ?.
+
+/********************************************************************************************************************************/
+FUNCTION MaxImportSrvLen ( Imports ) SHORTCARD
+ Import ( next , ident , _ , ident , _ ) RETURN {MaxImportSrvLen(next)} ?.
+ Import ( next , ident , .. )            RETURN {MaxSC(MaxImportSrvLen(next),UTI.IdentLength(ident))} ?.
+ _                                       RETURN 0 ?.
+
+/********************************************************************************************************************************/
+FUNCTION MaxDeclIdentLen ( Tree ) SHORTCARD
+ DeclUnit  ( n:DeclUnits , d:Decls )           RETURN {MaxSC(MaxDeclIdentLen(d),MaxDeclIdentLen(n))} ?.
+ ConstDecl ( n:Decls , id:IdentDef , .. )      RETURN {MaxSC(MaxDeclIdentLen(id),MaxDeclIdentLen(n))} ?.
+ TypeDecl  ( n:Decls , id:IdentDef , .. )      RETURN {MaxSC(MaxDeclIdentLen(id),MaxDeclIdentLen(n))} ?.
+ VarDecl   ( n:Decls , il:IdentLists , .. )    RETURN {MaxSC(MaxDeclIdentLen(il),MaxDeclIdentLen(n))} ?.
+ FieldList ( n:FieldLists, il:IdentList , .. ) RETURN {MaxSC(MaxDeclIdentLen(il),MaxDeclIdentLen(n))} ?.
+ IdentList ( n:IdentLists , id:IdentDef )      RETURN {MaxSC(MaxDeclIdentLen(id),MaxDeclIdentLen(n))} ?.
+ IdentDef  ( ident , _ , {OB.PRIVATE} )        RETURN {UTI.IdentLength(ident)} ?.
+ IdentDef  ( ident , _ , {OB.PUBLIC} )         RETURN {1+UTI.IdentLength(ident)} ?.
+ IdentDef  ( ident , _ , {OB.READONLY} )       RETURN {1+UTI.IdentLength(ident)} ?.
+ _                                             RETURN 0 ?.
+
+/********************************************************************************************************************************/
+FUNCTION MaxParamModeLen ( FPSections ) SHORTCARD
+ FPSection ( next:FPSections , {OB.REFPAR} , .. ) RETURN 4 ?.
+ FPSection ( next:FPSections , {OB.VALPAR} , .. ) RETURN {MaxParamModeLen(next)} ?.
+ _                                                RETURN 0 ?.
+
+/********************************************************************************************************************************/
+FUNCTION MaxParamIdLen ( Tree ) SHORTCARD
+ FPSection ( next:FPSections , _ , parIds:ParIds , _ ) RETURN {MaxSC(MaxParamIdLen(parIds),MaxParamIdLen(next))} ?.
+ ParId ( next:ParIds , ident , _ )                     RETURN {MaxSC(UTI.IdentLength(ident),MaxParamIdLen(next))} ?.
+ _                                                     RETURN 0 ?.
+
+/********************************************************************************************************************************/
+PREDICATE ProcsDeclared ( Tree )
+ DeclSection ( _ , Proc:Procs ) ?.
+
+/********************************************************************************************************************************/
+PREDICATE IsEmpty ( Tree )
+ mtImport        ?.
+ mtDeclUnit      ?.
+ mtDecl          ?.
+ mtProc          ?.
+ mtFPSection     ?.
+ mtParId         ?.
+ mtType          ?.
+ mtArrayExprList ?.
+ mtFieldList     ?.
+ mtIdentList     ?.
+ mtStmt          ?.
+ NoStmts         ?.
+ mtCase          ?.
+ mtCaseLabel     ?.
+ mtGuardedStmt   ?.
+ mtExpr          ?.
+ mtElement       ?.
+ mtDesignor      ?.
+ mtDesignation   ?.
+ mtExprList      ?.
+ mtNewExprList   ?.
+ mtSysAsmExprList?.
+
+/********************************************************************************************************************************/
+PREDICATE IsPredeclArgumenting ( Tree )
+ PredeclArgumenting ?.
+ Importing(_,_,_,_,PredeclArgumenting,..) ?.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpNextDeclSecName ( Tree )
+
+ ConstDecl(TypeDecl ,..) ?{ ED.Undent(E); ED.TextLn(E,'TYPE' ); ED.Indent(E,3); };.
+ ConstDecl(VarDecl  ,..) ?{ ED.Undent(E); ED.TextLn(E,'VAR'  ); ED.Indent(E,3); };.
+ TypeDecl (ConstDecl,..) ?{ ED.Undent(E); ED.TextLn(E,'CONST'); ED.Indent(E,3); };.
+ TypeDecl (VarDecl  ,..) ?{ ED.Undent(E); ED.TextLn(E,'VAR'  ); ED.Indent(E,3); };.
+ VarDecl  (ConstDecl,..) ?{ ED.Undent(E); ED.TextLn(E,'CONST'); ED.Indent(E,3); };.
+ VarDecl  (TypeDecl ,..) ?{ ED.Undent(E); ED.TextLn(E,'TYPE' ); ED.Indent(E,3); };.
+
+/********************************************************************************************************************************/
+PROCEDURE Dump ( t:Tree )
+ LOCAL{VAR n : SHORTCARD;}
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Module ( i1 , _ , isForeign , library , imp:Imports , decl:DeclSection , stmts:Stmts , i2 , .. ) ?{
+    E:=ED.Create();
+
+    
+    ED.Text(E,'MODULE ');
+    ED.Ident(E,i1);
+
+    IF isForeign THEN ED.Text(E,' EXTERNAL ['); ED.String(E,library); ED.Text(E,']'); END;
+
+    ED.TextLn(E,';');
+
+    IF ~IsEmpty(imp) THEN 
+       ED.TextLn(E,'IMPORT');
+       ED.Indent(E,3);
+       n:=MaxImportRefLen(imp);
+       ED.SetTab(E,1,2+n);
+       ED.SetTab(E,2,5+n+MaxImportSrvLen(imp));
+       Dump(imp);
+       ED.Undent(E);
+    END;
+
+    Dump(decl);
+
+    IF ProcsDeclared(decl) THEN ED.CR(E); END;
+    IF ~IsEmpty(stmts) THEN 
+        ED.Text(E,'BEGIN (* ');
+        ED.Ident(E,i1);
+        ED.TextLn(E,' *)');
+
+        ED.Indent(E,3);
+        Dump(stmts);
+        ED.Undent(E);
+    END;
+
+    ED.Text(E,'END ');
+    ED.Ident(E,i2);
+    ED.TextLn(E,'.');
+
+    ED.Dump(E);
+    ED.Kill(E);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Import ( next:Imports , serverId , _ , refId , _ ) ?{
+    ED.Ident(E,refId);
+    IF serverId#refId THEN 
+       ED.Tab(E,1);
+       ED.Text(E,':= ');
+       ED.Ident(E,serverId);
+    END;
+
+    ED.Tab(E,2);
+    IF ~IsEmpty(next) THEN 
+       ED.TextLn(E,',');
+       Dump(next);
+    ELSE 
+       ED.TextLn(E,';');
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ DeclSection ( declUnits:DeclUnits , procs:Procs ) ?{
+    ED.SetTab(E,1,5+MaxDeclIdentLen(declUnits));
+    Dump(declUnits);
+
+    ED.Indent(E,1);
+    Dump(procs);
+    ED.Undent(E);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ DeclUnit ( next:DeclUnits , decls:ConstDecl ) ?{
+    ED.TextLn(E,'CONST');
+
+    ED.Indent(E,3);
+    Dump(decls);
+    ED.Undent(E);
+
+    Dump(next);
+ };.
+ DeclUnit ( next:DeclUnits , decls:TypeDecl ) ?{
+    ED.TextLn(E,'TYPE');
+
+    ED.Indent(E,3);
+    Dump(decls);
+    ED.Undent(E);
+
+    Dump(next);
+ };.
+ DeclUnit ( next:DeclUnits , decls:VarDecl ) ?{
+    ED.TextLn(E,'VAR');
+
+    ED.Indent(E,3);
+    Dump(decls);
+    ED.Undent(E);
+
+    Dump(next);
+ };.
+ DeclUnit ( next:DeclUnits , mtDecl ) ?{
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ConstDecl ( next:Decls , identDef:IdentDef , expr:ConstExpr , _ ) ?{
+    Dump(identDef);
+    ED.Tab(E,1);
+    ED.Text(E,'= ');
+
+    ED.IndentCur(E);
+    Dump(expr);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+    ED.Undent(E);
+
+    DumpNextDeclSecName(t); 
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ TypeDecl ( next:Decls , identDef:IdentDef , type:Type ) ?{
+    Dump(identDef);
+    ED.Tab(E,1);
+    ED.Text(E,'= ');
+
+    ED.IndentCur(E);
+    Dump(type);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+    ED.Undent(E);
+
+    DumpNextDeclSecName(t); 
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ VarDecl ( next:Decls , identLists:IdentLists , type:Type ) ?{
+    Dump(identLists);
+    ED.Tab(E,1);
+    ED.Text(E,': ');
+
+    ED.IndentCur(E);
+    Dump(type);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+    ED.Undent(E);
+
+    DumpNextDeclSecName(t); 
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ProcDecl ( next       : Procs
+          , identDef   : IdentDef
+          , formalPars : FormalPars
+          , decls      : DeclSection
+          , stmts      : Stmts
+          , _
+          , ident
+          , .. ) ?{
+    ED.CR(E);
+    ED.Text(E,'PROCEDURE ');
+    Dump(identDef);
+    Dump(formalPars);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+
+    IF ~IsEmpty(decls) THEN Dump(decls); END;
+
+    IF ProcsDeclared(decls) THEN ED.CR(E); END;
+
+    IF ~IsEmpty(stmts) THEN 
+       ED.Text(E,'BEGIN (* ');
+       ED.Ident(E,identDef^.IdentDef.Ident);
+       ED.TextLn(E,' *)');
+       ED.Indent(E,3);
+       Dump(stmts);
+       ED.Undent(E);
+    END;
+
+    ED.Text(E,'END ');
+    ED.Ident(E,ident);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ForwardDecl ( /*_,_,_,*/ next:Procs , identDef:IdentDef , formalPars:FormalPars ) ?{
+    ED.CR(E);
+    ED.Text(E,'PROCEDURE ^ ');
+    Dump(identDef);
+    Dump(formalPars);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ BoundProcDecl ( /*_,_,_
+               , */ next       : Procs
+               , receiver   : Receiver
+               , identDef   : IdentDef
+               , formalPars : FormalPars
+               , decls      : DeclSection
+               , stmts      : Stmts
+               , _
+               , ident
+               , .. ) ?{
+    ED.CR(E);
+    ED.Text(E,'PROCEDURE ');
+    Dump(receiver);
+    Dump(identDef);
+    Dump(formalPars);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+
+    Dump(decls);
+
+    IF ProcsDeclared(decls) THEN ED.CR(E); END;
+
+    IF ~IsEmpty(stmts) THEN 
+       ED.Text(E,'BEGIN (* ');
+       ED.Ident(E,identDef^.IdentDef.Ident);
+       ED.TextLn(E,' *)');
+       ED.Indent(E,3);
+       Dump(stmts);
+       ED.Undent(E);
+    END;
+
+    ED.Text(E,'END ');
+    ED.Ident(E,ident);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ BoundForwardDecl ( /*_,_,_
+                  , */ next       : Procs
+                  , receiver   : Receiver
+                  , identDef   : IdentDef
+                  , formalPars : FormalPars ) ?{
+    ED.CR(E);
+    ED.Text(E,'PROCEDURE ^ ');
+    Dump(receiver);
+    Dump(identDef);
+    Dump(formalPars);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ FormalPars ( mtFPSection , mtType ) ?{
+ };.
+ FormalPars ( fpSection:FPSections , type:Type ) ?{
+    ED.Text(E,'(');
+    ED.IndentCur(E);
+
+    n:=MaxParamModeLen(fpSection);
+    ED.SetTab(E,1,1+n);
+    ED.SetTab(E,2,2+n+MaxParamIdLen(fpSection));
+    Dump(fpSection);
+
+    IF IsEmpty(type) THEN 
+       ED.Text(E,')');
+    ELSE 
+       ED.Text(E,') : ');
+       Dump(type);
+    END;
+    ED.Undent(E);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ GenericFPSection ?{
+    ED.Text(E,'..');
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ FPSection ( next:FPSections , parMode , parIds:ParIds , type:Type ) ?{
+    IF parMode=OB.REFPAR THEN ED.Text(E,'VAR'); END;
+    Dump(parIds);
+    ED.Tab(E,2);
+    ED.Text(E,': ');
+    Dump(type);
+
+    IF ~IsEmpty(next) THEN 
+       ED.TextLn(E,';');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ParId ( next:ParIds , ident , .. ) ?{
+    ED.Tab(E,1);
+    ED.Ident(E,ident);
+
+    IF ~IsEmpty(next) THEN 
+       ED.Tab(E,2);
+       ED.TextLn(E,',');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Receiver ( parMode , name , typeId , .. ) ?{
+    ED.Text(E,'(');
+    IF parMode=OB.REFPAR THEN ED.Text(E,'VAR '); END;
+    ED.Ident(E,name);
+    ED.Text(E,' : ');
+    ED.Ident(E,typeId);
+    ED.Text(E,') ');
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ NamedType ( _ , qualidents:Qualidents ) ?{
+    Dump(qualidents);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ArrayType ( _ , arrayExprList:ArrayExprLists , type:Type ) ?{
+    ED.Text(E,'ARRAY ');
+    Dump(arrayExprList);
+    ED.Text(E,' OF ');
+    Dump(type);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ OpenArrayType ( _ , _ , type:Type ) ?{
+    ED.Text(E,'ARRAY OF ');
+    Dump(type);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ RecordType ( _ , fieldLists:FieldLists ) ?{
+    ED.IndentCur(E);
+    ED.TextLn(E,'RECORD');
+
+    ED.Indent(E,1);
+    ED.SetTab(E,1,2+MaxDeclIdentLen(fieldLists));
+    Dump(fieldLists);
+    ED.Undent(E);
+
+    ED.Text(E,'END');
+    ED.Undent(E);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ExtendedType ( _ , qualident:Qualidents , fieldLists:FieldLists ) ?{
+    ED.IndentCur(E);
+    ED.Text(E,'RECORD(');
+    Dump(qualident);
+    ED.TextLn(E,')');
+
+    ED.Indent(E,1);
+    ED.SetTab(E,1,2+MaxDeclIdentLen(fieldLists));
+    Dump(fieldLists);
+    ED.Undent(E);
+
+    ED.Text(E,'END');
+    ED.Undent(E);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ PointerToIdType ( _ , ident , .. ) ?{
+    ED.Text(E,'POINTER TO ');
+    ED.Ident(E,ident);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ PointerToQualIdType ( _ , qualident:Qualidents ) ?{
+    ED.Text(E,'POINTER TO ');
+    Dump(qualident);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ PointerToStructType ( _ , type:Type ) ?{
+    ED.Text(E,'POINTER TO ');
+    Dump(type);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ProcedureType ( _ , formalPars:FormalPars ) ?{
+    ED.Text(E,'PROCEDURE');
+    Dump(formalPars);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ArrayExprList ( next:ArrayExprLists , expr:ConstExpr ) ?{
+    Dump(expr);
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,',');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ FieldList ( next:FieldLists , identList:IdentLists , type:Type ) ?{
+    Dump(identList);
+    ED.Tab(E,1);
+    ED.Text(E,': ');
+
+    ED.IndentCur(E);
+    Dump(type);
+    ED.Eol(E);
+    ED.TextLn(E,';');
+    ED.Undent(E);
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IdentList ( next:IdentLists , identDef:IdentDef ) ?{
+    Dump(identDef);
+
+    IF ~IsEmpty(next) THEN 
+       ED.Tab(E,1);
+       ED.TextLn(E,',');
+
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ mtQualident ?{
+    ED.Text(E,'mtQualident?');
+ };.
+ ErrorQualident ?{
+    ED.Text(E,'ErrorQualident?');
+ };.
+ UnqualifiedIdent ( _ , ident ) ?{
+    ED.Ident(E,ident);
+ };.
+ QualifiedIdent ( _ , serverIdent , ident , _ ) ?{
+    ED.Ident(E,serverIdent);
+    ED.Text(E,'$');
+    ED.Ident(E,ident);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IdentDef ( ident , _ , {OB.PRIVATE} ) ?{
+    ED.Ident(E,ident);
+ };.
+ IdentDef ( ident , _ , {OB.PUBLIC} ) ?{
+    ED.Ident(E,ident);
+    ED.Text(E,'*');
+ };.
+ IdentDef ( ident , _ , {OB.READONLY} ) ?{
+    ED.Ident(E,ident);
+    ED.Text(E,'-');
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ AssignStmt ( next:Stmts , designator:Designator , expr:Exprs , coerce ) ?{
+    Dump(designator);
+    ED.Text(E,' := ');
+    DumpExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
+    ED.TextLn(E,';');
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CallStmt ( next:Stmts , designator:Designator ) ?{
+    Dump(designator);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IfStmt ( next:Stmts , expr:Exprs , then:Stmts , else:Stmts ) ?{
+    ED.Text(E,'IF ');
+    Dump(expr);
+
+    ED.CR(E);
+    ED.Text(E,'THEN ');
+    IF IsEmpty(then) THEN 
+       ED.CR(E);
+    ELSE 
+       ED.IndentCur(E);
+       Dump(then);
+       ED.Undent(E);
+    END;
+
+    IF ~IsEmpty(else) THEN 
+       ED.Text(E,'ELSE ');
+       ED.IndentCur(E);
+       Dump(else);
+       ED.Undent(E);
+    END;
+
+    ED.TextLn(E,'END; (* IF *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CaseStmt ( next:Stmts , expr:Exprs , cases:Cases , else:Stmts , _ ) ?{
+    ED.Text(E,'CASE ');
+    Dump(expr);
+    ED.TextLn(E,' OF');
+    Dump(cases);
+
+    ED.Text(E,'ELSE ');
+    IF IsEmpty(else) THEN 
+       ED.CR(E);
+    ELSE 
+       ED.IndentCur(E);
+       Dump(else);
+       ED.Undent(E);
+    END;
+
+    ED.TextLn(E,'END; (* CASE *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Case ( next:Cases, labels:CaseLabels , stmts:Stmts ) ?{
+    ED.Text(E,'|');
+    Dump(labels);
+    ED.TextLn(E,':');
+
+    ED.Indent(E,5);
+    Dump(stmts);
+    ED.Undent(E);
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CaseLabel ( next:CaseLabels , expr1:ConstExpr , expr2:ConstExpr(_,expr) ) ?{
+    Dump(expr1);
+
+    IF ~IsEmpty(expr) THEN 
+       ED.Text(E,'..');
+       Dump(expr2);
+    END;
+
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,',');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ WhileStmt ( next:Stmts , expr:Exprs , stmts:Stmts ) ?{
+    ED.Text(E,'WHILE ');
+    Dump(expr);
+    ED.TextLn(E,' DO');
+    ED.Indent(E,3);
+    Dump(stmts);
+    ED.Undent(E);
+    ED.TextLn(E,'END; (* WHILE *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ RepeatStmt ( next:Stmts , stmts:Stmts , expr:Exprs ) ?{
+    ED.TextLn(E,'REPEAT');
+    ED.Indent(E,3);
+    Dump(stmts);
+    ED.Undent(E);
+    ED.Text(E,'UNTIL ');
+    Dump(expr);
+    ED.TextLn(E,';');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ForStmt ( next:Stmts , ident , _ , from:Exprs , to:Exprs , by:ConstExpr , stmts:Stmts
+         , _ , _ , _ , fromCoerce , toCoerce , .. ) ?{
+
+    ED.Text(E,'FOR ');
+    ED.Ident(E,ident);
+    ED.Text(E,':=');
+    DumpExpr(NotNilCoerce(fromCoerce),from,NOBRACKETS);
+    ED.Text(E,' TO ');
+    DumpExpr(NotNilCoerce(toCoerce),to,NOBRACKETS);
+    ED.Text(E,' BY ');
+    DumpExpr(OB.cmtCoercion,by,NOBRACKETS);
+    ED.TextLn(E,' DO');
+    ED.Indent(E,3);
+    Dump(stmts);
+    ED.Undent(E);
+    ED.TextLn(E,'END; (* FOR *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ LoopStmt ( next:Stmts , stmts:Stmts , _ ) ?{
+    ED.TextLn(E,'LOOP');
+    ED.Indent(E,3);
+    Dump(stmts);
+    ED.Undent(E);
+    ED.TextLn(E,'END; (* LOOP *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ WithStmt ( next:Stmts , guards:GuardedStmts , else:Stmts ) ?{
+    ED.Text(E,'WITH ');
+    Dump(guards);
+
+    ED.Text(E,'ELSE ');
+    IF IsEmpty(else) THEN 
+       ED.CR(E);
+    ELSE 
+       ED.IndentCur(E);
+       Dump(else);
+       ED.Undent(E);
+    END;
+    ED.TextLn(E,'END; (* WITH *)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ GuardedStmt ( next:GuardedStmts , guard:Guard , stmts:Stmts , _ ) ?{
+    Dump(guard);
+    ED.TextLn(E,' DO');
+
+    ED.Indent(E,5);
+    Dump(stmts);
+    ED.Undent(E);
+
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,'|');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Guard ( var:Qualidents , _ , type:Qualidents , _ , _ ) ?{
+    Dump(var);
+    ED.Text(E,':');
+    Dump(type);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ExitStmt ( next:Stmts , _ , _ ) ?{
+    ED.TextLn(E,'EXIT;');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ReturnStmt ( next:Stmts , _ , expr:Exprs , coerce ) ?{
+    ED.Text(E,'RETURN');
+    IF ~IsEmpty(expr) THEN  
+       ED.Text(E,' ');
+       DumpExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
+    END;
+    ED.TextLn(E,';');
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ConstExpr(_,expr:Exprs)?{
+    Dump(expr);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Exprs(_,_,value)? (V.IsValidConstValue(value));{
+    DumpValue(value); 
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ NegateExpr(_,_,_,expr:Exprs)?{
+    ED.Text(E,'-');
+    DumpExpr(OB.cmtCoercion,expr,BRACKETS);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IdentityExpr(_,_,_,expr:Exprs)?{
+    ED.Text(E,'+');
+    DumpExpr(OB.cmtCoercion,expr,BRACKETS);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ NotExpr(_,_,_,expr:Exprs)?{
+    ED.Text(E,'~');
+    DumpExpr(OB.cmtCoercion,expr,BRACKETS);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ DyExpr(_,_,_,oper:DyOperator(_,_,coerce1,coerce2),expr1:Exprs,expr2:Exprs)?{
+    DumpExpr(NotNilCoerce(coerce1),expr1,BRACKETS);
+    Dump(oper);
+    DumpExpr(NotNilCoerce(coerce2),expr2,BRACKETS);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IsExpr(_,_,_,designator:Designator,_,typeId:Qualidents,_)?{
+    Dump(designator);
+    ED.Text(E,' IS ');
+    Dump(typeId);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ SetExpr(_,_,_,elements:Elements,NIL)?{
+    ED.Text(E,'{');
+    DumpElements(elements,TRUE); 
+    ED.Text(E,'}');
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ expr:SetExpr(_,_,_,elements:Elements,value)?{
+    DumpSetExpr(value,expr); 
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ DesignExpr(_,_,_,designator:Designator,_)?{
+    Dump(designator);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ IntConst(_,_,_,val)?{
+    ED.Longint(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ SetConst(_,_,_,val)?{
+    ED.Set(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ RealConst(_,_,_,val)?{
+    ED.Real(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ LongrealConst(_,_,_,val)?{
+    ED.Longreal(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CharConst(_,_,_,val)?{
+    ED.Char(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ StringConst(_,_,_,val)?{
+    ED.String(E,val);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ NilConst ?{
+    ED.Text(E,'NIL');
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ EqualOper        ?{ ED.Text(E,'='    );};.
+ UnequalOper      ?{ ED.Text(E,'#'    );};.
+ LessOper         ?{ ED.Text(E,'<'    );};.
+ LessEqualOper    ?{ ED.Text(E,'<='   );};.
+ GreaterOper      ?{ ED.Text(E,'>'    );};.
+ GreaterEqualOper ?{ ED.Text(E,'>='   );};.
+ InOper           ?{ ED.Text(E,' IN ' );};.
+ PlusOper         ?{ ED.Text(E,'+'    );};.
+ MinusOper        ?{ ED.Text(E,'-'    );};.
+ MultOper         ?{ ED.Text(E,'*'    );};.
+ RDivOper         ?{ ED.Text(E,'/'    );};.
+ DivOper          ?{ ED.Text(E,' DIV ');};.
+ ModOper          ?{ ED.Text(E,' MOD ');};.
+ OrOper           ?{ ED.Text(E,' OR ' );};.
+ AndOper          ?{ ED.Text(E,' & '  );};.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Designator ( ident, _ , designor:Designors , designations:Designations , .. ) ?{
+    IF ~IsPredeclArgumenting(designations) THEN ED.Ident(E,ident); END;
+    Dump(designor);
+    Dump(designations);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Selector ( next:Designors , _ , ident , _ ) ?{
+    ED.Text(E,'\.');
+    ED.Ident(E,ident);
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Indexor ( next:Designors , _ , _ , exprList:ExprLists ) ?{
+    ED.Text(E,'\[');
+    Dump(exprList);
+    ED.Text(E,'\]');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Dereferencor ( next:Designors , _ ) ?{
+    ED.Text(E,'\^');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Argumentor ( next:Designors , _ , _ , exprList:ExprLists ) ?{
+    ED.Text(E,'\(');
+    Dump(exprList);
+    ED.Text(E,'\)');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Importing ( _ , _ , _ , _ , next:Designations , ident , .. ) ?{
+    IF ~IsPredeclArgumenting(next) THEN 
+       ED.Text(E,'$');
+       ED.Ident(E,ident);
+    END;
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Selecting ( _ , _ , _ , _ , next:Designations , ident , .. ) ?{
+    ED.Text(E,'.');
+    ED.Ident(E,ident);
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Indexing ( _ , _ , _ , _ , next:Designations , _ , expr:Exprs , .. ) ?{
+    ED.Text(E,'[');
+    Dump(expr);
+    ED.Text(E,']');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Dereferencing ( _ , _ , _ , _ , next:Designations , _ ) ?{
+    ED.Text(E,'^');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Supering ( _ , _ , _ , _ , next:Designations , _ ) ?{
+    ED.Text(E,'!');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Argumenting ( _ , _ , _ , _ , next:Designations , _ , exprList:ExprLists , _ , _ ) ?{
+    ED.Text(E,'(');
+    Dump(exprList);
+    ED.Text(E,')');
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Guarding ( _ , _ , _ , _ , next:Designations , _ , qualident:Qualidents , _ , _ ) ?{
+    ED.Text(E,'`');
+    Dump(qualident);
+
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ PredeclArgumenting1 ( _ , _ , _ , _ , next:Designations , _ , expr:Exprs , exprList:ExprLists ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    DumpExpr(OB.cmtCoercion,expr,NOBRACKETS);
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+
+ PredeclArgumenting2 ( _ , _ , _ , _ , next:Designations , _ , expr1:Exprs , expr2:Exprs 
+                     , exprList:ExprLists , coerce1 , coerce2 ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    DumpExpr(NotNilCoerce(coerce1),expr1,NOBRACKETS);
+    ED.Text(E,',');
+    DumpExpr(NotNilCoerce(coerce2),expr2,NOBRACKETS);
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ PredeclArgumenting2Opt ( _ , _ , _ , _ , next:Designations , _ , expr1:Exprs , expr2:Exprs 
+                        , exprList:ExprLists , coerce1 , coerce2 ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    DumpExpr(NotNilCoerce(coerce1),expr1,NOBRACKETS);
+    IF ~IsEmpty(expr2) THEN 
+       ED.Text(E,',');
+       DumpExpr(NotNilCoerce(coerce2),expr2,NOBRACKETS);
+    END;
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ PredeclArgumenting3 ( _ , _ , _ , _ , next:Designations , _ , expr1:Exprs , expr2:Exprs , expr3:Exprs 
+                     , exprList:ExprLists , coerce3 ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    DumpExpr(OB.cmtCoercion,expr1,NOBRACKETS);
+    ED.Text(E,',');
+    DumpExpr(OB.cmtCoercion,expr2,NOBRACKETS);
+    ED.Text(E,',');
+    DumpExpr(NotNilCoerce(coerce3),expr3,NOBRACKETS);
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ SysValArgumenting ( _ , _ , _ , _ , next:Designations , _ , qualident:Qualidents, exprList:ExprLists , expr:Exprs , _ , _ ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    Dump(qualident);
+    ED.Text(E,',');
+    DumpExpr(OB.cmtCoercion,expr,NOBRACKETS);
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ TypeArgumenting ( _ , _ , _ , _ , next:Designations , _ , qualident:Qualidents, exprList:ExprLists ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    Dump(qualident);
+    IF ~IsEmpty(exprList) THEN 
+       ED.Text(E,',[');
+       Dump(exprList);
+       ED.Text(E,']');
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ NewArgumenting ( _ , _ , _ , _ , next:Designations , _ , expr:Exprs, newExprList:NewExprLists ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    Dump(expr);
+    IF ~IsEmpty(newExprList) THEN 
+       ED.Text(E,',');
+       Dump(newExprList);
+    END;
+    ED.Text(E,')');
+    Dump(next);
+ };.
+ SysAsmArgumenting ( _ , _ , _ , _ , next:Designations , _ , sysAsmExprList:SysAsmExprLists ) ?{
+    DumpPredecl(t);
+    ED.Text(E,'(');
+    Dump(sysAsmExprList);
+    ED.Text(E,')');
+    Dump(next);
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ExprList ( next:ExprLists , expr:Exprs , coerce ) ?{
+    DumpExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,',');
+       Dump(next);
+    END;
+ };.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ NewExprList ( next:NewExprLists , expr:Exprs , coerce ) ?{
+    DumpExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,',');
+       Dump(next);
+    END;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ SysAsmExprList ( next:SysAsmExprLists , expr:Exprs ) ?{
+    Dump(expr);
+    IF ~IsEmpty(next) THEN 
+       ED.Text(E,',');
+       Dump(next);
+    END;
+ };.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpExpr ( coerce:Coercion , expr:Exprs , brackets:BOOLEAN )
+ Shortint2Integer ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'I'); };.
+ Shortint2Longint ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'L'); };.
+ Shortint2Real    ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'R'); };.
+ Shortint2Longreal,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'D'); };.
+ Integer2Longint  ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'L'); };.
+ Integer2Real     ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'R'); };.
+ Integer2Longreal ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'D'); };.
+ Longint2Real     ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'R'); };.
+ Longint2Longreal ,IntConst     (_,_,_,v),_ ?{ ED.Longint (E,v); ED.Text(E,'D'); };.
+ Real2Longreal    ,LongrealConst(_,_,_,v),_ ?{ ED.Longreal(E,v); ED.Text(E,'D'); };.
+
+ Shortint2Integer ,..?{ ED.Text(E,'$SI_IN('); Dump(expr); ED.Text(E,')'); };.
+ Shortint2Longint ,..?{ ED.Text(E,'$SI_LI('); Dump(expr); ED.Text(E,')'); };.
+ Shortint2Real    ,..?{ ED.Text(E,'$SI_RE('); Dump(expr); ED.Text(E,')'); };.
+ Shortint2Longreal,..?{ ED.Text(E,'$SI_LR('); Dump(expr); ED.Text(E,')'); };.
+ Integer2Longint  ,..?{ ED.Text(E,'$IN_LI('); Dump(expr); ED.Text(E,')'); };.
+ Integer2Real     ,..?{ ED.Text(E,'$IN_RE('); Dump(expr); ED.Text(E,')'); };.
+ Integer2Longreal ,..?{ ED.Text(E,'$IN_LR('); Dump(expr); ED.Text(E,')'); };.
+ Longint2Real     ,..?{ ED.Text(E,'$LI_RE('); Dump(expr); ED.Text(E,')'); };.
+ Longint2Longreal ,..?{ ED.Text(E,'$LI_LR('); Dump(expr); ED.Text(E,')'); };.
+ Real2Longreal    ,..?{ ED.Text(E,'$RE_LR('); Dump(expr); ED.Text(E,')'); };.
+ Char2String      ,..?{ ED.Text(E,'$CH_ST('); Dump(expr); ED.Text(E,')'); };.
+
+ _,SetExpr      ,_?{ Dump(expr); };.
+ _,DesignExpr   ,_?{ Dump(expr); };.
+ _,IntConst     ,_?{ Dump(expr); };.
+ _,RealConst    ,_?{ Dump(expr); };.
+ _,LongrealConst,_?{ Dump(expr); };.
+ _,CharConst    ,_?{ Dump(expr); };.
+ _,StringConst  ,_?{ Dump(expr); };.
+ _,NilConst     ,_?{ Dump(expr); };.
+ .. ?{
+    IF brackets THEN ED.Text(E,'('); END;
+    Dump(expr);
+    IF brackets THEN ED.Text(E,')'); END;
+ };.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpSetExpr ( val:ValueReprs , expr:SetExpr )
+
+ SetValue(s),SetExpr(_,_,_,elements:Elements,_) ? (s#OT.NoSet); {
+    ED.Text(E,'{');
+    ED.SetElems(E,s); 
+    DumpElements(elements,FALSE); 
+    ED.Text(E,'}');
+ };.
+ 
+ _,SetExpr(_,_,_,elements:Elements,_)?{
+    ED.Text(E,'{');
+    DumpElements(elements,TRUE); 
+    ED.Text(E,'}');
+ };.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpElements ( Elements , isFirst:BOOLEAN )
+
+ Element(next:Elements,expr1:Exprs(_,_,val1),mtExpr),_?{
+    IF ~V.IsCalculatableValue(val1) THEN 
+       IF isFirst THEN isFirst:=FALSE; ELSE ED.Text(E,','); END; (* IF *)
+       Dump(expr1);
+    END; (* IF *)
+    DumpElements(next,isFirst); 
+ };.
+
+ Element(next:Elements,expr1:Exprs(_,_,val1),expr2:Exprs(_,_,val2)),_?{
+    IF ~V.IsCalculatableValue(val1) OR ~V.IsCalculatableValue(val2) THEN 
+       IF isFirst THEN isFirst:=FALSE; ELSE ED.Text(E,','); END; (* IF *)
+       Dump(expr1);
+       IF ~IsEmpty(expr2) THEN ED.Text(E,'..'); Dump(expr2); END;
+    END; (* IF *)
+    DumpElements(next,isFirst); 
+ };.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpPredecl ( Tree )
+ AbsArgumenting       ?{ ED.Text(E,'$ABS'         ); };.
+ AshArgumenting       ?{ ED.Text(E,'$ASH'         ); };.
+ CapArgumenting       ?{ ED.Text(E,'$CAP'         ); };.
+ ChrArgumenting       ?{ ED.Text(E,'$CHR'         ); };.
+ EntierArgumenting    ?{ ED.Text(E,'$ENTIER'      ); };.
+ LenArgumenting       ?{ ED.Text(E,'$LEN'         ); };.
+ LongArgumenting      ?{ ED.Text(E,'$LONG'        ); };.
+ MaxArgumenting       ?{ ED.Text(E,'$MAX'         ); };.
+ MinArgumenting       ?{ ED.Text(E,'$MIN'         ); };.
+ OddArgumenting       ?{ ED.Text(E,'$ODD'         ); };.
+ OrdArgumenting       ?{ ED.Text(E,'$ORD'         ); };.
+ ShortArgumenting     ?{ ED.Text(E,'$SHORT'       ); };.
+ SizeArgumenting      ?{ ED.Text(E,'$SIZE'        ); };.
+
+ AssertArgumenting    ?{ ED.Text(E,'$ASSERT'      ); };.
+ CopyArgumenting      ?{ ED.Text(E,'$COPY'        ); };.
+ DecArgumenting       ?{ ED.Text(E,'$DEC'         ); };.
+ ExclArgumenting      ?{ ED.Text(E,'$EXCL'        ); };.
+ HaltArgumenting      ?{ ED.Text(E,'$HALT'        ); };.
+ IncArgumenting       ?{ ED.Text(E,'$INC'         ); };.
+ InclArgumenting      ?{ ED.Text(E,'$INCL'        ); };.
+ NewArgumenting       ?{ ED.Text(E,'$NEW'         ); };.
+
+ SysAdrArgumenting    ?{ ED.Text(E,'SYSTEM$ADR'   ); };.
+ SysBitArgumenting    ?{ ED.Text(E,'SYSTEM$BIT'   ); };.
+ SysCcArgumenting     ?{ ED.Text(E,'SYSTEM$CC'    ); };.
+ SysLshArgumenting    ?{ ED.Text(E,'SYSTEM$LSH'   ); };.
+ SysRotArgumenting    ?{ ED.Text(E,'SYSTEM$ROT'   ); };.
+ SysValArgumenting    ?{ ED.Text(E,'SYSTEM$VAL'   ); };.
+
+ SysGetArgumenting    ?{ ED.Text(E,'SYSTEM$GET'   ); };.
+ SysPutArgumenting    ?{ ED.Text(E,'SYSTEM$PUT'   ); };.
+ SysGetregArgumenting ?{ ED.Text(E,'SYSTEM$GETREG'); };.
+ SysPutregArgumenting ?{ ED.Text(E,'SYSTEM$PUTREG'); };.
+ SysMoveArgumenting   ?{ ED.Text(E,'SYSTEM$MOVE'  ); };.
+ SysNewArgumenting    ?{ ED.Text(E,'SYSTEM$NEW'   ); };.
+ SysAsmArgumenting    ?{ ED.Text(E,'SYSTEM$ASM'   ); };.
+
+ _                    ?{ ED.Text(E,'$PREDECL?'    ); };.
+
+/********************************************************************************************************************************/
+PROCEDURE DumpValue ( ValueReprs )
+
+ BooleanValue(v)   ?{ ED.Boolean(E,v        ); };.
+ CharValue   (v)   ?{ ED.Char   (E,v        ); };.
+ StringValue (v)   ?{ ED.String (E,v        ); };.
+ SetValue    (v)   ?{ ED.Set    (E,v        ); };.
+ NilValue          ?{ ED.Text   (E,'<NIL>'  ); };.
+ NilPointerValue   ?{ ED.Text   (E,'NIL'    ); };.
+ NilProcedureValue ?{ ED.Text   (E,'NILPROC'); };.
+
+ IntegerValue(v)?{
+    IF    v=OT.MINoSHORTINT THEN ED.Text(E,'MIN(SHORTINT)');
+    ELSIF v=OT.MAXoSHORTINT THEN ED.Text(E,'MAX(SHORTINT)');
+    ELSIF v=OT.MINoINTEGER  THEN ED.Text(E,'MIN(INTEGER)');
+    ELSIF v=OT.MAXoINTEGER  THEN ED.Text(E,'MAX(INTEGER)');
+    ELSIF v=OT.MINoLONGINT  THEN ED.Text(E,'MIN(LONGINT)');
+    ELSIF v=OT.MAXoLONGINT  THEN ED.Text(E,'MAX(LONGINT)');
+                            ELSE ED.Longint(E,v);
+    END; (* IF *)
+ };.
+
+ RealValue(v)?{
+    IF    v=OT.MINoREAL THEN ED.Text(E,'MIN(REAL)');
+    ELSIF v=OT.MAXoREAL THEN ED.Text(E,'MAX(REAL)');
+                        ELSE ED.Real(E,v);
+    END; (* IF *)
+ };.
+
+ LongrealValue(v)?{
+    IF    OT.EqualoLONGREAL(v,OT.MINoLONGREAL) THEN ED.Text(E,'MIN(LONGREAL)');
+    ELSIF OT.EqualoLONGREAL(v,OT.MAXoLONGREAL) THEN ED.Text(E,'MAX(LONGREAL)');
+                                               ELSE ED.Longreal(E,v);
+    END; (* IF *)
+ };.
+
+/********************************************************************************************************************************/
+/*** END TD.pum                                                                                                               ***/
+/********************************************************************************************************************************/
+
+

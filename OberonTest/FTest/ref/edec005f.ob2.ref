@@ -1,0 +1,9 @@
+Compiling edec005f
+'MODULE' edec005f
+-------------------------------------------------------------------------------
+Forward      TYPE      POINTER TO Deferred
+<Deferred>   TYPE      <Forward>
+appPtr       VAR       Forward
+-------------------------------------------------------------------------------
+
+edec005f.ob2: 5,24: Unresolved forward reference

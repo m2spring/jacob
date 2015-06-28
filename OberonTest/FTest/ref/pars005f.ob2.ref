@@ -1,0 +1,3 @@
+Compiling pars005f
+pars005f.ob2: 6,1: Expected: BEGIN END PROCEDURE 
+pars005f.ob2: 6,6: Expected: . 

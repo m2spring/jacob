@@ -1,0 +1,31 @@
+Compiling eptb005f
+'BOUND' Bound
+-------------------------------------------------------------------------------
+r   RECEIVER  T0
+-------------------------------------------------------------------------------
+
+'BOUND' Another
+-------------------------------------------------------------------------------
+r   RECEIVER  T2
+-------------------------------------------------------------------------------
+
+'MODULE' eptb005f
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+                Bound   BOUND     VAR r:T0()
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+                Bound   INHERITED VAR r:T0()
+               END
+               (-->T2)
+
+T2   TYPE      RECORD(T1)
+                Bound     INHERITED VAR r:T0()
+                Another   BOUND     VAR r:T2()
+               END
+-------------------------------------------------------------------------------
+
+eptb005f.ob2: 19,9: There is no redefined procedure to call
+eptb005f.ob2: 26,11: There is no redefined procedure to call

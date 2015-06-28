@@ -1,0 +1,3 @@
+MODULE M12;
+BEGIN (* M12 *)
+END M12.

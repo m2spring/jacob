@@ -1,0 +1,15 @@
+MODULE Index;
+IMPORT InOut;
+
+TYPE X=[0..5];
+VAR a:ARRAY X,X,X,X OF CHAR; 
+
+PROCEDURE F(i:LONGINT):LONGINT; 
+BEGIN (* F *)			
+ InOut.WriteInt(i,0); InOut.WriteLn;
+ RETURN i; 
+END F;	 
+
+BEGIN (* Index *)
+ a[F(1),F(2),F(3),F(4)]:=0C; 
+END Index.

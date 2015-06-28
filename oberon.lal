@@ -1,0 +1,1601 @@
+/********************************************************************************************************************************/
+/*** oberon.lal / Parser specification                                                                                        ***/
+/********************************************************************************************************************************/
+
+GLOBAL{ FROM   Storage IMPORT ALLOCATE, DEALLOCATE;
+        IMPORT ERR            ,
+               FIL            ,
+               Idents         ,
+               OB             ,
+               OT             ,
+               POS            ,
+               PR             ,
+               Tree           ;
+
+        TYPE   tList          = RECORD
+                                 head,tail:Tree.tTree;
+                                END;
+               tForeign       = POINTER TO tForeignDesc;
+               tForeignDesc   = RECORD
+                                 Decls,Procs:tList;
+                                END;
+               tParsAttribute = RECORD
+                                 CASE : INTEGER OF
+                                 |1: Scan    : Scanner.tScanAttribute;
+                                 |2: Tree    : Tree.tTree;
+                                 |3: Foreign : tForeign;
+                                 END;
+                                END; 
+                                
+        PROCEDURE mmtForeign():tForeign; 
+        VAR f:tForeign;
+        BEGIN
+         NEW(f); f^.Decls.head:=NIL; f^.Decls.tail:=NIL; f^.Procs.head:=NIL; f^.Procs.tail:=NIL; 
+         RETURN f; 
+        END mmtForeign;
+        
+        PROCEDURE Prepend(e:Tree.tTree; VAR l:tList);
+        BEGIN
+         IF l.tail=NIL THEN 
+            l.tail:=e; 
+         ELSE 
+            CASE e^.Kind OF
+            |Tree.ConstDecl       : e^.ConstDecl       .Next:=l.head;
+            |Tree.TypeDecl        : e^.TypeDecl        .Next:=l.head;
+            |Tree.VarDecl         : e^.VarDecl         .Next:=l.head;
+            |Tree.ProcDecl        : e^.ProcDecl        .Next:=l.head;
+            |Tree.ForwardDecl     : e^.ForwardDecl     .Next:=l.head;
+            |Tree.BoundProcDecl   : e^.BoundProcDecl   .Next:=l.head;
+            |Tree.BoundForwardDecl: e^.BoundForwardDecl.Next:=l.head;
+            ELSE ERR.Fatal('Parser.Prepend: Failed'); 
+            END;
+         END;
+         l.head:=e; 
+        END Prepend;
+
+        PROCEDURE Append(VAR l:tList; e:Tree.tTree);
+        BEGIN
+         IF l.head=NIL THEN 
+            l.head:=e; 
+         ELSE 
+            CASE l.tail^.Kind OF
+            |Tree.ConstDecl       : l.tail^.ConstDecl       .Next:=e;
+            |Tree.TypeDecl        : l.tail^.TypeDecl        .Next:=e;
+            |Tree.VarDecl         : l.tail^.VarDecl         .Next:=e;
+            |Tree.ProcDecl        : l.tail^.ProcDecl        .Next:=e;
+            |Tree.ForwardDecl     : l.tail^.ForwardDecl     .Next:=e;
+            |Tree.BoundProcDecl   : l.tail^.BoundProcDecl   .Next:=e;
+            |Tree.BoundForwardDecl: l.tail^.BoundForwardDecl.Next:=e;
+            ELSE ERR.Fatal('Parser.Prepend: Failed'); 
+            END;
+         END;
+         l.tail:=e; 
+        END Append;
+
+        PROCEDURE Concat(VAR l,k:tList);
+        BEGIN
+         IF l.head=NIL THEN 
+            l:=k; 
+         ELSIF k.head#NIL THEN
+            Append(l,k.head); l.tail:=k.tail; 
+         END;
+        END Concat; }
+
+/********************************************************************************************************************************/
+TOKEN
+
+   ident      =  1          '^'        = 24          IMPORT     = 47  /* These token numbers must be the same as in the scanner */
+   integer    =  2          '='        = 25          IN         = 48  /* specification!                                         */
+   real       =  3          '#'        = 26          IS         = 49
+   longreal   =  4          '<'        = 27          LOOP       = 50
+   character  =  5          '>'        = 28          MOD        = 51
+   string     =  6          '<='       = 29          MODULE     = 52
+   '+'        =  7          '>='       = 30          NIL        = 53
+   '-'        =  8          '..'       = 31          OF         = 54
+   '*'        =  9          ':'        = 32          OR         = 55
+   '/'        = 10          ARRAY      = 33          POINTER    = 56
+   '~'        = 11          'BEGIN'    = 34          PROCEDURE  = 57
+   '&'        = 12          BY         = 35          RECORD     = 58
+   '.'        = 13          CASE       = 36          REPEAT     = 59
+   ','        = 14          CONST      = 37          RETURN     = 60
+   ';'        = 15          DIV        = 38          THEN       = 61
+   '|'        = 16          DO         = 39          TO         = 62
+   '('        = 17          ELSE       = 40          TYPE       = 63
+   ')'        = 18          ELSIF      = 41          UNTIL      = 64
+   '['        = 19          END        = 42          VAR        = 65
+   ']'        = 20          EXIT       = 43          WHILE      = 66
+   '{'        = 21          EXTERNAL   = 44          WITH       = 67
+   '}'        = 22          FOR        = 45          
+   ':='       = 23          IF         = 46
+
+/********************************************************************************************************************************/
+RULE
+
+/********************************************************************************************************************************/
+Module:
+
+   MODULE          /*  1 */
+   ident           /*  2 */
+   ';'             /*  3 */
+   ImportList      /*  4 */
+   DeclSection     /*  5 */
+   BeginStmts      /*  6 */
+   END             /*  7 */
+   ident           /*  8 */
+   '.'             /*  9 */ { FIL.ActP^.TreeRoot      := Tree.mModule
+                                                         ((* Name          := *) $2.Scan.Ident
+                                                         ,(* Pos           := *) $2.Scan.Position
+                                                         ,(* IsForeign     := *) FALSE
+                                                         ,(* Library       := *) OT.NoString
+                                                         ,(* Imports       := *) $4.Tree
+                                                         ,(* DeclSection   := *) $5.Tree
+                                                         ,(* Stmts         := *) $6.Tree
+                                                         ,(* Name2         := *) $8.Scan.Ident
+                                                         ,(* Pos2          := *) $8.Scan.Position);
+                            }
+|
+   FModule         /*  1 */ { FIL.ActP^.TreeRoot      := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+ImportList:
+
+   IMPORT          /*  1 */
+   Import          /*  2 */
+   Imports         /*  3 */
+   ';'             /*  4 */ { $2.Tree^.Import.Next    := $3.Tree;
+                              $$.Tree                 := $2.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtImport();
+                            }
+.
+/********************************************************************************************************************************/
+Imports:
+
+   ','             /*  1 */
+   Import          /*  2 */
+   Imports         /*  3 */ { $2.Tree^.Import.Next    := $3.Tree;
+                              $$.Tree                 := $2.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtImport();
+                            }
+.
+/********************************************************************************************************************************/
+Import:
+
+   ident           /*  1 */ { $$.Tree                 := Tree.mImport
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ServerId      := *) $1.Scan.Ident
+                                                         ,(* ServerPos     := *) $1.Scan.Position
+                                                         ,(* RefId         := *) $1.Scan.Ident
+                                                         ,(* RefPos        := *) $1.Scan.Position);
+                            }
+
+|  ident           /*  1 */
+   ':='            /*  2 */
+   ident           /*  3 */ { $$.Tree                 := Tree.mImport
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ServerId      := *) $3.Scan.Ident
+                                                         ,(* ServerPos     := *) $3.Scan.Position
+                                                         ,(* RefId         := *) $1.Scan.Ident
+                                                         ,(* RefPos        := *) $1.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+DeclSection:
+
+   DeclUnits       /*  1 */
+   ProcDecls       /*  2 */ { $$.Tree                 := Tree.mDeclSection
+                                                         ((* DeclUnits     := *) $1.Tree
+                                                         ,(* Procs         := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+DeclUnits:
+
+   DeclUnit        /*  1 */
+   DeclUnits       /*  2 */ { $1.Tree^.DeclUnit.Next  := $2.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtDeclUnit();
+                            }
+.
+/********************************************************************************************************************************/
+DeclUnit:
+
+   CONST           /*  1 */
+   ConstDecls      /*  2 */ { $$.Tree                 := Tree.mDeclUnit
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Decls         := *) $2.Tree);
+                            }
+
+|  TYPE            /*  1 */
+   TypeDecls       /*  2 */ { $$.Tree                 := Tree.mDeclUnit
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Decls         := *) $2.Tree);
+                            }
+
+|  VAR             /*  1 */
+   VarDecls        /*  2 */ { $$.Tree                 := Tree.mDeclUnit
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Decls         := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ConstDecls:
+
+   ConstDecl       /*  1 */
+   ';'             /*  2 */
+   ConstDecls      /*  3 */ { $1.Tree^.ConstDecl.Next := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtDecl();
+                            }
+.
+/********************************************************************************************************************************/
+TypeDecls:
+
+   TypeDecl        /*  1 */
+   ';'             /*  2 */
+   TypeDecls       /*  3 */ { $1.Tree^.TypeDecl.Next  := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtDecl();
+                            }
+.
+/********************************************************************************************************************************/
+VarDecls:
+
+   VarDecl         /*  1 */
+   ';'             /*  2 */
+   VarDecls        /*  3 */ { $1.Tree^.VarDecl.Next   := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtDecl();
+                            }
+.
+/********************************************************************************************************************************/
+ConstDecl:
+
+   IdentDef        /*  1 */
+   '='             /*  2 */
+   ConstExpr       /*  3 */ { $$.Tree                 := Tree.mConstDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentDef      := *) $1.Tree
+                                                         ,(* ConstExpr     := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+TypeDecl:
+
+   IdentDef        /*  1 */
+   '='             /*  2 */
+   Type            /*  3 */ { $$.Tree                 := Tree.mTypeDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentDef      := *) $1.Tree
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+VarDecl:
+
+   IdentList       /*  1 */
+   ':'             /*  2 */
+   Type            /*  3 */ { $$.Tree                 := Tree.mVarDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentLists    := *) $1.Tree
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ProcDecls:
+
+   ProcDecl        /*  1 */
+   ';'             /*  2 */
+   ProcDecls       /*  3 */ { $1.Tree^.Proc.Next      := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtProc();
+                            }
+.
+/********************************************************************************************************************************/
+ProcDecl:
+
+   PROCEDURE       /*  1 */
+   IdentDef        /*  2 */
+   FormalPars      /*  3 */
+   ';'             /*  4 */
+   DeclSection     /*  5 */
+   BeginStmts      /*  6 */
+   END             /*  7 */
+   ident           /*  8 */ { $$.Tree                 := Tree.mProcDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentDef      := *) $2.Tree
+                                                         ,(* FormalPars    := *) $3.Tree
+                                                         ,(* DeclSection   := *) $5.Tree
+                                                         ,(* Stmts         := *) $6.Tree
+                                                         ,(* EndPos        := *) $7.Scan.Position
+                                                         ,(* Ident         := *) $8.Scan.Ident
+                                                         ,(* IdPos         := *) $8.Scan.Position);
+                            }
+
+|  PROCEDURE       /*  1 */
+   '^'             /*  2 */
+   IdentDef        /*  3 */
+   FormalPars      /*  4 */ { $$.Tree                 := Tree.mForwardDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentDef      := *) $3.Tree
+                                                         ,(* FormalPars    := *) $4.Tree);
+                            }
+
+|  PROCEDURE       /*  1 */
+   Receiver        /*  2 */
+   IdentDef        /*  3 */
+   FormalPars      /*  4 */
+   ';'             /*  5 */
+   DeclSection     /*  6 */
+   BeginStmts      /*  7 */
+   END             /*  8 */
+   ident           /*  9 */ { $$.Tree                 := Tree.mBoundProcDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Receiver      := *) $2.Tree
+                                                         ,(* IdentDef      := *) $3.Tree
+                                                         ,(* FormalPars    := *) $4.Tree
+                                                         ,(* DeclSection   := *) $6.Tree
+                                                         ,(* Stmts         := *) $7.Tree
+                                                         ,(* EndPos        := *) $8.Scan.Position
+                                                         ,(* Ident         := *) $9.Scan.Ident
+                                                         ,(* IdPos         := *) $8.Scan.Position);
+                            }
+
+|  PROCEDURE       /*  1 */
+   '^'             /*  2 */
+   Receiver        /*  3 */
+   IdentDef        /*  4 */
+   FormalPars      /*  5 */ { $$.Tree                 := Tree.mBoundForwardDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Receiver      := *) $3.Tree
+                                                         ,(* IdentDef      := *) $4.Tree
+                                                         ,(* FormalPars    := *) $5.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+FormalPars:
+
+   '('             /*  1 */
+   ')'             /*  2 */
+   FormalResult    /*  3 */ { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) Tree.mmtFPSection()
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+
+|  '('             /*  1 */
+   FPSections      /*  2 */
+   ')'             /*  3 */
+   FormalResult    /*  4 */ { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) $2.Tree
+                                                         ,(* Type          := *) $4.Tree);
+                            }
+
+|                           { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) Tree.mmtFPSection()
+                                                         ,(* Type          := *) Tree.mmtType
+                                                                                 ((* Position := *) POS.NoPosition)
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+FPSections:
+
+   FPSection       /*  1 */
+   ';'             /*  2 */
+   FPSections      /*  3 */ { $1.Tree^.FPSection.Next := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  FPSection       /*  1 */ { $1.Tree^.FPSection.Next := Tree.mmtFPSection();
+                              $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+FPSection:
+
+   ParIds          /*  1 */
+   ':'             /*  2 */
+   Type            /*  3 */ { $$.Tree                 := Tree.mFPSection
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ParMode       := *) OB.VALPAR
+                                                         ,(* ParIds        := *) $1.Tree
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+
+|  VAR             /*  1 */
+   ParIds          /*  2 */
+   ':'             /*  3 */
+   Type            /*  4 */ { $$.Tree                 := Tree.mFPSection
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ParMode       := *) OB.REFPAR
+                                                         ,(* IdentLists    := *) $2.Tree
+                                                         ,(* Type          := *) $4.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ParIds:
+
+   ident           /*  1 */
+   ','             /*  2 */
+   ParIds          /*  3 */ { $$.Tree                 := Tree.mParId
+                                                         ((* Next          := *) $3.Tree
+                                                         ,(* Ident         := *) $1.Scan.Ident
+                                                         ,(* Pos           := *) $1.Scan.Position);
+                            }
+
+|  ident           /*  1 */ { $$.Tree                 := Tree.mParId
+                                                         ((* Next          := *) Tree.mmtParId()
+                                                         ,(* Ident         := *) $1.Scan.Ident
+                                                         ,(* Pos           := *) $1.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+FormalResult:
+
+   ':'             /*  1 */
+   Qualident       /*  2 */ { $$.Tree                 := Tree.mNamedType
+                                                         ((* Position      := *) $2.Tree^.Qualidents.Position
+                                                         ,(* Qualidents    := *) $2.Tree);
+                            }
+
+|                           { $$.Tree                 := Tree.mmtType
+                                                         ((* Position      := *) POS.NoPosition);
+                            }
+.
+/********************************************************************************************************************************/
+Receiver:
+
+   '('             /*  1 */
+   ident           /*  2 */
+   ':'             /*  3 */
+   ident           /*  4 */
+   ')'             /*  5 */ { $$.Tree                 := Tree.mReceiver
+                                                         ((* ParMode       := *) OB.VALPAR
+                                                         ,(* Name          := *) $2.Scan.Ident
+                                                         ,(* TypeIdent     := *) $4.Scan.Ident
+                                                         ,(* TypePos       := *) $4.Scan.Position);
+                            }
+
+|  '('             /*  1 */
+   VAR             /*  2 */
+   ident           /*  3 */
+   ':'             /*  4 */
+   ident           /*  5 */
+   ')'             /*  6 */ { $$.Tree                 := Tree.mReceiver
+                                                         ((* ParMode       := *) OB.REFPAR
+                                                         ,(* Name          := *) $3.Scan.Ident
+                                                         ,(* TypeIdent     := *) $5.Scan.Ident
+                                                         ,(* TypePos       := *) $5.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+Type:
+
+   Qualident       /*  1 */ { $$.Tree                 := Tree.mNamedType
+                                                         ((* Position      := *) $1.Tree^.Qualidents.Position
+                                                         ,(* Qualidents    := *) $1.Tree);
+                            }
+
+|  PointerBaseType /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  PointerType     /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  ProcedureType   /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+PointerBaseType:
+
+   ArrayType       /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  RecordType      /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+ArrayType:
+
+   ARRAY           /*  1 */
+   ArrayExprList   /*  2 */
+   OF              /*  3 */
+   Type            /*  4 */ { $$.Tree                 := Tree.mArrayType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* ArrayExprList := *) $2.Tree
+                                                         ,(* Type          := *) $4.Tree);
+                            }
+
+|  ARRAY           /*  1 */
+   OF              /*  2 */
+   Type            /*  3 */ { $$.Tree                 := Tree.mOpenArrayType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* OfPosition    := *) $2.Scan.Position
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ArrayExprList:
+
+   ConstExpr       /*  1 */
+   ','             /*  2 */
+   ArrayExprList   /*  3 */ { $$.Tree                 := Tree.mArrayExprList
+                                                         ((* Next          := *) $3.Tree
+                                                         ,(* ConstExpr     := *) $1.Tree);
+                            }
+
+|  ConstExpr       /*  1 */ { $$.Tree                 := Tree.mArrayExprList
+                                                         ((* Next          := *) Tree.mmtArrayExprList()
+                                                         ,(* ConstExpr     := *) $1.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+RecordType:
+
+   RECORD          /*  1 */
+   '('             /*  2 */
+   Qualident       /*  3 */
+   ')'             /*  4 */
+   FieldLists      /*  5 */
+   END             /*  6 */ { $$.Tree                 := Tree.mExtendedType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Qualidents    := *) $3.Tree
+                                                         ,(* FieldLists    := *) $5.Tree);
+                            }
+
+|  RECORD          /*  1 */
+   FieldLists      /*  2 */
+   END             /*  3 */ { $$.Tree                 := Tree.mRecordType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* FieldLists    := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+FieldLists:
+
+   FieldList       /*  1 */
+   ';'             /*  2 */
+   FieldLists      /*  3 */ { $1.Tree^.FieldList.Next := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  ';'             /*  1 */
+   FieldLists      /*  2 */ { $$.Tree                 := $2.Tree;
+                            }
+
+|  FieldList       /*  1 */ { $1.Tree^.FieldList.Next := Tree.mmtFieldList();
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtFieldList();
+                            }
+.
+/********************************************************************************************************************************/
+FieldList:
+
+   IdentList       /*  1 */
+   ':'             /*  2 */
+   Type            /*  3 */ { $$.Tree                 := Tree.mFieldList
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentLists    := *) $1.Tree
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+PointerType:
+
+   POINTER         /*  1 */
+   TO              /*  2 */
+   ident           /*  3 */ { $$.Tree                 := Tree.mPointerToIdType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Ident         := *) $3.Scan.Ident
+                                                         ,(* IdentPos      := *) $3.Scan.Position);
+                            }
+|  POINTER         /*  1 */
+   TO              /*  2 */
+   ident           /*  3 */
+   '.'             /*  4 */
+   ident           /*  5 */ { $$.Tree                 := Tree.mPointerToQualIdType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Qualidents    := *) Tree.mQualifiedIdent
+                                                                                 ((* Position := *) $3.Scan.Position
+                                                                                 ,(* ServerId := *) $3.Scan.Ident
+                                                                                 ,(* Ident    := *) $5.Scan.Ident
+                                                                                 ,(* IdentPos := *) $5.Scan.Position
+                                                                                 )
+                                                         );
+                            }
+|  POINTER         /*  1 */
+   TO              /*  2 */
+   PointerBaseType /*  3 */ { $$.Tree                 := Tree.mPointerToStructType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ProcedureType:
+
+   PROCEDURE       /*  1 */
+   FormalPars      /*  2 */ { $$.Tree                 := Tree.mProcedureType
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* FormalPars    := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+BeginStmts:
+
+   'BEGIN'         /*  1 */
+   StatementSeq    /*  2 */ { $$.Tree                 := $2.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mNoStmts();
+                            }
+.
+/********************************************************************************************************************************/
+StatementSeq:
+
+   Statement       /*  1 */
+   ';'             /*  2 */
+   StatementSeq    /*  3 */ { $1.Tree^.Stmt.Next      := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  ';'             /*  1 */
+   StatementSeq    /*  2 */ { $$.Tree                 := $2.Tree;
+                            }
+
+|  Statement       /*  1 */ { $1.Tree^.Stmt.Next      := Tree.mmtStmt();
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtStmt();
+                            }
+.
+/********************************************************************************************************************************/
+Statement:
+
+   AssignStmt      /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  CallStmt        /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  IfStmt          /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  CaseStmt        /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  WhileStmt       /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  RepeatStmt      /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  ForStmt         /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  LoopStmt        /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  WithStmt        /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  ExitStmt        /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  ReturnStmt      /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+AssignStmt:
+
+   Designator      /*  1 */
+   ':='            /*  2 */
+   Expr            /*  3 */ { $$.Tree                 := Tree.mAssignStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Designator    := *) $1.Tree
+                                                         ,(* Exprs         := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+CallStmt:
+
+   Designator      /*  1 */ { $$.Tree                 := Tree.mCallStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Designator    := *) $1.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+IfStmt:
+
+   IF              /*  1 */
+   Expr            /*  2 */
+   THEN            /*  3 */
+   StatementSeq    /*  4 */
+   ElsIfs          /*  5 */ { $$.Tree                 := Tree.mIfStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Exprs         := *) $2.Tree
+                                                         ,(* Then          := *) $4.Tree
+                                                         ,(* Else          := *) $5.Tree);
+                            }
+
+.
+/********************************************************************************************************************************/
+ElsIfs:
+
+   ELSIF           /*  1 */
+   Expr            /*  2 */
+   THEN            /*  3 */
+   StatementSeq    /*  4 */
+   ElsIfs          /*  5 */ { $$.Tree                 := Tree.mIfStmt
+                                                         ((* Next          := *) Tree.mmtStmt()              (* An ELSIF has no *)
+                                                         ,(* Exprs         := *) $2.Tree                     (* next statement. *)
+                                                         ,(* Then          := *) $4.Tree
+                                                         ,(* Else          := *) $5.Tree);
+                            }
+
+|  ELSE            /*  1 */
+   StatementSeq    /*  2 */
+   END             /*  3 */ { $$.Tree                 := $2.Tree
+                            }
+
+|  END             /*  1 */ { $$.Tree                 := Tree.mmtStmt();
+                            }
+.
+/********************************************************************************************************************************/
+CaseStmt:
+
+   CASE            /*  1 */
+   Expr            /*  2 */
+   OF              /*  3 */
+   Cases           /*  4 */
+   ELSE            /*  5 */
+   StatementSeq    /*  6 */
+   END             /*  7 */ { $$.Tree                 := Tree.mCaseStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Exprs         := *) $2.Tree
+                                                         ,(* Cases         := *) $4.Tree
+                                                         ,(* Else          := *) $6.Tree);
+                            }
+
+|  CASE            /*  1 */
+   Expr            /*  2 */
+   OF              /*  3 */
+   Cases           /*  4 */
+   END             /*  5 */ { $$.Tree                 := Tree.mCaseStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Exprs         := *) $2.Tree
+                                                         ,(* Cases         := *) $4.Tree
+                                                         ,(* Else          := *) Tree.mCallStmt
+                                                                                 ((* Next       := *) Tree.mmtStmt()
+                                                                                 ,(* Designator := *) Tree.mDesignator
+                                                                                                      ((* Ident     := *)
+                                                                                                       PR.Ident_CASEFAULT
+                                                                                                      ,(* Position  := *)
+                                                                                                       $5.Scan.Position
+                                                                                                      ,(* Designors := *)
+                                                                                                       Tree.mmtDesignor())
+                                                                                 )
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+Cases:
+
+   Case            /*  1 */
+   '|'             /*  2 */
+   Cases           /*  3 */ { $1.Tree^.Case.Next      := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  '|'             /*  1 */
+   Cases           /*  2 */ { $$.Tree                 := $2.Tree;
+                            }
+
+|  Case            /*  1 */ { $1.Tree^.Case.Next      := Tree.mmtCase();
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|                           { $$.Tree                 := Tree.mmtCase();
+                            }
+.
+/********************************************************************************************************************************/
+Case:
+
+   CaseLabelList   /*  1 */
+   ':'             /*  2 */
+   StatementSeq    /*  3 */ { $$.Tree                 := Tree.mCase
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* CaseLabels    := *) $1.Tree
+                                                         ,(* Stmts         := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+CaseLabelList:
+
+   CaseLabels      /*  1 */
+   ','             /*  2 */
+   CaseLabelList   /*  3 */ { $1.Tree^.CaseLabel.Next := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  CaseLabels      /*  1 */ { $1.Tree^.CaseLabel.Next := Tree.mmtCaseLabel();
+                              $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+CaseLabels:
+
+   ConstExpr       /*  1 */
+   '..'            /*  2 */
+   ConstExpr       /*  3 */ { $$.Tree                 := Tree.mCaseLabel
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ConstExpr1    := *) $1.Tree
+                                                         ,(* ConstExpr2    := *) $3.Tree);
+                            }
+
+|  ConstExpr       /*  1 */ { $$.Tree                 := Tree.mCaseLabel
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* ConstExpr1    := *) $1.Tree
+                                                         ,(* ConstExpr2    := *) Tree.mConstExpr
+                                                                                 ((* Position := *) POS.NoPosition
+                                                                                 ,(* Expr     := *) Tree.mmtExpr(POS.NoPosition)
+                                                                                 )
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+WhileStmt:
+
+   WHILE           /*  1 */
+   Expr            /*  2 */
+   DO              /*  3 */
+   StatementSeq    /*  4 */
+   END             /*  5 */ { $$.Tree                 := Tree.mWhileStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Exprs         := *) $2.Tree
+                                                         ,(* Stmts         := *) $4.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+RepeatStmt:
+
+   REPEAT          /*  1 */
+   StatementSeq    /*  2 */
+   UNTIL           /*  3 */
+   Expr            /*  4 */ { $$.Tree                 := Tree.mRepeatStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Stmts         := *) $2.Tree
+                                                         ,(* Exprs         := *) $4.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ForStmt:
+
+   FOR             /*   1 */
+   ident           /*   2 */
+   ':='            /*   3 */
+   Expr            /*   4 */
+   TO              /*   5 */
+   Expr            /*   6 */
+   BY              /*   7 */
+   ConstExpr       /*   8 */
+   DO              /*   9 */
+   StatementSeq    /*  10 */
+   END             /*  11 */ { $$.Tree                := Tree.mForStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Ident         := *) $2.Scan.Ident
+                                                         ,(* Pos           := *) $2.Scan.Position
+                                                         ,(* From          := *) $4.Tree
+                                                         ,(* To            := *) $6.Tree
+                                                         ,(* By            := *) $8.Tree
+                                                         ,(* Stmts         := *) $10.Tree);
+                             }
+|  FOR             /*   1 */
+   ident           /*   2 */
+   ':='            /*   3 */
+   Expr            /*   4 */
+   TO              /*   5 */
+   Expr            /*   6 */
+   DO              /*   7 */
+   StatementSeq    /*   8 */
+   END             /*   9 */ { $$.Tree                := Tree.mForStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Ident         := *) $2.Scan.Ident
+                                                         ,(* Pos           := *) $2.Scan.Position
+                                                         ,(* From          := *) $4.Tree
+                                                         ,(* To            := *) $6.Tree
+                                                         ,(* By            := *) Tree.mConstExpr
+                                                                                 ((* Pos  := *) $7.Scan.Position
+                                                                                 ,(* Expr := *) Tree.mIntConst
+                                                                                                ((* Pos := *) $7.Scan.Position
+                                                                                                ,(* Int := *) 1)
+                                                                                 )
+                                                         ,(* Stmts         := *) $8.Tree);
+                             }
+.
+/********************************************************************************************************************************/
+LoopStmt:
+
+   LOOP            /*  1 */
+   StatementSeq    /*  2 */
+   END             /*  3 */ { $$.Tree                 := Tree.mLoopStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Stmts         := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+WithStmt:
+
+   WITH            /*  1 */
+   Guard           /*  2 */
+   DO              /*  3 */
+   StatementSeq    /*  4 */
+   Guards          /*  5 */
+   ELSE            /*  6 */
+   StatementSeq    /*  7 */
+   END             /*  8 */ { $$.Tree                 := Tree.mWithStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* GuardedStmts  := *) Tree.mGuardedStmt
+                                                                                 ((* Next  := *) $5.Tree
+                                                                                 ,(* Guard := *) $2.Tree
+                                                                                 ,(* Stmts := *) $4.Tree)
+                                                         ,(* Else          := *) $7.Tree);
+                            }
+
+|  WITH            /*  1 */
+   Guard           /*  2 */
+   DO              /*  3 */
+   StatementSeq    /*  4 */
+   Guards          /*  5 */
+   END             /*  6 */ { $$.Tree                 := Tree.mWithStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* GuardedStmts  := *) Tree.mGuardedStmt
+                                                                                 ((* Next       := *) $5.Tree
+                                                                                 ,(* Guard      := *) $2.Tree
+                                                                                 ,(* Stmts      := *) $4.Tree)
+                                                         ,(* Else          := *) Tree.mCallStmt
+                                                                                 ((* Next       := *) Tree.mmtStmt()
+                                                                                 ,(* Designator := *) Tree.mDesignator
+                                                                                                      ((* Ident     := *)
+                                                                                                       PR.Ident_WITHFAULT
+                                                                                                      ,(* Position  := *)
+                                                                                                       $6.Scan.Position
+                                                                                                      ,(* Designors := *)
+                                                                                                       Tree.mmtDesignor())
+                                                                                 )
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+Guards:
+
+   '|'             /*  1 */
+   Guard           /*  2 */
+   DO              /*  3 */
+   StatementSeq    /*  4 */
+   Guards          /*  5 */ { $$.Tree                 := Tree.mGuardedStmt
+                                                         ((* Next          := *) $5.Tree
+                                                         ,(* Guard         := *) $2.Tree
+                                                         ,(* Stmts         := *) $4.Tree);
+                            }
+
+|                           { $$.Tree                 := Tree.mmtGuardedStmt();
+                            }
+.
+/********************************************************************************************************************************/
+Guard:
+
+   Qualident       /*  1 */
+   ':'             /*  2 */
+   Qualident       /*  3 */ { $$.Tree                 := Tree.mGuard
+                                                         ((* Variable      := *) $1.Tree
+                                                         ,(* OpPos         := *) $2.Scan.Position
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+ExitStmt:
+
+   EXIT            /*  1 */ { $$.Tree                 := Tree.mExitStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Position      := *) $1.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+ReturnStmt:
+
+   RETURN          /*  1 */
+   Expr            /*  2 */ { $$.Tree                 := Tree.mReturnStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Position      := *) $1.Scan.Position
+                                                         ,(* Exprs         := *) $2.Tree);
+                            }
+
+|  RETURN          /*  1 */ { $$.Tree                 := Tree.mReturnStmt
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Position      := *) $1.Scan.Position
+                                                         ,(* Exprs         := *) Tree.mmtExpr
+                                                                                 ((* Position := *) POS.NoPosition)
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+ConstExpr:
+   Expr            /*  1 */ { $$.Tree                 := Tree.mConstExpr
+                                                         ((* Position      := *) $1.Tree^.Exprs.Position
+                                                         ,(* Expr          := *) $1.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+Expr:
+
+   SimpleExpr      /*  1 */
+   Relation        /*  2 */
+   SimpleExpr      /*  3 */ { $$.Tree                 := Tree.mDyExpr
+                                                         ((* Position      := *) $1.Tree^.Exprs.Position
+                                                         ,(* DyOperator    := *) $2.Tree
+                                                         ,(* Expr1         := *) $1.Tree
+                                                         ,(* Expr2         := *) $3.Tree);
+                            }
+
+|  Designator      /*  1 */
+   IS              /*  2 */
+   Qualident       /*  3 */ { $$.Tree                 := Tree.mIsExpr
+                                                         ((* Position      := *) $1.Tree^.Designator.Position
+                                                         ,(* Variable      := *) $1.Tree
+                                                         ,(* OpPos         := *) $2.Scan.Position
+                                                         ,(* TypeId        := *) $3.Tree);
+                            }
+
+|  SimpleExpr      /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+SimpleExpr:
+
+   SimpleExpr      /*  1 */
+   AddOp           /*  2 */
+   Term            /*  3 */ { $$.Tree                 := Tree.mDyExpr
+                                                         ((* Position      := *) $1.Tree^.Exprs.Position
+                                                         ,(* DyOperator    := *) $2.Tree
+                                                         ,(* Expr1         := *) $1.Tree
+                                                         ,(* Expr2         := *) $3.Tree);
+                            }
+
+|  '+'             /*  1 */
+   Term            /*  2 */ { $$.Tree                 := Tree.mIdentityExpr
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Exprs         := *) $2.Tree);
+                            }
+
+|  '-'             /*  1 */
+   Term            /*  2 */ { $$.Tree                 := Tree.mNegateExpr
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Exprs         := *) $2.Tree);
+                            }
+
+|  Term            /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+Term:
+
+   Term            /*  1 */
+   MulOp           /*  2 */
+   Factor          /*  3 */ { $$.Tree                 := Tree.mDyExpr
+                                                         ((* Position      := *) $1.Tree^.Exprs.Position
+                                                         ,(* DyOperator    := *) $2.Tree
+                                                         ,(* Expr1         := *) $1.Tree
+                                                         ,(* Expr2         := *) $3.Tree);
+                            }
+
+|  Factor          /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+Factor:
+
+   Designator      /*  1 */ { $$.Tree                 := Tree.mDesignExpr
+                                                         ((* Position      := *) $1.Tree^.Designator.Position
+                                                         ,(* Designator    := *) $1.Tree);
+                            }
+
+|  integer         /*  1 */ { $$.Tree                 := Tree.mIntConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Int           := *) $1.Scan.Integer);
+                            }
+
+|  real            /*  1 */ { $$.Tree                 := Tree.mRealConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Real          := *) $1.Scan.Real);
+                            }
+
+|  longreal        /*  1 */ { $$.Tree                 := Tree.mLongrealConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Longreal      := *) $1.Scan.Longreal);
+                            }
+
+|  character       /*  1 */ { $$.Tree                 := Tree.mCharConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Char          := *) $1.Scan.Char);
+                            }
+
+|  string          /*  1 */ { $$.Tree                 := Tree.mStringConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* String        := *) $1.Scan.String);
+                            }
+
+|  NIL             /*  1 */ { $$.Tree                 := Tree.mNilConst
+                                                         ((* Position      := *) $1.Scan.Position);
+                            }
+
+|  Set             /*  1 */ { $$.Tree                 := $1.Tree;
+                            }
+
+|  '('             /*  1 */
+   Expr            /*  2 */
+   ')'             /*  3 */ { $$.Tree                 := $2.Tree;
+                              $$.Tree^.Exprs.Position := $1.Scan.Position;
+                            }
+
+|  '~'             /*  1 */
+   Factor          /*  2 */ { $$.Tree                 := Tree.mNotExpr
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Exprs         := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+Set:
+
+   '{'             /*  1 */
+   Elements        /*  2 */
+   '}'             /*  3 */ { $$.Tree                 := Tree.mSetExpr
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Elements      := *) $2.Tree);
+                            }
+
+|  '{'             /*  1 */
+   '}'             /*  2 */ { $$.Tree                 := Tree.mSetConst
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Set           := *) OT.EmptySet);
+                            }
+.
+/********************************************************************************************************************************/
+Elements:
+
+   Element         /*  1 */
+   ','             /*  2 */
+   Elements        /*  3 */ { $1.Tree^.Element.Next   := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  Element         /*  1 */ { $1.Tree^.Element.Next   := Tree.mmtElement();
+                              $$.Tree                 := $1.Tree;
+                            }
+
+.
+/********************************************************************************************************************************/
+Element:
+
+   Expr            /*  1 */
+   '..'            /*  2 */
+   Expr            /*  3 */ { $$.Tree                 := Tree.mElement
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Expr1         := *) $1.Tree
+                                                         ,(* Expr2         := *) $3.Tree);
+                            }
+
+|  Expr            /*  1 */ { $$.Tree                 := Tree.mElement
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* Expr1         := *) $1.Tree
+                                                         ,(* Expr2         := *) Tree.mmtExpr
+                                                                                 ((* Position := *) POS.NoPosition)
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+Relation:
+
+   '='             /*  1 */ { $$.Tree                 := Tree.mEqualOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.EqualOper);
+                            }
+
+|  '#'             /*  1 */ { $$.Tree                 := Tree.mUnequalOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.UnequalOper);
+                            }
+
+|  '<'             /*  1 */ { $$.Tree                 := Tree.mLessOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.LessOper);
+                            }
+
+|  '<='            /*  1 */ { $$.Tree                 := Tree.mLessEqualOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.LessEqualOper);
+                            }
+
+|  '>'             /*  1 */ { $$.Tree                 := Tree.mGreaterOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.GreaterOper);
+                            }
+
+|  '>='            /*  1 */ { $$.Tree                 := Tree.mGreaterEqualOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.GreaterEqualOper);
+                            }
+
+|  IN              /*  1 */ { $$.Tree                 := Tree.mInOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.InOper);
+                            }
+.
+/********************************************************************************************************************************/
+AddOp:
+
+   '+'             /*  1 */ { $$.Tree                 := Tree.mPlusOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.PlusOper);
+                            }
+
+|  '-'             /*  1 */ { $$.Tree                 := Tree.mMinusOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.MinusOper);
+                            }
+
+|  OR              /*  1 */ { $$.Tree                 := Tree.mOrOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.OrOper);
+                            }
+.
+/********************************************************************************************************************************/
+MulOp:
+
+   '*'             /*  1 */ { $$.Tree                 := Tree.mMultOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.MultOper);
+                            }
+
+|  '/'             /*  1 */ { $$.Tree                 := Tree.mRDivOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.RDivOper);
+                            }
+
+|  DIV             /*  1 */ { $$.Tree                 := Tree.mDivOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.DivOper);
+                            }
+
+|  MOD             /*  1 */ { $$.Tree                 := Tree.mModOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.ModOper);
+                            }
+
+|  '&'             /*  1 */ { $$.Tree                 := Tree.mAndOper
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Operator      := *) Tree.AndOper);
+                            }
+.
+/********************************************************************************************************************************/
+Designator:
+
+   ident           /*  1 */
+   Designations    /*  2 */ { $$.Tree                 := Tree.mDesignator
+                                                         ((* Ident         := *) $1.Scan.Ident
+                                                         ,(* Position      := *) $1.Scan.Position
+                                                         ,(* Designors     := *) $2.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+Designations:
+
+   '.'             /*  1 */
+   ident           /*  2 */
+   Designations    /*  3 */ { $$.Tree                 := Tree.mSelector
+                                                         ((* Nextor        := *) $3.Tree
+                                                         ,(* OpPos         := *) $1.Scan.Position
+                                                         ,(* Ident         := *) $2.Scan.Ident
+                                                         ,(* IdPos         := *) $2.Scan.Position);
+                            }
+
+|  '['             /*  1 */
+   ExprList        /*  2 */
+   ']'             /*  3 */
+   Designations    /*  4 */ { $$.Tree                 := Tree.mIndexor
+                                                         ((* Nextor        := *) $4.Tree
+                                                         ,(* Op1Pos        := *) $1.Scan.Position
+                                                         ,(* Op2Pos        := *) $3.Scan.Position
+                                                         ,(* ExprList      := *) $2.Tree);
+                            }
+
+|  '^'             /*  1 */
+   Designations    /*  2 */ { $$.Tree                 := Tree.mDereferencor
+                                                         ((* Nextor        := *) $2.Tree
+                                                         ,(* OpPos         := *) $1.Scan.Position);
+                            }
+
+|  '('             /*  1 */
+   ExprList        /*  2 */
+   ')'             /*  3 */
+   Designations    /*  4 */ { $$.Tree                 := Tree.mArgumentor
+                                                         ((* Nextor        := *) $4.Tree
+                                                         ,(* Op1Pos        := *) $1.Scan.Position
+                                                         ,(* Op2Pos        := *) $3.Scan.Position
+                                                         ,(* ExprList      := *) $2.Tree);
+                            }
+
+|  '('             /*  1 */
+   ')'             /*  2 */
+   Designations    /*  3 */ { $$.Tree                 := Tree.mArgumentor
+                                                         ((* Nextor        := *) $3.Tree
+                                                         ,(* Op1Pos        := *) $1.Scan.Position
+                                                         ,(* Op2Pos        := *) $2.Scan.Position
+                                                         ,(* ExprList      := *) Tree.mmtExprList());
+                            }
+
+|                           { $$.Tree                 := Tree.mmtDesignor();
+                            }
+.
+/********************************************************************************************************************************/
+ExprList:
+
+   Expr            /*  1 */
+   ','             /*  2 */
+   ExprList        /*  3 */ { $$.Tree                 := Tree.mExprList
+                                                         ((* Next          := *) $3.Tree
+                                                         ,(* Expr          := *) $1.Tree);
+                            }
+
+|  Expr            /*  1 */ { $$.Tree                 := Tree.mExprList
+                                                         ((* Next          := *) Tree.mmtExprList()
+                                                         ,(* Expr          := *) $1.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+IdentList:
+
+   IdentDef        /*  1 */
+   ','             /*  2 */
+   IdentList       /*  3 */ { $$.Tree                 := Tree.mIdentList
+                                                         ((* Next          := *) $3.Tree
+                                                         ,(* IdentDef      := *) $1.Tree);
+                            }
+
+|  IdentDef        /*  1 */ { $$.Tree                 := Tree.mIdentList
+                                                         ((* Next          := *) Tree.mmtIdentList()
+                                                         ,(* IdentDef      := *) $1.Tree);
+                            }
+.
+/********************************************************************************************************************************/
+Qualident:
+
+   ident           /*  1 */ { $$.Tree                 := Tree.mUnqualifiedIdent
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* Ident         := *) $1.Scan.Ident);
+                            }
+
+|  ident           /*  1 */
+   '.'             /*  2 */
+   ident           /*  3 */ { $$.Tree                 := Tree.mQualifiedIdent
+                                                         ((* Position      := *) $1.Scan.Position
+                                                         ,(* ServerId      := *) $1.Scan.Ident
+                                                         ,(* Ident         := *) $3.Scan.Ident
+                                                         ,(* IdentPos      := *) $3.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+IdentDef:
+
+   ident           /*  1 */ { $$.Tree                 := Tree.mIdentDef
+                                                         ((* Ident         := *) $1.Scan.Ident
+                                                         ,(* Pos           := *) $1.Scan.Position
+                                                         ,(* ExportMode    := *) OB.PRIVATE);
+                            }
+
+|  ident           /*  1 */
+   '*'             /*  2 */ { $$.Tree                 := Tree.mIdentDef
+                                                         ((* Ident         := *) $1.Scan.Ident
+                                                         ,(* Pos           := *) $1.Scan.Position
+                                                         ,(* ExportMode    := *) OB.PUBLIC);
+                            }
+
+|  ident           /*  1 */
+   '-'             /*  2 */ { $$.Tree                 := Tree.mIdentDef
+                                                         ((* Ident         := *) $1.Scan.Ident
+                                                         ,(* Pos           := *) $1.Scan.Position
+                                                         ,(* ExportMode    := *) OB.READONLY);
+                            }
+.
+/********************************************************************************************************************************/
+/*** FOREIGN MODULEs                                                                                                          ***/
+/********************************************************************************************************************************/
+FModule:
+
+   MODULE          /*  1 */
+   ident           /*  2 */
+   EXTERNAL        /*  3 */
+   '['             /*  4 */
+   string          /*  5 */
+   ']'             /*  6 */
+   ';'             /*  7 */
+   ImportList      /*  8 */
+   FDeclSection    /*  9 */
+   END             /* 10 */
+   ident           /* 11 */
+   '.'             /* 12 */ { $$.Tree                 := Tree.mModule
+                                                         ((* Name          := *) $2.Scan.Ident
+                                                         ,(* Pos           := *) $2.Scan.Position
+                                                         ,(* IsForeign     := *) TRUE
+                                                         ,(* Library       := *) $5.Scan.String
+                                                         ,(* Imports       := *) $8.Tree
+                                                         ,(* DeclSection   := *) $9.Tree
+                                                         ,(* Stmts         := *) Tree.mNoStmts()
+                                                         ,(* Name2         := *) $11.Scan.Ident
+                                                         ,(* Pos2          := *) $11.Scan.Position);
+                            }
+.
+/********************************************************************************************************************************/
+FDeclSection:
+
+   FDeclUnits      /*  1 */ { Append($1.Foreign^.Decls,Tree.mmtDecl()); 
+                              Append($1.Foreign^.Procs,Tree.mmtProc()); 
+                              
+                              $$.Tree                 := Tree.mDeclSection
+                                                         ((* DeclUnits     := *) Tree.mDeclUnit
+                                                                                 ((* Next  := *) Tree.mmtDeclUnit()
+                                                                                 ,(* Decls := *) $1.Foreign^.Decls.head)
+                                                         ,(* Procs         := *) $1.Foreign^.Procs.head);
+                            }
+.
+/********************************************************************************************************************************/
+FDeclUnits:
+
+   FDeclUnit       /*  1 */
+   FDeclUnits      /*  2 */ { Concat($1.Foreign^.Decls,$2.Foreign^.Decls); 
+                              Concat($1.Foreign^.Procs,$2.Foreign^.Procs); 
+                              $$.Foreign              := $1.Foreign; 
+                            }
+
+|  FProcDecl       /*  1 */
+   FDeclUnits      /*  2 */ { Prepend($1.Tree,$2.Foreign^.Procs); 
+                              $$.Foreign              := $2.Foreign; 
+                            }
+
+|                           { $$.Foreign              := mmtForeign(); 
+                            }
+.
+/********************************************************************************************************************************/
+FDeclUnit:
+
+   CONST           /*  1 */
+   FConstDecls     /*  2 */ { $$.Foreign              := $2.Foreign;
+                            }
+
+|  TYPE            /*  1 */
+   FTypeDecls      /*  2 */ { $$.Foreign              := $2.Foreign;
+                            }
+
+|  VAR             /*  1 */
+   FVarDecls       /*  2 */ { $$.Foreign              := $2.Foreign;
+                            }
+.
+/********************************************************************************************************************************/
+FConstDecls:
+
+   ConstDecl       /*  1 */
+   ';'             /*  2 */
+   FConstDecls     /*  3 */ { $$.Foreign              := $3.Foreign; 
+                              Prepend($1.Tree,$$.Foreign^.Decls); 
+                            }
+
+|                           { $$.Foreign              := mmtForeign();
+                            }
+.
+/********************************************************************************************************************************/
+FTypeDecls:
+
+   TypeDecl        /*  1 */
+   ';'             /*  2 */
+   FTypeDecls      /*  3 */ { $$.Foreign              := $3.Foreign; 
+                              Prepend($1.Tree,$$.Foreign^.Decls); 
+                            }
+
+|                           { $$.Foreign              := mmtForeign();
+                            }
+.
+/********************************************************************************************************************************/
+FVarDecls:
+
+   VarDecl         /*  1 */
+   ';'             /*  2 */
+   FVarDecls       /*  3 */ { $$.Foreign              := $3.Foreign; 
+                              Prepend($1.Tree,$$.Foreign^.Decls); 
+                            }
+
+|                           { $$.Foreign              := mmtForeign();
+                            }
+.
+/********************************************************************************************************************************/
+FProcDecl:
+
+   PROCEDURE       /*  1 */
+   IdentDef        /*  2 */
+   FFormalPars     /*  3 */
+   ';'             /*  4 */ { $$.Tree                 := Tree.mProcDecl
+                                                         ((* Next          := *) Tree.NoTree
+                                                         ,(* IdentDef      := *) $2.Tree
+                                                         ,(* FormalPars    := *) $3.Tree
+                                                         ,(* DeclSection   := *) Tree.mDeclSection
+                                                                                 ((* DeclUnits := *) Tree.mmtDeclUnit()
+                                                                                 ,(* Procs     := *) Tree.mmtDecl())
+                                                         ,(* Stmts         := *) Tree.mNoStmts()
+                                                         ,(* EndPos        := *) $4.Scan.Position
+                                                         ,(* Ident         := *) $2.Tree^.IdentDef.Ident
+                                                         ,(* IdPos         := *) $2.Tree^.IdentDef.Pos);
+                            }
+.
+/********************************************************************************************************************************/
+FFormalPars:
+
+   '('             /*  1 */
+   ')'             /*  2 */
+   FormalResult    /*  3 */ { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) Tree.mmtFPSection()
+                                                         ,(* Type          := *) $3.Tree);
+                            }
+
+|  '('             /*  1 */
+   FFPSections     /*  2 */
+   ')'             /*  3 */
+   FormalResult    /*  4 */ { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) $2.Tree
+                                                         ,(* Type          := *) $4.Tree);
+                            }
+
+|                           { $$.Tree                 := Tree.mFormalPars
+                                                         ((* FPSections    := *) Tree.mmtFPSection()
+                                                         ,(* Type          := *) Tree.mmtType
+                                                                                 ((* Position := *) POS.NoPosition)
+                                                         );
+                            }
+.
+/********************************************************************************************************************************/
+FFPSections:
+
+   FPSection       /*  1 */
+   ';'             /*  2 */
+   FFPSections     /*  3 */ { $1.Tree^.FPSection.Next := $3.Tree;
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  FPSection       /*  1 */ 
+   ';'             /*  2 */
+   '..'            /*  3 */ { $1.Tree^.FPSection.Next := Tree.mGenericFPSection();
+                              $$.Tree                 := $1.Tree;
+                            }
+
+|  FPSection       /*  1 */ { $1.Tree^.FPSection.Next := Tree.mmtFPSection();
+                              $$.Tree                 := $1.Tree;
+                            }
+.
+/********************************************************************************************************************************/
+/*** END oberon.lal                                                                                                           ***/
+/********************************************************************************************************************************/
+

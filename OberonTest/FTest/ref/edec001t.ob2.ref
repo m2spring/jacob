@@ -1,0 +1,34 @@
+Compiling edec001t
+'MODULE' edec001t
+-------------------------------------------------------------------------------
+vshortint * VAR       SHORTINT
+vint      - VAR       INTEGER
+vlongint    VAR       LONGINT
+vreal     * VAR       REAL
+vlongreal   VAR       LONGREAL
+vchar     * VAR       CHAR
+vbool     - VAR       BOOLEAN
+vset        VAR       SET
+tShortint * TYPE      SHORTINT
+tInt      * TYPE      INTEGER
+tLongint    TYPE      LONGINT
+tReal     * TYPE      REAL
+tLongreal   TYPE      LONGREAL
+tChar     * TYPE      CHAR
+tBool     * TYPE      BOOLEAN
+tSet        TYPE      SET
+cshortint * CONST     SHORTINT = 10
+cint        CONST     INTEGER = 400
+clongint    CONST     LONGINT = 4000000
+creal       CONST     REAL = 3.00000E0
+clongreal   CONST     LONGREAL = 3.0000000000000D2
+cchar       CONST     <Char> = 'A'
+cbool       CONST     BOOLEAN = TRUE
+cset        CONST     SET = {1..4}
+t1Record  * TYPE      RECORD
+                       i * VAR       INTEGER
+                       c - VAR       CHAR
+                       d   VAR       BOOLEAN
+                      END
+-------------------------------------------------------------------------------
+

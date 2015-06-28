@@ -1,0 +1,235 @@
+Compiling eppr001f
+'PROCEDURE' PAssert
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PCopy
+-------------------------------------------------------------------------------
+x   VAR       ARRAY 10 OF CHAR
+v   VAR       ARRAY 5 OF CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PDec
+-------------------------------------------------------------------------------
+r    VAR       REAL
+lr   VAR       LONGREAL
+s    VAR       SET
+c    VAR       CHAR
+b    VAR       BOOLEAN
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PExcl
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+s    VAR       SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PHalt
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PInc
+-------------------------------------------------------------------------------
+r    VAR       REAL
+lr   VAR       LONGREAL
+s    VAR       SET
+c    VAR       CHAR
+b    VAR       BOOLEAN
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PIncl
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+s    VAR       SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PNew
+-------------------------------------------------------------------------------
+topen1   TYPE      POINTER TO ARRAY OF CHAR
+topen2   TYPE      POINTER TO ARRAY OF ARRAY OF INTEGER
+topen3   TYPE      POINTER TO ARRAY OF ARRAY OF ARRAY OF SHORTINT
+popen1   VAR       topen1
+popen2   VAR       topen2
+popen3   VAR       topen3
+si       VAR       SHORTINT
+i        VAR       INTEGER
+li       VAR       LONGINT
+r        VAR       REAL
+lr       VAR       LONGREAL
+s        VAR       SET
+b        VAR       BOOLEAN
+-------------------------------------------------------------------------------
+
+'MODULE' eppr001f
+-------------------------------------------------------------------------------
+abs1            CONST     <ErrorType> = <?Value>
+ash1            CONST     LONGINT = <?Value>
+ash2            CONST     LONGINT = <?Value>
+ash3            CONST     LONGINT = <?Value>
+ash4            CONST     LONGINT = <?Value>
+cap1            CONST     CHAR = <?Value>
+cap2            CONST     CHAR = <?Value>
+cap3            CONST     CHAR = <?Value>
+chr1            CONST     CHAR = <?Value>
+chr2            CONST     CHAR = <?Value>
+chr3            CONST     CHAR = <?Value>
+ent1            CONST     LONGINT = <?Value>
+ent2            CONST     LONGINT = <?Value>
+ent3            CONST     LONGINT = <?Value>
+ent4            CONST     LONGINT = <?Value>
+ent5            CONST     LONGINT = <?Value>
+long1           CONST     <ErrorType> = <?Value>
+long2           CONST     <ErrorType> = <EmptyValue>
+long3           CONST     <ErrorType> = MAX(LONGINT)
+tmaxrecord      TYPE      RECORD
+                          END
+tmaxarray       TYPE      ARRAY 1 OF CHAR
+tmaxpointer     TYPE      POINTER TO tmaxrecord
+tmaxprocedure   TYPE      (i:SET)
+max1            CONST     tmaxrecord = <?Value>
+max2            CONST     tmaxarray = <?Value>
+max3            CONST     tmaxpointer = <?Value>
+max4            CONST     tmaxprocedure = <?Value>
+tminrecord      TYPE      RECORD
+                          END
+tminarray       TYPE      ARRAY 1 OF CHAR
+tminpointer     TYPE      POINTER TO tminrecord
+tminprocedure   TYPE      (i:SET)
+min1            CONST     tminrecord = <?Value>
+min2            CONST     tminarray = <?Value>
+min3            CONST     tminpointer = <?Value>
+min4            CONST     tminprocedure = <?Value>
+odd1            CONST     BOOLEAN = <?Value>
+odd2            CONST     BOOLEAN = <?Value>
+odd3            CONST     BOOLEAN = <?Value>
+odd4            CONST     BOOLEAN = <?Value>
+ord1            CONST     INTEGER = <?Value>
+ord2            CONST     INTEGER = <?Value>
+ord3            CONST     INTEGER = <?Value>
+short1          CONST     <ErrorType> = <?Value>
+short2          CONST     <ErrorType> = <?Value>
+short3          CONST     <ErrorType> = <?Value>
+vlen1           VAR       ARRAY 3 OF ARRAY 4 OF ARRAY 5 OF INTEGER
+vlen2           VAR       ARRAY 1 OF ARRAY 4 OF ARRAY 8 OF ARRAY 10 OF BOOLEAN
+len1            CONST     LONGINT = <?Value>
+len2            CONST     LONGINT = <?Value>
+PAssert         PROCEDURE ()
+PCopy           PROCEDURE ()
+PDec            PROCEDURE ()
+PExcl           PROCEDURE ()
+PHalt           PROCEDURE ()
+PInc            PROCEDURE ()
+PIncl           PROCEDURE ()
+PNew            PROCEDURE ()
+-------------------------------------------------------------------------------
+
+eppr001f.ob2: 14,14: Actual parameter not compatible with formal
+eppr001f.ob2: 20,16: Actual parameter not compatible with formal
+eppr001f.ob2: 23,14: Actual parameter not compatible with formal
+eppr001f.ob2: 26,14: Actual parameter not compatible with formal
+eppr001f.ob2: 26,19: Actual parameter not compatible with formal
+eppr001f.ob2: 29,14: Actual parameter not compatible with formal
+eppr001f.ob2: 34,14: Actual parameter not compatible with formal
+eppr001f.ob2: 37,14: Actual parameter not compatible with formal
+eppr001f.ob2: 40,14: Actual parameter not compatible with formal
+eppr001f.ob2: 45,14: Actual parameter not compatible with formal
+eppr001f.ob2: 48,14: Actual parameter not compatible with formal
+eppr001f.ob2: 51,14: Actual parameter not compatible with formal
+eppr001f.ob2: 56,17: Actual parameter not compatible with formal
+eppr001f.ob2: 59,17: Actual parameter not compatible with formal
+eppr001f.ob2: 62,17: Actual parameter not compatible with formal
+eppr001f.ob2: 65,17: Actual parameter not compatible with formal
+eppr001f.ob2: 68,17: Actual parameter not compatible with formal
+eppr001f.ob2: 74,16: Actual parameter not compatible with formal
+eppr001f.ob2: 77,11: Expression not constant
+eppr001f.ob2: 77,16: Types are not allowed here
+eppr001f.ob2: 77,16: Actual parameter not compatible with formal
+eppr001f.ob2: 80,16: Actual parameter not compatible with formal
+eppr001f.ob2: 92,14: Actual parameter not compatible with formal
+eppr001f.ob2: 95,14: Actual parameter not compatible with formal
+eppr001f.ob2: 98,14: Actual parameter not compatible with formal
+eppr001f.ob2: 101,14: Actual parameter not compatible with formal
+eppr001f.ob2: 114,14: Actual parameter not compatible with formal
+eppr001f.ob2: 117,14: Actual parameter not compatible with formal
+eppr001f.ob2: 120,14: Actual parameter not compatible with formal
+eppr001f.ob2: 123,14: Actual parameter not compatible with formal
+eppr001f.ob2: 129,14: Actual parameter not compatible with formal
+eppr001f.ob2: 132,14: Actual parameter not compatible with formal
+eppr001f.ob2: 135,14: Actual parameter not compatible with formal
+eppr001f.ob2: 138,14: Actual parameter not compatible with formal
+eppr001f.ob2: 143,14: Actual parameter not compatible with formal
+eppr001f.ob2: 146,14: Actual parameter not compatible with formal
+eppr001f.ob2: 149,14: Actual parameter not compatible with formal
+eppr001f.ob2: 154,18: Actual parameter not compatible with formal
+eppr001f.ob2: 157,18: Actual parameter not compatible with formal
+eppr001f.ob2: 160,18: Actual parameter not compatible with formal
+eppr001f.ob2: 171,20: Illegal LEN dimension
+eppr001f.ob2: 174,20: Illegal LEN dimension
+eppr001f.ob2: 183,9: Actual parameter not compatible with formal
+eppr001f.ob2: 186,9: Actual parameter not compatible with formal
+eppr001f.ob2: 189,9: Actual parameter not compatible with formal
+eppr001f.ob2: 192,9: Actual parameter not compatible with formal
+eppr001f.ob2: 196,14: Actual parameter not compatible with formal
+eppr001f.ob2: 199,15: Actual parameter not compatible with formal
+eppr001f.ob2: 202,13: Actual parameter not compatible with formal
+eppr001f.ob2: 214,7: Actual parameter not compatible with formal
+eppr001f.ob2: 214,7: Actual parameter not compatible with formal
+eppr001f.ob2: 217,7: Actual parameter not compatible with formal
+eppr001f.ob2: 217,7: Actual parameter not compatible with formal
+eppr001f.ob2: 233,6: Actual parameter not compatible with formal
+eppr001f.ob2: 236,6: Actual parameter not compatible with formal
+eppr001f.ob2: 239,6: Actual parameter not compatible with formal
+eppr001f.ob2: 242,6: Actual parameter not compatible with formal
+eppr001f.ob2: 245,6: Actual parameter not compatible with formal
+eppr001f.ob2: 248,6: Actual parameter not compatible with formal
+eppr001f.ob2: 251,6: Actual parameter not compatible with formal
+eppr001f.ob2: 251,9: Actual parameter not compatible with formal
+eppr001f.ob2: 254,6: Actual parameter not compatible with formal
+eppr001f.ob2: 254,8: Actual parameter not compatible with formal
+eppr001f.ob2: 268,7: Actual parameter not compatible with formal
+eppr001f.ob2: 271,7: Actual parameter not compatible with formal
+eppr001f.ob2: 274,7: Actual parameter not compatible with formal
+eppr001f.ob2: 277,9: Actual parameter not compatible with formal
+eppr001f.ob2: 277,9: Expression exceeds set bounds
+eppr001f.ob2: 281,9: Actual parameter not compatible with formal
+eppr001f.ob2: 290,7: Actual parameter not compatible with formal
+eppr001f.ob2: 293,7: Actual parameter not compatible with formal
+eppr001f.ob2: 296,7: Actual parameter not compatible with formal
+eppr001f.ob2: 299,7: Actual parameter not compatible with formal
+eppr001f.ob2: 314,6: Actual parameter not compatible with formal
+eppr001f.ob2: 317,6: Actual parameter not compatible with formal
+eppr001f.ob2: 320,6: Actual parameter not compatible with formal
+eppr001f.ob2: 323,6: Actual parameter not compatible with formal
+eppr001f.ob2: 326,6: Actual parameter not compatible with formal
+eppr001f.ob2: 329,6: Actual parameter not compatible with formal
+eppr001f.ob2: 332,6: Actual parameter not compatible with formal
+eppr001f.ob2: 332,9: Actual parameter not compatible with formal
+eppr001f.ob2: 335,6: Actual parameter not compatible with formal
+eppr001f.ob2: 335,8: Actual parameter not compatible with formal
+eppr001f.ob2: 349,7: Actual parameter not compatible with formal
+eppr001f.ob2: 352,7: Actual parameter not compatible with formal
+eppr001f.ob2: 352,9: Actual parameter not compatible with formal
+eppr001f.ob2: 352,9: Expression exceeds set bounds
+eppr001f.ob2: 355,7: Actual parameter not compatible with formal
+eppr001f.ob2: 355,10: Actual parameter not compatible with formal
+eppr001f.ob2: 355,10: Expression exceeds set bounds
+eppr001f.ob2: 358,9: Actual parameter not compatible with formal
+eppr001f.ob2: 384,6: Actual parameter not compatible with formal
+eppr001f.ob2: 387,6: Actual parameter not compatible with formal
+eppr001f.ob2: 390,6: Actual parameter not compatible with formal
+eppr001f.ob2: 393,6: Actual parameter not compatible with formal
+eppr001f.ob2: 396,6: Actual parameter not compatible with formal
+eppr001f.ob2: 399,6: Actual parameter not compatible with formal
+eppr001f.ob2: 402,6: Actual parameter not compatible with formal
+eppr001f.ob2: 405,12: Too few actual parameters
+eppr001f.ob2: 408,15: Too many actual parameters
+eppr001f.ob2: 411,14: Too few actual parameters
+eppr001f.ob2: 414,13: Actual parameter not compatible with formal
+eppr001f.ob2: 414,19: Too many actual parameters
+eppr001f.ob2: 418,16: Too few actual parameters
+eppr001f.ob2: 421,15: Actual parameter not compatible with formal
+eppr001f.ob2: 421,21: Too many actual parameters

@@ -1,0 +1,11 @@
+Compiling edec001t
+Compiling edec009f
+'MODULE' edec009f
+-------------------------------------------------------------------------------
+e   SERVER    edec001t
+b   CONST     BOOLEAN = TRUE
+-------------------------------------------------------------------------------
+
+edec009f.ob2: 12,9: Identifier not exported from qualified module
+edec009f.ob2: 17,4: Object is read-only
+edec009f.ob2: 21,4: L-value expected

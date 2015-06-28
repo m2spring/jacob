@@ -1,0 +1,3 @@
+MODULE M31;
+BEGIN (* M31 *)
+END M31.

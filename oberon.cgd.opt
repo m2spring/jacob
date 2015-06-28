@@ -1,0 +1,1076 @@
+(********************************************************************************************************************************)
+(*** oberon.cgd.opt / OBERON-2 Code Generator Description (OPTimized)                                                         ***)
+(********************************************************************************************************************************)
+RULE x:Index 
+        i:Gv 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:Ireg;
+COND{ (x.factor>1) & (op.code=ASMOP.add) }
+EMIT{ o.loc        := i.loc; 	 
+      o.loc.ofs    := i.loc.ofs+x.factor*c.val; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+RULE x:Index 
+        i:Gv 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:Breg;
+COND{ (x.factor=1) & (op.code=ASMOP.add) }
+EMIT{ o.loc        := i.loc;  
+      o.loc.ofs    := i.loc.ofs+c.val; 
+      o.loc.breg   := r; 
+    }
+RULE x:Index 
+        i:Ireg 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:BregIreg;
+COND{ (x.factor>1) & (op.code=ASMOP.add) }
+EMIT{ o.loc        := ASM.mtLocation;
+      o.loc.label  := LAB.MT; 
+      o.loc.ofs    := i.loc.ofs+x.factor*c.val; 
+      o.loc.breg   := i.loc.ireg; 
+      o.loc.ireg   := r; 
+      o.loc.factor := x.factor;  
+      ASM.CS2                                        ( lea,l   ,  Loc(i.loc),R(i.loc.ireg)                                      ); 
+    }
+RULE x:Index 
+        i:Ireg 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:BregIreg;
+COND{ (x.factor=1) & (op.code=ASMOP.add) }
+EMIT{ o.loc        := i.loc;  
+      o.loc.ofs    := i.loc.ofs+c.val; 
+      o.loc.breg   := r; 
+    }
+RULE x:Index 
+        i:Breg 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:BregIreg;
+COND{ op.code=ASMOP.add }
+EMIT{ o.loc        := i.loc; 
+      o.loc.ofs    := i.loc.ofs+x.factor*c.val; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+RULE x:Index 
+        b:LReg 
+        op:SymDyOper
+           r:LReg
+           c:Constant
+     -> o:BregIreg;
+COND{ op.code=ASMOP.add }
+EMIT{ o.loc        := ASM.mtLocation;
+      o.loc.label  := LAB.MT; 
+      o.loc.ofs    := x.factor*c.val; 
+      o.loc.breg   := b; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE x:Index 
+        i:Gv 
+        Sub r:LReg c:Constant
+     -> o:Ireg;
+COND{ x.factor>1 }
+EMIT{ o.loc        := i.loc; 	 
+      o.loc.ofs    := i.loc.ofs-x.factor*c.val; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+RULE x:Index 
+        i:Gv 
+        Sub r:LReg c:Constant
+     -> o:Breg;
+COND{ x.factor=1 }
+EMIT{ o.loc        := i.loc;  
+      o.loc.ofs    := i.loc.ofs-c.val; 
+      o.loc.breg   := r; 
+    }
+RULE x:Index 
+        i:Ireg 
+        Sub r:LReg c:Constant
+     -> o:BregIreg;
+COND{ x.factor>1 }
+EMIT{ o.loc        := ASM.mtLocation;
+      o.loc.label  := LAB.MT; 
+      o.loc.ofs    := i.loc.ofs-x.factor*c.val; 
+      o.loc.breg   := i.loc.ireg; 
+      o.loc.ireg   := r; 
+      o.loc.factor := x.factor;  
+      ASM.CS2                                        ( lea,l   ,  Loc(i.loc),R(i.loc.ireg)                                      ); 
+    }
+RULE x:Index 
+        i:Ireg 
+        Sub r:LReg c:Constant
+     -> o:BregIreg;
+COND{ x.factor=1 }
+EMIT{ o.loc        := i.loc;  
+      o.loc.ofs    := i.loc.ofs-c.val; 
+      o.loc.breg   := r; 
+    }
+RULE x:Index 
+        i:Breg 
+        Sub r:LReg c:Constant
+     -> o:BregIreg;
+EMIT{ o.loc        := i.loc; 
+      o.loc.ofs    := i.loc.ofs-x.factor*c.val; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+RULE x:Index 
+        b:LReg 
+        Sub r:LReg c:Constant
+     -> o:BregIreg;
+EMIT{ o.loc        := ASM.mtLocation;
+      o.loc.label  := LAB.MT; 
+      o.loc.ofs    := -x.factor*c.val; 
+      o.loc.breg   := b; 
+      o.loc.ireg   := r;  
+      o.loc.factor := x.factor; 
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE op2:OpenIndexBase 
+        op1:OpenIndexFirst m:Memory x:LReg
+        tmp:LReg
+     -> out:aOpenIndexedElem;    
+COST 4;
+EMIT{ out.headerBaseReg   := tmp; 
+      out.displacementReg := x; 
+
+      IF ARG.OptionIndexChecking THEN 
+         INC(m.loc.ofs,op1.lenOfs); 
+         ASM.CS2                                     ( cmp,l   ,  Loc(m.loc),R(x)                                               );
+         ASM.C1                                      ( jae     ,  L(LAB.IndexFault)                                             );
+         DEC(m.loc.ofs,op1.lenOfs); 
+      END;
+
+      ASM.CS2                                        ( imul,l  ,  i(op2.staticSize),R(x)                                        ); 
+      ASM.CS2                                        ( lea,l   ,  Loc(m.loc),R(out.headerBaseReg)                               );
+    }
+RULE op3:OpenIndexApplication
+        op2:OpenIndexBase 
+           op1:OpenIndexFirst m:Memory x:LReg
+           tmp:LReg
+     -> out:BregIreg;
+COST 4;
+EMIT{ IF ARG.OptionIndexChecking THEN 
+         INC(m.loc.ofs,op1.lenOfs); 
+         ASM.CS2                                     ( cmp,l   ,  Loc(m.loc),R(x)                                               );
+         ASM.C1                                      ( jae     ,  L(LAB.IndexFault)                                             );
+         DEC(m.loc.ofs,op1.lenOfs); 
+      END;
+
+      IF m.loc.ireg#RegNil THEN 
+         ASM.CS2                                     ( lea,l   ,  Loc(m.loc),R(m.loc.breg)                                      ); 
+      END;
+
+      out.loc        := ASM.mtLocation;
+      out.loc.label  := LAB.MT; 
+      out.loc.ofs    := 0; 
+      out.loc.breg   := m.loc.breg; 
+      out.loc.ireg   := x; 
+      out.loc.factor := op2.staticSize;  
+
+      IF op3.isStackObj THEN 
+         IF out.loc.breg=ebp THEN out.loc.breg:=tmp; END;
+         ASM.CS2                                     ( mov,l   ,  oB(op3.objOfs,m.loc.breg),R(out.loc.breg)                     );
+      ELSE 
+         out.loc.ofs := op3.objOfs; 
+      END;
+    }
+RULE op3:OpenIndexApplication
+        op2:OpenIndexBase 
+           op1:OpenIndexFirst m:Memory c:Constant
+           tmp:LReg
+     -> out:BregIreg;
+COST 3;
+EMIT{ IF ARG.OptionIndexChecking THEN 
+         INC(m.loc.ofs,op1.lenOfs); 
+         ASM.CS2                                     ( cmp,l   ,  i(c.val),Loc(m.loc)                                           );
+         ASM.C1                                      ( jbe     ,  L(LAB.IndexFault)                                             );
+         DEC(m.loc.ofs,op1.lenOfs); 
+      END;
+
+      out.loc        := ASM.mtLocation;
+      out.loc.label  := LAB.MT; 
+      out.loc.ofs    := c.val*op2.staticSize; 
+      out.loc.breg   := m.loc.breg; 
+      out.loc.ireg   := RegNil; 
+      out.loc.factor := 1;  
+
+      IF op3.isStackObj THEN 
+         IF out.loc.breg=ebp THEN out.loc.breg:=tmp; END;
+         ASM.CS2                                     ( mov,l   ,  oB(op3.objOfs,m.loc.breg),R(out.loc.breg) );
+      ELSE 
+         INC(out.loc.ofs,op3.objOfs); 
+      END;
+    }
+(********************************************************************************************************************************)
+RULE Param 
+        in:aArguments 
+        AddressOf v:Gv
+     -> out:aArguments;
+COST 1;
+EMIT{ out.paramSpace:=in.paramSpace+4; 
+      ASM.C1                                         ( pushl   ,  ioL(v.loc.ofs,v.loc.label)                                    );
+    };
+RULE Param 
+        in:aArguments 
+        AddressOf
+           PointerFrom
+              c:ContentOf m:Memory
+     -> out:aArguments;
+COST 1;
+COND{ c.size=l }
+EMIT{ out.paramSpace:=in.paramSpace+4; 
+      ASM.C1                                         ( pushl   ,  Loc(m.loc)                                                    );
+    };
+RULE Param 
+        in:aArguments 
+        AddressOf
+           sel:Selector
+              PointerFrom
+                 c:ContentOf m:Memory
+     -> out:aArguments;
+COST 1;        
+COND{ (c.size=l) & (sel.ofs=0) }
+EMIT{ out.paramSpace:=in.paramSpace+4; 
+      ASM.C1                                         ( pushl   ,  Loc(m.loc)                                                    );
+    };
+(********************************************************************************************************************************)
+RULE AddressOf 
+        PointerFrom
+           c:ContentOf
+              m:Memory -> r:LReg;
+COST 2;
+COND{ c.size=l }
+EMIT{ ASM.CS2                                        ( mov,l   ,  Loc(m.loc),R(r)                                               );
+    }
+RULE AddressOf 
+        sel:Selector
+           PointerFrom
+              c:ContentOf
+                 m:Memory -> r:LReg;
+COST 2;
+COND{ (c.size=l) & (sel.ofs=0) }
+EMIT{ ASM.CS2                                        ( mov,l   ,  Loc(m.loc),R(r)                                               );
+    }
+(********************************************************************************************************************************)
+RULE Div a1:BReg<al> a2:Constant -> r:BReg;
+COST 6;
+TARGET a1;
+CHANGE <ah>
+SCRATCH tmp <bl..dh>;
+EMIT{ IF a2.val=1 THEN                               (*nop                                                                      *)
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( sar,b   ,  i(shift),R(a1)                                                ); 
+      ELSE 
+         ASM.CS2                                     ( mov,b   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.C0                                      ( cbw                                                                      ); 
+         ASM.CS1                                     ( idiv,b  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,b  ,  R(ah),R(ah)                                                   ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS1                                     ( dec,b   ,  R(al)                                                         );
+         ASM.Label                            ( label                                                                           );
+      END;
+    }
+RULE Div a1:WReg<ax> a2:Constant -> r:WReg;
+COST 6;
+TARGET a1;
+CHANGE <dx>
+SCRATCH tmp <bx,cx,si,di>;
+EMIT{ IF a2.val=1 THEN                               (*nop                                                                      *)
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( sar,w   ,  i(shift),R(a1)                                                ); 
+      ELSE 
+         ASM.CS2                                     ( mov,w   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.C0                                      ( cwd                                                                      ); 
+         ASM.CS1                                     ( idiv,w  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,w  ,  R(dx),R(dx)                                                   ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS1                                     ( dec,b   ,  R(ax)                                                         );
+         ASM.Label                            ( label                                                                           );
+      END;
+    }
+RULE Div a1:LReg<eax> a2:Constant -> r:LReg;
+COST 6;
+TARGET a1;
+CHANGE <edx>
+SCRATCH tmp <ebx,ecx,esi,edi>;
+EMIT{ IF a2.val=1 THEN                               (*nop                                                                      *)
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( sar,l   ,  i(shift),R(a1)                                                ); 
+      ELSE 
+         ASM.CS2                                     ( mov,l   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.C0                                      ( cdq                                                                      ); 
+         ASM.CS1                                     ( idiv,l  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,l  ,  R(edx),R(edx)                                                 ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS1                                     ( dec,l   ,  R(eax)                                                        );
+         ASM.Label                            ( label                                                                           );
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Mod a1:BReg<al> a2:Constant -> r:BReg<ah>;
+COST 6;
+SCRATCH tmp <bl..dh>;
+EMIT{ IF a2.val=1 THEN 
+         ASM.CS2                                     ( xor,b   ,  R(ah),R(ah)                                                   ); 
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( mov,b   ,  R(al),R(ah)                                                   ); 
+         ASM.CS2                                     ( and,b   ,  i(a2.val-1),R(ah)                                             ); 
+      ELSE 
+         ASM.C0                                      ( cbw                                                                      ); 
+         ASM.CS2                                     ( mov,b   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.CS1                                     ( idiv,b  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,b  ,  R(ah),R(ah)                                                   ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( add,b   ,  i(a2.val),R(ah)                                               );
+         ASM.Label                            ( label                                                                           ); 
+      END;
+    }
+RULE Mod a1:WReg<ax> a2:Constant -> r:WReg<dx>;
+COST 6;
+SCRATCH tmp <bx,cx,si,di>;
+EMIT{ IF a2.val=1 THEN 
+         ASM.CS2                                     ( xor,w   ,  R(dx),R(dx)                                                   ); 
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( mov,w   ,  R(ax),R(dx)                                                   ); 
+         ASM.CS2                                     ( and,w   ,  i(a2.val-1),R(dx)                                             ); 
+      ELSE 
+         ASM.CS2                                     ( mov,w   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.C0                                      ( cwd                                                                      ); 
+         ASM.CS1                                     ( idiv,w  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,w  ,  R(dx),R(dx)                                                   ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( add,w   ,  i(a2.val),R(dx)                                               );
+         ASM.Label                            ( label                                                                           ); 
+      END;
+    }
+RULE Mod a1:LReg<eax> a2:Constant -> r:LReg<edx>;
+COST 6;
+SCRATCH tmp <ebx,ecx,esi,edi>;
+EMIT{ IF a2.val=1 THEN 
+         ASM.CS2                                     ( xor,l   ,  R(edx),R(edx)                                                 ); 
+      ELSIF ADR.IntLog2(a2.val,shift) THEN
+         ASM.CS2                                     ( mov,l   ,  R(eax),R(edx)                                                 ); 
+         ASM.CS2                                     ( and,l   ,  i(a2.val-1),R(edx)                                            ); 
+      ELSE 
+         ASM.CS2                                     ( mov,l   ,  i(a2.val),R(tmp)                                              ); 
+         ASM.C0                                      ( cdq                                                                      ); 
+         ASM.CS1                                     ( idiv,l  ,  R(tmp)                                                        ); 
+         ASM.CS2                                     ( test,l  ,  R(edx),R(edx)                                                 ); 
+         ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( add,l   ,  i(a2.val),R(edx)                                              );
+         ASM.Label                            ( label                                                                           ); 
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Difference a1:LReg a2:Constant -> LReg;
+COST 1;
+TARGET a1;
+EMIT{ ASM.CS2                                        ( and,l   ,  i(LONGINT(BITSET(-1)-BITSET(a2.val))),R(a1)                   );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SetExtendByRange s:LReg r1:Constant r2:LReg -> LReg;
+COST 6;
+TARGET s;
+EMIT{ IF ARG.OptionRangeChecking THEN 
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r2)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+      END;                                                          
+      IF r1.val=0 THEN                                              
+         ASM.CS1                                     ( inc,l   ,  R(r2)                                                         ); 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r2,4),R(r2)                               ); 
+         ASM.CS2                                     ( or,l    ,  R(r2),R(s)                                                    ); 
+      ELSIF r1.val=31 THEN
+         ASM.CS2                                     ( cmp,l   ,  i(r1.val),R(r2)                                               );
+         ASM.C1                                      ( jl      ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( or,l    ,  x(ADR.InvBitRangeTab[r1.val]),R(s)                            ); 
+         ASM.Label                            ( label                                                                           );
+      ELSE 
+         ASM.CS1                                     ( inc,l   ,  R(r2)                                                         ); 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r2,4),R(r2)                               ); 
+         ASM.CS2                                     ( and,l   ,  x(ADR.InvBitRangeTab[r1.val]),R(r2)                           );
+         ASM.CS2                                     ( or,l    ,  R(r2),R(s)                                                    ); 
+      END;
+    }
+RULE SetExtendByRange s:LReg r1:LReg r2:Constant -> LReg;
+COST 6;
+TARGET s;
+EMIT{ IF ARG.OptionRangeChecking THEN 
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r1)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+      END;                                                         
+      IF r2.val=31 THEN                                            
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r1,4),R(r1)                               ); 
+         ASM.CS1                                     ( not,l   ,  R(r1)                                                         ); 
+         ASM.CS2                                     ( or,l    ,  R(r1),R(s)                                                    ); 
+      ELSIF r2.val=0 THEN
+         ASM.CS2                                     ( test,l  ,  R(r1),R(r1)                                                   );
+         ASM.C1                                      ( jnz     ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( or,l    ,  x(1),R(s)                                                     ); 
+         ASM.Label                            ( label                                                                           );
+      ELSE 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r1,4),R(r1)                               ); 
+         ASM.CS1                                     ( not,l   ,  R(r1)                                                         ); 
+         ASM.CS2                                     ( and,l   ,  x(ADR.BitRangeTab[1+r2.val]),R(r1)                            ); 
+         ASM.CS2                                     ( or,l    ,  R(r1),R(s)                                                    ); 
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SetExtendByRange s:Constant r1:LReg r2:LReg -> LReg;
+COST 10;
+TARGET r1;
+EMIT{ IF ARG.OptionRangeChecking THEN 
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r1)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r2)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+      END;
+      ASM.CS2                                        ( mov,l   ,  LIf(LAB.BitRangeTab,r1,4),R(r1)                               ); 
+      ASM.CS1                                        ( not,l   ,  R(r1)                                                         ); 
+      ASM.CS1                                        ( inc,l   ,  R(r2)                                                         ); 
+      ASM.CS2                                        ( and,l   ,  LIf(LAB.BitRangeTab,r2,4),R(r1)                               ); 
+      IF s.val#0 THEN 
+         ASM.CS2                                     ( or,l    ,  x(s.val),R(r1)                                                ); 
+      END;
+    }
+RULE SetExtendByRange s:Constant r1:Constant r2:LReg -> LReg;
+COST 5;
+TARGET r2;
+EMIT{ IF ARG.OptionRangeChecking THEN 
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r2)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+      END;                                                      
+      IF r1.val=0 THEN                                          
+         ASM.CS1                                     ( inc,l   ,  R(r2)                                                         ); 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r2,4),R(r2)                               ); 
+      ELSIF r1.val=31 THEN
+         ASM.CS2                                     ( cmp,l   ,  i(r1.val),R(r2)                                               );
+         ASM.C1                                      ( jl      ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( mov,l   ,  x(ADR.InvBitRangeTab[r1.val]),R(r2)                           );
+         ASM.Label                            ( label                                                                           );
+      ELSE
+         ASM.CS1                                     ( inc,l   ,  R(r2)                                                         ); 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r2,4),R(r2)                               ); 
+         ASM.CS2                                     ( and,l   ,  x(ADR.InvBitRangeTab[r1.val]),R(r2)                           );
+      END;
+      IF s.val#0 THEN
+         ASM.CS2                                     ( or,l    ,  x(s.val),R(r2)                                                ); 
+      END;
+    }
+RULE SetExtendByRange s:Constant r1:LReg r2:Constant -> LReg;
+COST 5;
+TARGET r1;
+EMIT{ IF ARG.OptionRangeChecking THEN 
+         ASM.CS2                                     ( cmp,l   ,  i(31),R(r1)                                                   );
+         ASM.C1                                      ( ja      ,  L(LAB.ElementFault)                                           );
+      END;                                                     
+      IF r2.val=31 THEN                                        
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r1,4),R(r1)                               ); 
+         ASM.CS1                                     ( not,l   ,  R(r1)                                                         ); 
+      ELSIF r2.val=0 THEN
+         ASM.CS2                                     ( test,l  ,  R(r1),R(r1)                                                   );
+         ASM.C1                                      ( jnz     ,  L(LAB.New(label))                                             );
+         ASM.CS2                                     ( mov,l   ,  x(1),R(r1)                                                    );
+         ASM.Label                            ( label                                                                           );
+      ELSE 
+         ASM.CS2                                     ( mov,l   ,  LIf(LAB.BitRangeTab,r1,4),R(r1)                               ); 
+         ASM.CS1                                     ( not,l   ,  R(r1)                                                         ); 
+         ASM.CS2                                     ( and,l   ,  x(ADR.BitRangeTab[1+r2.val]),R(r1)                            ); 
+      END; 
+      IF s.val#0 THEN 
+         ASM.CS2                                     ( or,l    ,  x(s.val),R(r1)                                                ); 
+      END;
+    }
+(********************************************************************************************************************************)
+RULE BoolVal
+       op:Branch cc:aCondition
+     -> o:BReg;
+COST 1;
+EMIT{ oper:=ASM.FlagSetOperTab[cc.rel,op.isSigned]; 
+      ASM.C1                                         ( oper    ,  R(o)                                                          );
+    }
+     
+RULE BoolVal
+       op:Branch
+         Flag aLabel r:BReg
+     -> o:BReg;
+COST 0;
+TARGET r;
+     
+RULE BoolVal
+       Not
+          op:Branch cc:aCondition
+     -> o:BReg;
+COST 1;
+EMIT{ oper:=ASM.FlagSetOperTab[ASM.InvRelTab[cc.rel],op.isSigned]; 
+      ASM.C1                                         ( oper    ,  R(o)                                                          );
+    }
+     
+RULE BoolVal
+       Not
+          op:Branch
+            Flag aLabel r:BReg
+     -> o:BReg;
+COST 1;
+TARGET r;
+EMIT{ ASM.CS1                                        ( not,b   ,  R(r)                                                          );
+    }
+     
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE BoolVal
+        In aLabel r1:LReg r2:AMemAReg
+     -> o:BReg;
+COST 4;
+EMIT{ ASM.CS2                                        ( cmp,l   ,  i(31),R(r1)                                                   );
+      ASM.C1                                         ( ja      ,  L(LAB.New(label))                                             );
+      ASM.CS2                                        ( bt,l    ,  R(r1),Operand(r2.oper)                                        ); 
+      ASM.Label                               ( label                                                                           ); 
+      ASM.C1                                         ( setc    ,  R(o)                                                          );
+    }
+RULE BoolVal
+        In aLabel r1:Constant r2:AMemAReg
+     -> o:BReg;
+COST 2;
+EMIT{ set:={}; INCL(set,r1.val); 
+      ASM.CS2                                        ( test,l  ,  i(LONGINT(set)),Operand(r2.oper)                              ); 
+      ASM.C1                                         ( setnz   ,  R(o)                                                          );
+    }
+RULE BoolVal
+        op:Is aLabel tag:LReg 
+     -> o:BReg;
+COST 2;
+EMIT{ ASM.CS2                                        ( cmp,l   ,  iL(op.typeLabel),oB(op.ttableElemOfs,tag)                     );
+      ASM.C1                                         ( setz    ,  R(o)                                                          );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE BoolVal
+        Odd aLabel r:Reg
+     -> o:BReg;
+COST 2;
+EMIT{ IF o=ASM.SizedRegTab[r,b] THEN 
+         ASM.CS2                                     ( and,b   ,  i(1),R(ASM.SizedRegTab[r,b])                                  ); 
+      ELSE 
+         ASM.CS2                                     ( test,b  ,  i(1),R(ASM.SizedRegTab[r,b])                                  );
+         ASM.C1                                      ( setnz   ,  R(o)                                                          );
+      END;
+    }
+RULE BoolVal
+        Odd aLabel r:AMem
+     -> o:BReg;
+COST 2;
+EMIT{ ASM.CS2                                        ( test,b  ,  i(1),Operand(r.oper)                                          );
+      ASM.C1                                         ( setnz   ,  R(o)                                                          );
+    }
+RULE BoolVal
+        Bit aLabel m:Memory r:LReg
+     -> o:BReg;
+COST 2;
+EMIT{ ASM.CS2                                        ( bt,l    ,  R(r),Loc(m.loc)                                               );
+      ASM.C1                                         ( setc    ,  R(o)                                                          );
+    }
+RULE BoolVal
+        op:Cc aLabel
+     -> o:BReg;
+COST 1;
+CHANGE <eax>;
+EMIT{ IF    op.condcoding=ASM.codeCF THEN ASM.C1     ( setc    ,  R(o)                                                          );
+      ELSIF op.condcoding=ASM.codePF THEN ASM.C1     ( setp    ,  R(o)                                                          );
+      ELSIF op.condcoding=ASM.codeZF THEN ASM.C1     ( setz    ,  R(o)                                                          );
+      ELSIF op.condcoding=ASM.codeSF THEN ASM.C1     ( sets    ,  R(o)                                                          );
+      ELSIF op.condcoding=ASM.codeOF THEN ASM.C1     ( seto    ,  R(o)                                                          );
+                                     ELSE ASM.C0     ( pushf                                                                    );
+                                          ASM.C1     ( popl    ,  R(eax)                                                        );
+                                          ASM.CS2    ( test,l  ,  x(op.condcoding),R(eax)                                       );
+                                          ASM.C1     ( setz    ,  R(o)                                                          );
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*<<<<<<<<<<<<<<<
+RULE op:In aLabel r1:LReg r2:Constant -> aBoolean;
+COST 5;
+EMIT{ ASM.CS2                                        ( cmp,l   ,  i(31),R(r1)                                                   );
+      ASM.C1                                         ( ja      ,  L(op.falseLabel)                                              );
+      ASM.CS2                                        ( bt,l    ,  R(r1),L(CV.Set(r2.val))                                       ); 
+      ASM.C1                                         ( jz      ,  L(op.falseLabel)                                              );
+      ASM.C1                                         ( jmp     ,  L(op.trueLabel)                                               );
+    }
+>>>>>>>>>>>>>>>*)
+RULE op:In aLabel r1:Constant r2:AMemAReg -> aBoolean;
+COST 5;
+EMIT{ set:={}; INCL(set,r1.val); 
+      ASM.CS2                                        ( test,l  ,  i(LONGINT(set)),Operand(r2.oper)                              ); 
+      ASM.C1                                         ( jz      ,  L(op.falseLabel)                                              );
+      ASM.C1                                         ( jmp     ,  L(op.trueLabel)                                               );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE op:Odd aLabel r:AMem -> aBoolean;
+COST 3;
+EMIT{ ASM.CS2                                        ( test,b  ,  i(1),Operand(r.oper)                                          );
+      ASM.C1                                         ( jz      ,  L(op.falseLabel)                                              );
+      ASM.C1                                         ( jmp     ,  L(op.trueLabel)                                               );
+    }
+(********************************************************************************************************************************)
+RULE op:StrCopy 
+     StrCopyArguments
+           s:ImplicifyConst src:Memory 
+           d:ImplicifyConst dst:Memory;
+CHANGE <eax,ecx,esi,edi>
+EMIT{ IF d.len<s.len THEN s.len:=d.len; END;
+
+      CASE s.len OF
+      |0:  ;
+
+      |1:  ASM.CS2                                   ( mov,b   ,  i(0),Loc(dst.loc)                                             ); 
+
+      |2:  ASM.CS2                                   ( mov,w   ,  Loc(src.loc),R(ax)                                            ); 
+           ASM.CS2                                   ( xor,b   ,  R(ah),R(ah)                                                   ); 
+           ASM.CS2                                   ( mov,w   ,  R(ax),Loc(dst.loc)                                            );
+
+      |3:  ASM.CS2                                   ( mov,w   ,  Loc(src.loc),R(ax)                                            ); 
+           ASM.CS2                                   ( mov,w   ,  R(ax),Loc(dst.loc)                                            ); 
+           INC(dst.loc.ofs,2);
+           ASM.CS2                                   ( mov,b   ,  i(0),Loc(dst.loc)                                             );
+
+      |4:  ASM.CS2                                   ( mov,l   ,  Loc(src.loc),R(eax)                                           ); 
+           ASM.CS2                                   ( mov,l   ,  R(eax),Loc(dst.loc)                                           ); 
+           INC(dst.loc.ofs,3);
+           ASM.CS2                                   ( mov,b   ,  i(0),Loc(dst.loc)                                             ); 
+
+      ELSE ASM.CS2                                   ( mov,l   ,  i(s.len-1),R(ecx)                                             ); 
+           ASM.CS2                                   ( lea,l   ,  Loc(src.loc),R(esi)                                           ); 
+           ASM.CS2                                   ( lea,l   ,  Loc(dst.loc),R(edi)                                           ); 
+
+           ASM.Label                 ( LAB.New(label1)                                                                          );
+           ASM.CS0                                   ( lods,b                                                                   ); 
+           ASM.CS0                                   ( stos,b                                                                   ); 
+           ASM.CS2                                   ( test,b  ,  R(al),R(al)                                                   ); 
+           ASM.C1                                    ( loopnz  ,  L(label1)                                                     );
+           ASM.C1                                    ( jz      ,  L(LAB.New(label2))                                            );
+           ASM.CS2                                   ( mov,b   ,  i(0),B(edi)                                                   );
+           ASM.Label                         ( label2                                                                           ); 
+      END;
+    }
+RULE StrCopyArguments 
+        s:Implicify src:Memory
+        d:Implicify dst:Memory
+     -> aStrCopyArgs;
+CHANGE <ecx,esi,edi>
+EMIT{ INC(src.loc.ofs,s.lenOfs);
+      ASM.CS2                                        ( mov,l   ,  Loc(src.loc),R(ecx)                                           ); 
+      DEC(src.loc.ofs,s.lenOfs);
+
+      INC(dst.loc.ofs,d.lenOfs);
+      ASM.CS2                                        ( cmp,l   ,  Loc(dst.loc),R(ecx)                                           ); 
+      ASM.C1                                         ( jle     ,  L(LAB.New(label1))                                            );
+      ASM.CS2                                        ( mov,l   ,  Loc(dst.loc),R(ecx)                                           ); 
+      ASM.Label                              ( label1                                                                           );                      
+      DEC(dst.loc.ofs,d.lenOfs);
+
+      INC(src.loc.ofs,s.objOfs);
+      IF s.isStackObject THEN
+         ASM.CS2                                     ( mov,l   ,  Loc(src.loc),R(esi)                                           );
+      ELSE
+         ASM.CS2                                     ( lea,l   ,  Loc(src.loc),R(esi)                                           );
+      END;
+      
+      INC(dst.loc.ofs,d.objOfs);
+      IF d.isStackObject THEN
+         ASM.CS2                                     ( mov,l   ,  Loc(dst.loc),R(edi)                                           );
+      ELSE
+         ASM.CS2                                     ( lea,l   ,  Loc(dst.loc),R(edi)                                           );
+      END;
+    }
+RULE StrCopyArguments 
+        s:ImplicifyConst src:Memory 
+        d:Implicify dst:Memory
+     -> aStrCopyArgs;
+CHANGE <ecx,esi,edi>
+EMIT{ INC(dst.loc.ofs,d.lenOfs);
+      ASM.CS2                                        ( mov,l   ,  Loc(dst.loc),R(ecx)                                           ); 
+      ASM.CS2                                        ( cmp,l   ,  i(s.len),R(ecx)                                               ); 
+      ASM.C1                                         ( jle     ,  L(LAB.New(label))                                             );
+      ASM.CS2                                        ( mov,l   ,  i(s.len),R(ecx)                                               ); 
+      ASM.Label                               ( label                                                                           );                      
+      DEC(dst.loc.ofs,d.lenOfs);
+
+      ASM.CS2                                        ( lea,l   ,  Loc(src.loc),R(esi)                                           );
+      
+      INC(dst.loc.ofs,d.objOfs);
+      IF d.isStackObject THEN
+         ASM.CS2                                     ( mov,l   ,  Loc(dst.loc),R(edi)                                           );
+      ELSE
+         ASM.CS2                                     ( lea,l   ,  Loc(dst.loc),R(edi)                                           );
+      END;
+    }
+RULE StrCopyArguments 
+        s:Implicify src:Memory
+        d:ImplicifyConst dst:Memory 
+     -> aStrCopyArgs;
+CHANGE <ecx,esi,edi>
+EMIT{ INC(src.loc.ofs,s.lenOfs);
+      ASM.CS2                                        ( mov,l   ,  Loc(src.loc),R(ecx)                                           ); 
+      ASM.CS2                                        ( cmp,l   ,  i(d.len),R(ecx)                                               ); 
+      ASM.C1                                         ( jle     ,  L(LAB.New(label))                                             );
+      ASM.CS2                                        ( mov,l   ,  i(d.len),R(ecx)                                               ); 
+      ASM.Label                               ( label                                                                           );                      
+      DEC(src.loc.ofs,s.lenOfs);
+
+      INC(src.loc.ofs,s.objOfs);
+      IF s.isStackObject THEN
+         ASM.CS2                                     ( mov,l   ,  Loc(src.loc),R(esi)                                           );
+      ELSE
+         ASM.CS2                                     ( lea,l   ,  Loc(src.loc),R(esi)                                           );
+      END;
+      
+      ASM.CS2                                        ( lea,l   ,  Loc(dst.loc),R(edi)                                           );
+    }
+(********************************************************************************************************************************)
+RULE Ash a1:LReg a2:LongintConst -> r:LReg;
+COST 1;
+TARGET a1;
+EMIT{ IF ABS(a2.val)<ASM.BitSizeTab[ASM.RegSizeTab[a1]] THEN 
+         IF a2.val>0 THEN 
+            ASM.CS2                                  ( shl,l   ,  i(a2.val),R(a1)                                               );
+         ELSIF a2.val<0 THEN
+            ASM.CS2                                  ( sar,l   ,  i(-a2.val),R(a1)                                              );
+         END;
+      ELSE 
+         IF a2.val<0 THEN
+            ASM.CS2                                  ( mov,l   ,  i(-1),R(a1)                                                   );
+         ELSE
+            ASM.CS2                                  ( xor,l   ,  R(a1),R(a1)                                                   );
+         END;
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Excl m:Memory c:LongintConst;
+COST 1;
+EMIT{ set:={0..31}; EXCL(set,c.val); 
+      ASM.CS2                                        ( and,l   ,  x(LONGCARD(set)),Loc(m.loc)                                   );
+    }
+RULE Incl m:Memory c:LongintConst;
+COST 1;
+EMIT{ set:={}; INCL(set,c.val); 
+      ASM.CS2                                        ( or,l    ,  x(LONGCARD(set)),Loc(m.loc)                                   );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE op:ShiftOrRotate a1:Reg a2:LongintConst -> r:Reg;
+COST 1;
+TARGET a1;
+EVAL{ r.size:=a1.size; }
+EMIT{ IF ASMOP.IsRotateOper[op.code] OR (ABS(a2.val)<ASM.BitSizeTab[ASM.RegSizeTab[a1]]) THEN 
+         IF a2.val>0 THEN 
+            ASM.CS2                                  ( op.code,ASM.RegSizeTab[a1]  ,  i(a2.val),R(a1)                           );
+         ELSIF a2.val<0 THEN
+            op.code:=ASMOP.InvDirTab[op.code]; 
+            ASM.CS2                                  ( op.code,ASM.RegSizeTab[a1]  ,  i(-a2.val),R(a1)                          );
+         END;
+      ELSE 
+         ASM.CS2                                     ( xor,ASM.RegSizeTab[a1]      ,  R(a1),R(a1)                               );
+      END;
+    }
+(********************************************************************************************************************************)
+RULE Retype2Data op:Data2Retype src:Reg -> dst:BReg; COND{ op.dstLen=1 } EMIT{ ASM.RegCopy(src,dst); }
+RULE Retype2Data op:Data2Retype src:Reg -> dst:WReg; COND{ op.dstLen=2 } EMIT{ ASM.RegCopy(src,dst); }
+RULE Retype2Data op:Data2Retype src:Reg -> dst:LReg; COND{ op.dstLen=4 } EMIT{ ASM.RegCopy(src,dst); }
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Retype2Data op:Addr2Retype src:Memory -> dst:BReg; 
+COND{ op.dstLen=1 }
+EMIT{ IF op.srcLen=0 THEN
+         ASM.CS2                                     ( xor,b   ,  R(dst),R(dst)                                                 ); 
+      ELSE
+         ASM.CS2                                     ( mov,b   ,  Loc(src.loc),R(dst)                                           ); 
+      END;
+    }
+RULE Retype2Data op:Addr2Retype src:Memory -> dst:WReg; 
+COND{ op.dstLen=2 }
+EMIT{ IF op.srcLen=0 THEN
+         ASM.CS2                                     ( xor,w   ,  R(dst),R(dst)                                                 ); 
+      ELSIF op.srcLen=1 THEN
+         ASM.C2                                      ( movzbw  ,  Loc(src.loc),R(dst)                                           ); 
+      ELSE 
+         ASM.CS2                                     ( mov,w   ,  Loc(src.loc),R(dst)                                           ); 
+      END;
+    }
+RULE Retype2Data op:Addr2Retype src:Memory -> dst:LReg; 
+COND{ op.dstLen=4 }
+EMIT{ IF op.srcLen=0 THEN
+         ASM.CS2                                     ( xor,l   ,  R(dst),R(dst)                                                 ); 
+      ELSIF op.srcLen=1 THEN
+         ASM.C2                                      ( movzbl  ,  Loc(src.loc),R(dst)                                           ); 
+      ELSIF op.srcLen=2 THEN
+         ASM.C2                                      ( movzwl  ,  Loc(src.loc),R(dst)                                           ); 
+      ELSIF op.srcLen=3 THEN
+         ASM.CS2                                     ( mov,l   ,  Loc(src.loc),R(dst)                                           ); 
+         ASM.CS2                                     ( and,l   ,  x(0FFFFFFH),R(dst)                                            ); 
+      ELSE 
+         ASM.CS2                                     ( mov,l   ,  Loc(src.loc),R(dst)                                           ); 
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Retype2Float op:Addr2Retype src:Memory -> Float; 
+COND{ ((op.dstLen=4) OR (op.dstLen=8)) & (op.dstLen<=op.srcLen) }
+EMIT{ NDP.CS1                                        ( fld,ASM.FloatSizeTab[op.dstLen]  ,  Loc(src.loc)                         ); 
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Retype2Addr op:Addr2Retype src:Memory -> dst:Memory; 
+COND{ op.dstLen<=op.srcLen }
+EMIT{ dst.loc:=src.loc;
+    }
+(********************************************************************************************************************************)
+RULE Int2Integer BReg<al> -> o:WReg<ax>;
+COST 1;
+EMIT{ ASM.C0                                         ( cbw                                                                      );
+    }
+RULE Int2Longint WReg<ax> -> o:LReg<eax>;
+COST 1;
+EMIT{ ASM.C0                                         ( cwde                                                                     );
+    }
+RULE Int2Longint Int2Integer i:BReg -> o:LReg;
+COST 1;
+EMIT{ ASM.C2                                         ( movsbl  ,  R(i),R(o)                                                     );
+    }
+RULE Int2Longint Card2Integer BReg<al> -> o:LReg<eax>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(o) ); }
+RULE Int2Longint Card2Integer BReg<bl> -> o:LReg<ebx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(o) ); }
+RULE Int2Longint Card2Integer BReg<cl> -> o:LReg<ecx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(o) ); }
+RULE Int2Longint Card2Integer BReg<dl> -> o:LReg<edx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(o) ); }
+
+RULE Int2Longint i:Constant -> o:Constant;
+EVAL{ o.size:=l; o.val:=i.val; }
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE Card2Shortint WReg< ax> -> o:BReg< al>; COST 0; 
+RULE Card2Shortint WReg< bx> -> o:BReg< bl>; COST 0; 
+RULE Card2Shortint WReg< cx> -> o:BReg< cl>; COST 0; 
+RULE Card2Shortint WReg< dx> -> o:BReg< dl>; COST 0; 
+                         
+RULE Card2Shortint LReg<eax> -> o:BReg< al>; COST 0; 
+RULE Card2Shortint LReg<ebx> -> o:BReg< bl>; COST 0; 
+RULE Card2Shortint LReg<ecx> -> o:BReg< cl>; COST 0; 
+RULE Card2Shortint LReg<edx> -> o:BReg< dl>; COST 0; 
+                         
+RULE Card2Integer  BReg< al> -> o:WReg< ax>; COST 1; EMIT{ ASM.CS2( xor,b  ,  R(ah),R(ah)      ); }
+RULE Card2Integer  BReg< bl> -> o:WReg< bx>; COST 1; EMIT{ ASM.CS2( xor,b  ,  R(bh),R(bh)      ); }
+RULE Card2Integer  BReg< cl> -> o:WReg< cx>; COST 1; EMIT{ ASM.CS2( xor,b  ,  R(ch),R(ch)      ); }
+RULE Card2Integer  BReg< dl> -> o:WReg< dx>; COST 1; EMIT{ ASM.CS2( xor,b  ,  R(dh),R(dh)      ); }
+
+RULE Card2Integer  LReg<eax> -> o:WReg< ax>; COST 0; 
+RULE Card2Integer  LReg<ebx> -> o:WReg< bx>; COST 0; 
+RULE Card2Integer  LReg<ecx> -> o:WReg< cx>; COST 0; 
+RULE Card2Integer  LReg<edx> -> o:WReg< dx>; COST 0; 
+RULE Card2Integer  LReg<esi> -> o:WReg< si>; COST 0; 
+RULE Card2Integer  LReg<edi> -> o:WReg< di>; COST 0; 
+                         
+RULE Card2Longint  BReg< al> -> o:LReg<eax>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(eax)   ); }
+RULE Card2Longint  BReg< bl> -> o:LReg<ebx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(ebx)   ); }
+RULE Card2Longint  BReg< cl> -> o:LReg<ecx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(ecx)   ); }
+RULE Card2Longint  BReg< dl> -> o:LReg<edx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFH),R(edx)   ); }
+
+RULE Card2Longint  WReg< ax> -> o:LReg<eax>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(eax) ); }
+RULE Card2Longint  WReg< bx> -> o:LReg<ebx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(ebx) ); }
+RULE Card2Longint  WReg< cx> -> o:LReg<ecx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(ecx) ); }
+RULE Card2Longint  WReg< dx> -> o:LReg<edx>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(edx) ); }
+RULE Card2Longint  WReg< si> -> o:LReg<esi>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(esi) ); }
+RULE Card2Longint  WReg< di> -> o:LReg<edi>; COST 1; EMIT{ ASM.CS2( and,l  ,  x(0FFFFH),R(edi) ); }
+
+(********************************************************************************************************************************)
+RULE op:ContentOf
+        PointerFrom
+           g:PointerGuard m:Memory r:LReg tag:LReg 
+     -> o:LReg;
+TARGET r;
+COND{ op.size=l }
+EMIT{ ASM.CS2                                        ( mov,l   ,  Loc(m.loc),R(r)                                               ); 
+      IF ARG.OptionNilChecking THEN 
+         ASM.CS2                                     ( test,l  ,  R(r),R(r)                                                     ); 
+         ASM.C1                                      ( jz      ,  L(LAB.NilFault)                                               ); 
+      END;
+      ASM.CS2                                        ( mov,l   ,  oB(-4,r),R(tag)                                               ); 
+      ASM.CS2                                        ( cmp,l   ,  iL(g.typeLabel),oB(g.ttableElemOfs,tag)                       );
+      ASM.C1                                         ( jz      ,  L(LAB.New(label1))                                            );
+      ASM.C1                                         ( pushl   ,  oL(-12,g.typeLabel)                                           );
+      ASM.C1                                         ( pushl   ,  oB(-12,tag)                                                   );
+      ASM.C1                                         ( jmp     ,  L(LAB.GuardFault)                                             ); 
+      ASM.Label                              ( label1                                                                           );
+    }
+RULE NilCheck
+        op:ContentOf
+           PointerFrom
+              g:PointerGuard m:Memory r:LReg tag:LReg 
+     -> o:LReg;
+TARGET r;
+COND{ op.size=l }
+EMIT{ ASM.CS2                                        ( mov,l   ,  Loc(m.loc),R(r)                                               ); 
+      IF ARG.OptionNilChecking THEN 
+         ASM.CS2                                     ( test,l  ,  R(r),R(r)                                                     ); 
+         ASM.C1                                      ( jz      ,  L(LAB.NilFault)                                               ); 
+      END;
+      ASM.CS2                                        ( mov,l   ,  oB(-4,r),R(tag)                                               ); 
+      ASM.CS2                                        ( cmp,l   ,  iL(g.typeLabel),oB(g.ttableElemOfs,tag)                       );
+      ASM.C1                                         ( jz      ,  L(LAB.New(label1))                                            );
+      ASM.C1                                         ( pushl   ,  oL(-12,g.typeLabel)                                           );
+      ASM.C1                                         ( pushl   ,  oB(-12,tag)                                                   );
+      ASM.C1                                         ( jmp     ,  L(LAB.GuardFault)                                             ); 
+      ASM.Label                              ( label1                                                                           );
+    }
+(********************************************************************************************************************************)
+(*** assignment operations                                                                                                    ***)
+(********************************************************************************************************************************)
+RULE gv:GlobalVariable -> v:AVar;
+EVAL{ v.var.label    := gv.label; 
+      v.var.frame    := 0;
+      v.var.ofs      := gv.adr; 
+      v.var.tmpreg   := RegNil; 
+      v.var.cmtIdent := gv.cmtIdent; }
+
+RULE lv:LocalVariable -> v:AVar;
+EVAL{ v.var.label    := LAB.MT; 
+      v.var.frame    := 0;
+      v.var.ofs      := lv.adr; 
+      v.var.tmpreg   := RegNil; 
+      v.var.cmtIdent := lv.cmtIdent; }
+
+RULE sel:Selector
+        PointerFrom
+           ContentOf lv:LocalVariable
+     -> v:AVar;
+EVAL{ v.var.label    := LAB.MT; 
+      v.var.frame    := sel.ofs;
+      v.var.ofs      := lv.adr; 
+      v.var.tmpreg   := RegNil; 
+      v.var.cmtIdent := lv.cmtIdent; }
+
+RULE sel:Selector i:AVar -> o:AVar;
+EVAL{ o.var:=i.var; INC(o.var.ofs,sel.ofs); }
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SimpleAssignment 
+        dst:AVar
+        op:MonOper 
+           s:ContentOf src:AVar;
+COST 1;
+SCRATCH tmp <eax..edi>;
+COND{ ASM.AreEqualVariables(dst.var,src.var) }
+EMIT{ src.var.tmpreg:=tmp; 
+      ASM.CS1                                        ( op.code,s.size  ,  Variable(src.var)                                     );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SimpleAssignment                                                         (*/* Because rule-local variables don't exist,  */*)
+        dst:AVar                                                              (*/* we put the calculated log2 of the constant */*)
+        op:SymDyOper                                                          (*/* into a field of AVar's attribute :-)       */*)
+           s:ContentOf src:AVar
+           c:Constant;
+COST 1;
+SCRATCH tmp <eax..edi>;
+COND{ (op.code=ASMOP.imul) & ASM.AreEqualVariables(dst.var,src.var) & ADR.IntLog2(c.val,src.var.log2) }
+EMIT{ src.var.tmpreg:=tmp; 
+      ASM.CS2                                        ( shl,s.size  ,  i(src.var.log2),Variable(src.var)                         );
+    } 
+RULE SimpleAssignment 
+        dst:AVar
+        op:SymDyOper 
+           s:ContentOf src:AVar
+           a:ARegAImm;
+COST 1;
+SCRATCH tmp <eax..edi>;
+COND{ (op.code#ASMOP.imul) & ASM.AreEqualVariables(dst.var,src.var) }
+EMIT{ src.var.tmpreg:=tmp; 
+      ASM.CS2                                        ( op.code,s.size  ,  Operand(a.oper),Variable(src.var)                     );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SimpleAssignment 
+        dst:AVar
+        Sub
+           s:ContentOf src:AVar
+           a:ARegAImm;
+COST 1;
+SCRATCH tmp <eax..edi>;
+COND{ ASM.AreEqualVariables(dst.var,src.var) }
+EMIT{ src.var.tmpreg:=tmp; 
+      ASM.CS2                                        ( sub,s.size  ,  Operand(a.oper),Variable(src.var)                         );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SimpleAssignment                                                         (*/* Because rule-local variables don't exist,  */*)
+        dst:AVar                                                              (*/* we put the calculated log2 of the constant */*)
+        op:Div                                                                (*/* into a field of AVar's attribute :-)       */*)
+           s:ContentOf src:AVar
+           c:Constant;
+COST 1;
+SCRATCH tmp <eax..edi>;
+COND{ ASM.AreEqualVariables(dst.var,src.var) & ADR.IntLog2(c.val,src.var.log2) }
+EMIT{ src.var.tmpreg:=tmp; 
+      ASM.CS2                                        ( sar,s.size  ,  i(src.var.log2),Variable(src.var)                         );
+    } 
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE SimpleAssignment 
+        dst:AVar
+        BoolVal
+           Not
+              Branch
+                 Flag
+                    LabelDef
+                    s:ContentOf src:AVar;
+COST 1;
+COND{ ASM.AreEqualVariables(dst.var,src.var) }
+EMIT{ ASM.CS1                                        ( not,s.size  ,  Variable(src.var)                                         );
+    }
+(********************************************************************************************************************************)
+(*** some lea tricks                                                                                                          ***)
+(********************************************************************************************************************************)
+RULE op1:SymDyOper           (* c1 + r*c2 *)
+        c1:Constant
+        op2:SymDyOper
+           r:LReg
+           c2:Constant
+     -> o:LReg;
+COST 1;
+COND{ (op1.code=ASMOP.add) 
+    & (op2.code=ASMOP.imul) 
+    & ((c2.val=2) OR (c2.val=4) OR (c2.val=8)) }
+EMIT{ ASM.CS2                                        ( lea,l   ,  oIf(c1.val,r,c2.val),R(o)                                     );
+    }
+RULE op1:SymDyOper           (* c1 + r*c2 *)
+        c1:Constant
+        op2:SymDyOper
+           r:LReg
+           c2:Constant
+     -> o:LReg;
+COST 1;
+COND{ (op1.code=ASMOP.add) 
+    & (op2.code=ASMOP.imul) 
+    & ((c2.val=3) OR (c2.val=5) OR (c2.val=9)) }
+EMIT{ ASM.CS2                                        ( lea,l   ,  oBIf(c1.val,r,r,c2.val-1),R(o)                                );
+    }
+RULE op1:SymDyOper           (* c1 + r1 + r2*c2 *)
+        c1:Constant
+        op2:SymDyOper
+           r1:LReg
+           op3:SymDyOper
+              r2:LReg
+              c2:Constant
+     -> o:LReg;
+COST 1;
+COND{ (op1.code=ASMOP.add) 
+    & (op2.code=ASMOP.add) 
+    & (op3.code=ASMOP.imul) 
+    & ((c2.val=2) OR (c2.val=4) OR (c2.val=8)) }
+EMIT{ ASM.CS2                                        ( lea,l   ,  oBIf(c1.val,r1,r2,c2.val),R(o)                                );
+    }
+(********************************************************************************************************************************)
+(*** END oberon.cgd.opt                                                                                                       ***)
+(********************************************************************************************************************************)
+

@@ -1,0 +1,96 @@
+#!/bin/sh
+
+count ()
+{
+ echo $1
+ echo -ne "$1  " >>srcount.out
+ grep -v "^..\\$" $1|wc >>srcount.out
+}
+
+rm srccount.out
+count oberon.rex
+count oberon.ast
+count oberon.lal
+count OB.ast
+count oberon.eva
+count oberon.che
+count oberon.pre
+count TT.pum
+count ADR.pum
+count BL.pum
+count E.pum
+count T.pum
+count V.pum
+count CO.pum
+count SI.pum
+count PR.pum
+count TD.pum
+count OD.pum
+count CODE.pum
+count CODE.pum.ProcCalls
+count CODE.pum.Assignments
+count CODE.pum.Stmts
+count CODE.pum.Exprs
+count CODE.pum.BooleanExprs
+count CODE.pum.Designators
+count CODE.pum.Predecls
+count CODEf.pum
+count CODEf.pum.Init
+count CODEf.pum.TDesc
+count CMT.pum
+count oberon.cgd
+count oberon.cgd.min
+count oberon.cgd.opt
+count oberon.cgd.floats.min
+count oberon.cgd.floats.opt
+count ASM.md
+count ASM.mi
+count ASMOP.md
+count ASMOP.mi
+count NDP.md
+count NDP.mi
+count CV.md
+count CV.mi
+count Target.md
+count Target.mi
+count oc.assembler
+count oc.linker
+count ARG.md
+count ARG.mi
+count BETO.md
+count BETO.mi
+count DRV.md
+count DRV.mi
+count ED.md
+count ED.mi
+count ERR.md
+count ERR.mi
+count Errors.md
+count Errors.mi
+count FIL.md
+count FIL.mi
+count Jacob.mi
+count LAB.md
+count LAB.mi
+count LIM.md
+count LIM.mi
+count O.md
+count O.mi
+count OT.md
+count OT.mi
+count POS.md
+count POS.mi
+count STR.md
+count STR.mi
+count TBL.md
+count TBL.mi
+count UTI.md
+count UTI.mi
+count OB2RTS.as
+count Storage.c
+count Storage.h
+count UTIS.c
+count UTIS.h
+count Makefile
+count EmitPatch
+count Errors.Tab

@@ -1,0 +1,164 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.Assignments                                                                                                     ***/
+/********************************************************************************************************************************/
+PROCEDURE CodeAssignment ( dstType    : TypeReprs 
+                         , srcType    : TypeReprs
+                         , srcVal     : ValueReprs 
+                         , designator : Designator 
+                         , expr       : Exprs
+                         , coercion   : Coercion )
+LOCAL{ VAR acode:ACode; }
+
+ RecordTypeRepr,_,_,Designator(_,_,_,_,_,dstEntry,_,_,_),.. ?{ TRACE(CodeAssignment.RefdRecord); 
+(*
+    CodeImplicitAssignmentGuard(dstEntry,dstType,designator,acode); 
+*)    
+    CodeImplicitAssignmentGuard(designator^.Designator.EntryOut,dstType,designator,acode); 
+    CodeAssign(dstType,srcType,srcVal,acode,expr,coercion); 
+ };.
+
+ ..?{ TRACE(CodeAssignment.Default); 
+    CodeLDesignator(designator,acode); 
+    CodeAssign(dstType,srcType,srcVal,acode,expr,coercion); 
+ };.
+
+/*END CodeAssignment */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeImplicitAssignmentGuard ( dstEntry:Entries , dstType:TypeReprs , designator:Designator => ACode )
+LOCAL{ VAR acode:ACode; dcode:DCode; idData:tImplicitDesignationData; }
+
+ VarEntry(_,_,_,_,_,_,RecordTypeRepr,_,_,parMode,_,_,_,_),.. => {acode} ? (parMode=OB.REFPAR); 
+ { TRACE(ImplicitAssignmentGuard.RecordVarPar); 
+    CodeImplicitLDesignator(designator,idData,acode); 
+
+    Cons.Selector(4+idData.ofsOfObjHeader,idData.acodeToObjHeader,acode); 
+    Cons.SimpleGuard(LAB.AppS(T.LabelOfTypeRepr(dstType),'$D'),-4,acode,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+ };.
+ 
+ VarEntry(_,_,_,_,_,_,varType,..),.. => {acode} ? (T.IsPtrToRecOrArrOfPtrToRec(varType)); 
+ { TRACE(ImplicitAssignmentGuard.PointerToRecord); 
+    CodeLDesignator(designator,acode); 
+
+    Cons.SimpleGuard(LAB.AppS(T.LabelOfTypeRepr(dstType),'$D'),-4,acode,acode); 
+ };.
+ 
+ .. => {acode} ?{ TRACE(ImplicitAssignmentGuard.Default); 
+    CodeLDesignator(designator,acode); 
+ };.
+
+/*END CodeImplicitAssignmentGuard */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeAssign ( dstType    : TypeReprs 
+                     , srcType    : TypeReprs
+                     , srcVal     : ValueReprs 
+                     , dstAcode   : ACode
+                     , expr       : Exprs
+                     , coercion   : Coercion )
+
+LOCAL{ VAR acode,srcAcode:ACode; dcode:DCode; lr:OT.oLONGREAL; li,lo,hi:LONGINT; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ RealTypeRepr,_,RealValue(v),..?{ TRACE(CodeAssign.Real_ConstReal); 
+    Cons.RealConst(v,dcode); 
+    Cons.SimpleAssignment(dstAcode,dcode);
+ };.
+
+ LongrealTypeRepr,_,RealValue(v),..?{ TRACE(CodeAssign.Longreal_ConstReal); 
+    OT.oREAL2oLONGREAL(v,lr); OT.SplitoLONGREAL(lr,lo,hi); 
+    Cons.MemSet8(lo,hi,dstAcode);
+ };.
+
+ LongrealTypeRepr,_,LongrealValue(v),..?{ TRACE(CodeAssign.Longreal_ConstLongreal); 
+    OT.SplitoLONGREAL(v,lo,hi); 
+    Cons.MemSet8(lo,hi,dstAcode);
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ RealTypeRepr,_,mtValue,..?{ TRACE(CodeAssign.Real_Real); 
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.FloatAssignment(s,dstAcode,dcode);
+ };.
+
+ LongrealTypeRepr,_,mtValue,..?{ TRACE(CodeAssign.Longreal_Longreal); 
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.FloatAssignment(l,dstAcode,dcode);
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CharStringTypeRepr,CharStringTypeRepr,CharValue(v),..; /* just for SYSTEM.PUT */
+ CharTypeRepr      ,CharStringTypeRepr,CharValue(v),..?{ TRACE(CodeAssign.Char_CharString); 
+    Cons.CharConst(v,dcode); 
+    Cons.SimpleAssignment(dstAcode,dcode);
+ };.
+
+ ArrayTypeRepr,CharStringTypeRepr,CharValue(v),..?{ TRACE(CodeAssign.ArrayOfChar_CharString); 
+    IF v=0 THEN 
+       Cons.CharConst(v,dcode); 
+    ELSE 
+       Cons.IntegerConst(v MOD 256,dcode); 
+    END;
+    Cons.SimpleAssignment(dstAcode,dcode);
+ };.
+
+ ArrayTypeRepr,StringTypeRepr,StringValue(v),..?{ TRACE(CodeAssign._String); 
+    CASE OT.LengthOfoSTRING(v) OF
+    |0:  Cons.CharConst(0,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+    |1:  OT.SplitoSTRING(v,li); Cons.IntegerConst(li,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+    |2:  OT.SplitoSTRING(v,li); Cons.MemSet3(li,dstAcode); 
+    |3:  OT.SplitoSTRING(v,li); Cons.LongintConst(li,dcode); Cons.SimpleAssignment(dstAcode,dcode);
+    ELSE CodeLongstringAssignment(srcVal,expr,dstAcode); 
+    END;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ByteTypeRepr     ,..;
+ PtrTypeRepr      ,..;
+ BooleanTypeRepr  ,..;
+ CharTypeRepr     ,..;
+ SetTypeRepr      ,..;
+ ShortintTypeRepr ,..;
+ IntegerTypeRepr  ,..;
+ LongintTypeRepr  ,..;
+ RealTypeRepr     ,..;
+ PointerTypeRepr  ,..;
+ ProcedureTypeRepr,..?{ TRACE(CodeAssign.StandardType); 
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.SimpleAssignment(dstAcode,dcode);
+ };.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ TypeRepr(_,size,..),_,_,_,DesignExpr(_,_,_,src:Designator,_),..?{ TRACE(CodeAssign.StructuredType); 
+    CodeLDesignator(src,srcAcode); 
+    Cons.MemCopy(size,(*isStringCopy:=*)FALSE,dstAcode,srcAcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ .. ?{ ERR.Fatal('CODE.CodeAssign: failed'); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*END CodeAssign */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeLongstringAssignment ( val:StringValue , Exprs , dstAcode:ACode )
+LOCAL{ VAR srcAcode:ACode; lab:OB.tLabel; }
+
+ StringValue(v),DesignExpr(_,_,_,src:Designator,_),..?{ TRACE(CodeLongstringAssignment.NamedStringConst); 
+    CodeLDesignator(src,srcAcode); 
+    Cons.MemCopy(1+OT.LengthOfoSTRING(v),(*isStringCopy:=*)TRUE,dstAcode,srcAcode); 
+ };.
+ 
+ StringValue(v),..?{ TRACE(CodeLongstringAssignment.UnnamedStringConst); 
+    Cons.GlobalVariable(V.LabelOfMemValue(val),0,Idents.NoIdent,srcAcode); 
+    Cons.MemCopy(1+OT.LengthOfoSTRING(v),(*isStringCopy:=*)TRUE,dstAcode,srcAcode); 
+ };.
+
+/*END CodeLongstringAssignment */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.Assignments                                                                                                 ***/
+/********************************************************************************************************************************/
+

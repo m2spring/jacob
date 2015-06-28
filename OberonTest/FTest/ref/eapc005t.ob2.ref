@@ -1,0 +1,64 @@
+Compiling eapc005t
+'PROCEDURE' PGet
+-------------------------------------------------------------------------------
+a   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PPut
+-------------------------------------------------------------------------------
+a   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PGetReg
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PPutReg
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PMove
+-------------------------------------------------------------------------------
+a0   VAR       LONGINT
+a1   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PNew
+-------------------------------------------------------------------------------
+tr   TYPE      RECORD
+               END
+ta   TYPE      ARRAY 3 OF CHAR
+pr   VAR       POINTER TO tr
+pa   VAR       POINTER TO ta
+-------------------------------------------------------------------------------
+
+'MODULE' eapc005t
+-------------------------------------------------------------------------------
+SYS          SERVER    SYSTEM
+trecord      TYPE      RECORD
+                        f   VAR       SHORTINT
+                       END
+tpointer     TYPE      POINTER TO trecord
+tprocedure   TYPE      (A:SET)
+tarray       TYPE      ARRAY 10 OF CHAR
+si           VAR       SHORTINT
+i            VAR       INTEGER
+li           VAR       LONGINT
+r            VAR       REAL
+lr           VAR       LONGREAL
+c            VAR       CHAR
+b            VAR       BOOLEAN
+s            VAR       SET
+ptr          VAR       tpointer
+pro          VAR       tprocedure
+byte         VAR       SYSTEM$BYTE
+rec          VAR       trecord
+arr          VAR       tarray
+PGet         PROCEDURE ()
+PPut         PROCEDURE ()
+PGetReg      PROCEDURE ()
+PPutReg      PROCEDURE ()
+PMove        PROCEDURE ()
+PNew         PROCEDURE ()
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,1084 @@
+(********************************************************************************************************************************)
+(*** oberon.cgd / OBERON-2 Code Generator Description                                                                         ***)
+(********************************************************************************************************************************)
+%noonthefly
+%test
+CODE_GENERATOR_DESCRIPTION Cons;
+
+INTERMEDIATE_REPRESENTATION
+
+NONTERMINALS
+  Address, Data, Label, Condition, Boolean, Arguments, Implicits, StrCopyArgs, OpenIndexedElem, Retype;
+
+(********************************************************************************************************************************)
+OPERATORS
+
+(*-- Address calculations ------------------------------------------------------------------------------------------------------*)
+
+  GlobalVariable (label:LAB.T; adr:LONGINT; cmtIdent:Idents.tIdent) -> Address;
+  (*
+   * Yields the address of a global variable with an offset 'adr' relative to 'label'.
+   * 'cmtIdent' gets punched as comment.
+   *)
+   
+  LocalVariable  (adr:LONGINT; cmtIdent:Idents.tIdent) -> Address;
+  (*
+   * Yields the address of a local variable with an offset 'adr' relative to ebp.
+   * 'cmtIdent' gets punched as comment.
+   *)
+
+  Selector (ofs:LONGINT) (*a:*)Address -> Address; 
+  (*
+   * Yields 'a' + 'ofs'.
+   *)
+   
+  Index (factor:LONGINT) (*a:*)Address * (*x:*)Data -> Address;
+  (*
+   * Yields 'a' + 'x' * 'factor'.
+   *)
+   
+  PointerFrom Data -> Address;
+  (*
+   * Yields the address of the location which is referenced by the value 'Data'.
+   *)
+
+(*-- Open index rules ----------------------------------------------------------------------------------------------------------*)
+
+  OpenIndexFirst (tmpOfs:LONGINT; lenOfs:LONGINT) (*headerBase:*)Address * (*x:*)Data -> (*displ:*)Data;
+  (*
+   * To start an indexing of an open array.
+   * Yields the register which holds the first displacement.
+   * PRE: tmpOfs     = offset of the temporary variable to be used for storing the header base address
+   *      lenOfs     = offset of LEN0 relative to the header base
+   *      headerBase = address of the array header
+   *      x          = first index expression value
+   *)
+   
+  OpenIndex (tmpOfs:LONGINT; lenOfs:LONGINT) (*displ:*)Data * (*x:*)Data -> (*displ:*)Data;
+  (*
+   * To process one non-first open indexing.
+   * Yields the register which holds the updated displacement.
+   * PRE: tmpOfs = offset of the temporary variable to be used for storing the header base address
+   *      lenOfs = offset of relevant LEN relative to the header base
+   *      displ  = previous displacement
+   *      x      = index expression value
+   *)
+   
+  OpenIndexOpenBase (tmpOfs:LONGINT; lenOfs:LONGINT) (*displ:*)Data -> (*displ:*)Data;
+  (*
+   * Used after all open index expressions are processed and the type of the resulting array element is still an open array
+   * for multiplying the displace with the relevant LEN.
+   * Yields the register which holds the updated displacement.
+   * PRE: tmpOfs = offset of the temporary variable to be used for storing the header base address
+   *      lenOfs = offset of relevant LEN relative to the header base
+   *      displ  = previous displacement
+   *)
+   
+  OpenIndexBase (tmpOfs:LONGINT; staticSize:LONGINT) (*displ:*)Data * (*newReg:*)Data -> OpenIndexedElem;
+  (*
+   * Used after all open index expression and all remaining unindexed LENs are processed
+   * for multiplying the displacement with the static array element size.
+   * Yields a pair (headerBaseReg,displacementReg).
+   * PRE: tmpOfs     = offset of the temporary variable to be used for storing the header base address
+   *      staticSize = number of bytes required by the static array element type
+   *      displ      = previous displacement
+   *      newReg     = "conjured" register
+   *)
+   
+  OpenIndexApplication (objOfs:LONGINT; isStackObj:BOOLEAN) OpenIndexedElem -> Address;
+  (*
+   * Used to apply the calculated address of an array element. 
+   * Yields the address of the array element.
+   * PRE: objOfs     = offset of the (reference of the) array relative to 'OpenIndexedElem.headerBaseReg'
+   *      isStackObj = object is stored in the stack
+   *)
+
+  ConjureRegister -> Data;
+  (*
+   * Used to "scratch" a register in addressing mode nonterminal rules.
+   * Yields a newly allocated register. 
+   *)
+
+(*-- Memory access -------------------------------------------------------------------------------------------------------------*)
+
+  ContentOf (size:tSize) Address -> Data;
+  (*
+   * Yields the content of the memory location 'Address'.
+   *)
+  
+  AddressOf Address -> Data;
+  (*
+   * Yields the address value of the memory location 'Address'.
+   *)
+
+(*-- Parameters and calls ------------------------------------------------------------------------------------------------------*)
+
+  NoParam -> Arguments;
+  (*
+   * The empty parameter. Used as terminator for a parameter list.
+   *)
+   
+  Param Arguments * Data -> Arguments;
+  (*
+   * Standard parameter. 
+   * PRE: Data = value to be pushed.
+   *)
+  
+  Param0 Arguments * Data -> Arguments;
+  (*
+   * Parameter with empty size. Think of an empty record...
+   *)
+   
+  ParamStructured (size:LONGINT) Arguments * Address -> Arguments;
+  (*
+   * Structured parameter with 'size' bytes.
+   *)
+
+  ImplicitArg (implOfs:LONGINT; objOfs:LONGINT; isStackObj:BOOLEAN) Address * (*newReg:*)Data -> Implicits;
+  (*
+   * Start of implicitly passed parameters.
+   * PRE: implOfs    = offset of last actual LEN or of type tag field relative to 'Address'
+   *      objOfs     = offset of the actual object relative to the header base
+   *      isStackObj = object is stored in the stack
+   *      Address    = address of header base
+   *      Data       = "conjured" register
+   *)
+   
+  ImplicitOpenIndexedArg (implOfs:LONGINT; objOfs:LONGINT; isStackObj:BOOLEAN) OpenIndexedElem * (*newReg:*)Data -> Implicits;
+  (*
+   * Start of implicitly passed parameters after an open indexing.
+   * PRE: implOfs         = offset of last actual LEN or of type tag field relative to 'OpenIndexedElem.headerBaseReg'
+   *      objOfs          = offset of the actual object relative to the header base
+   *      isStackObj      = object is stored in the stack
+   *      OpenIndexedElem = resulting code from the open indexing
+   *      newReg          = "conjured" register
+   *)
+
+  ImplConstLen (len:LONGINT) Implicits -> Implicits;
+  (*
+   * A constant LEN passed as an implicitly passed parameter.
+   *)
+   
+  ImplOpenLen Implicits -> Implicits;
+  (*
+   * A non-constant LEN passed as an implicitly passed parameter.
+   *)
+   
+  ImplNewNofElems (useActNofElems:BOOLEAN) Implicits -> Implicits;
+  (*
+   * To pass an additional "nofElems"
+   * PRE: useActNofElems = Don`t calculate "nofElems", use the "nofElems" of the actual parameter instead.
+   *)
+
+  ImplObjReference Implicits -> Implicits;
+  (*
+   * To pass the reference of the object.
+   *)
+  
+  ImplTypedesc Implicits -> Implicits;
+  (*
+   * To pass an object`s type tag.
+   *)
+
+  Param_Implicit Arguments * Implicits -> Arguments;
+  (*
+   * Completion of the implicitly passed parameters.
+   * PRE: Arguments  = previous parameters
+   *      Implicits  = the list of the implicitly passed parameters
+   *)
+  
+  Param_RecordSizeAndAddr Arguments * Data -> Arguments;
+  (*
+   * To pass the size and address of a dynamically allocated record for ARRAY OF SYSTEM.BYTE.
+   * PRE: Data = address of the record
+   *)
+   
+  Param_OArrSizeAndAddr (objOfs:LONGINT; elemSize:LONGINT) Arguments * (*objHeaderAddr:*)Data -> Arguments;
+  (*
+   * To pass the size and address of a dynamically allocated open array for ARRAY OF SYSTEM.BYTE.
+   * PRE: Data     = address of the header of the array
+   *      objOfs   = offset of the array relative to its header address
+   *      elemSize = size of the elements
+   *)
+   
+  Param_PartialOArrSizeAndAddr
+  (nofUnindexedLens:LONGINT; ofsOfLastLen:LONGINT; 
+   staticSize:LONGINT; objOfs:LONGINT; isStackObj:BOOLEAN) Arguments * OpenIndexedElem -> Arguments;
+  (*
+   * To pass the size and address of a partial open array for ARRAY OF SYSTEM.BYTE.
+   * PRE: nofUnindexedLens                = number of remaining LENs not indexed
+   *      ofsOfLastLen                    = offset of the last LEN relative to the header address
+   *      staticSize                      = number of bytes of the type of the array element
+   *      objOfs                          = offset of the array relative to its header address
+   *      isStackObj                      = array is stored in the stack
+   *      OpenIndexedElem.headerBaseReg   = address of the header of the array
+   *      OpenIndexedElem.displacementReg = offset of the sub array relative to the whole array
+   *)
+
+  DirectCall (label:LAB.T) Arguments -> Address;
+  (*
+   * To call proper procedures and function procedures.
+   * PRE   : label      = symbolic destination address
+   * RESULT: Virtual. It is only used to connect to 'NoFuncResult' or 'FuncResultOf' (s.b.).
+   *)
+   
+  IndirectCall Data * Arguments -> Address;
+  (*
+   * To call proper procedure variables and function procedure variables.
+   * PRE   : Data = address of the call destination
+   * RESULT: Virtual. It is only used to connect to 'NoFuncResult' or 'FuncResultOf' (s.b.).
+   *)
+
+  BoundCall_FPtr_APtr (bprocLab:LAB.T; procOfs:LONGINT) Data * Arguments -> Address;
+  (*
+   * To call bound proper procedures and bound function procedures with an actual pointer receiver 
+   * for a formal pointer receiver.
+   * Passes the receiver address.
+   * PRE   : Data        = address of the actual receiver record
+   *         bprocLab=MT = indirect call via the procedure table of the type descriptor for the actual receiver
+   *            procOfs  = offset of the procedure relative to the procedure table
+   *         bprocLab#MT = direct call to bprocLab
+   *)
+   
+  BoundCall_FRec_APtr (bprocLab:LAB.T; procOfs:LONGINT) Data * Arguments -> Address;
+  (*
+   * To call bound proper procedures and bound function procedures with an actual pointer receiver 
+   * for a formal var-parameter receiver.
+   * Passes the receiver address and the receiver`s tag.
+   * PRE   : Data        = address of the actual receiver record
+   *         bprocLab=MT = indirect call via the procedure table of the type descriptor for the actual receiver
+   *            procOfs  = offset of the procedure relative to the procedure table
+   *         bprocLab#MT = direct call to bprocLab
+   *)
+
+  BoundCall_FRec_ARec (bprocLab:LAB.T; procOfs:LONGINT) Data * Arguments -> Address;
+  (*
+   * To call bound proper procedures and bound function procedures with an actual var-parameter receiver 
+   * for a formal var-parameter receiver.
+   * Passes the receiver`s tag.
+   * PRE   : Data        = tag of the actual receiver record
+   *         bprocLab=MT = indirect call via the procedure table of the type descriptor for the actual receiver
+   *            procOfs  = offset of the procedure relative to the procedure table
+   *         bprocLab#MT = direct call to bprocLab
+   *)
+
+  ProcReturn;
+  (*
+   * RETURN;
+   *)
+   
+  FuncReturn Data;
+  (*
+   * RETURN <expr>;
+   * PRE: Data = value of the expression
+   *)
+
+  NoFuncResult Address;
+  (*
+   * To "absorb" the resulting nonterminal of a (bound) proper procedure call.
+   *)
+   
+  FuncResultOf (size:tSize) Address -> Data;
+  (*
+   * To connect a (bound) function procedure call into an expression.
+   *)
+   
+(*-- Statement stubs -----------------------------------------------------------------------------------------------------------*)
+
+  CaseExpr (isChar:BOOLEAN; minVal:LONGINT; maxVal:LONGINT; tabLabel:LAB.T; elseLabel:LAB.T) Data;
+  (*
+   * Jump branching according to the value of a case expression.
+   * PRE: Data      = value of the case expression
+   *      isChar    = value is an unsigned 8 bit integer
+   *      minVal    = lowest case-label value
+   *      maxVal    = highest case-label value
+   *      tabLabel  = symbolic address of the jump table
+   *      elseLabel = symbolic address of the else-part
+   *)
+   
+  ForStmt (tempOfs:LONGINT; step:LONGINT; loopLabel:LAB.T; condLabel:LAB.T; size:tSize) (*controlVar:*)Address;
+  (*
+   * Control part of a for-statement following the body of a for-statement.
+   * A for-statement gets coded according to the following pattern:
+   *                 jmp condLabel			    # Already emitted  
+   *      loopLabel: body				    # Already emitted  
+   *                 INC(control variable,step)		    # ForStmt
+   *      condLabel: IF ~Termination THEN jmp loopLabel END # ForStmt
+   *      
+   * PRE: Address   = address of the control variable
+   *      tempOfs   = offset of temp-variable
+   *      step      = value of the step expression
+   *      loopLabel = symbolic address of the body of the for-statement
+   *      condLabel = symbolic address of the termination expression
+   *      size      = size of the control variable
+   *)
+
+(*-- Operators -----------------------------------------------------------------------------------------------------------------*)
+
+  MonOper (code:ASMOP.tOper) Data -> Data; 
+  (*
+   * Monadic operator -, for integers or SET
+   * PRE: Data = value of the sub expression
+   *      code = neg('-'), not('~')
+   *)
+  
+  SymDyOper (code:ASMOP.tOper) Data + Data -> Data;
+  (* 
+   * Symmetric dyadic operators + and * for integers and SET, / for SET.
+   * PRE: Data = value of the sub expressions
+   *      code = integer: add('+'), imul('*'); SET: or('+'), and('*'), xor('/')
+   *)
+
+  Sub Data * Data -> Data;
+  (*
+   * Integer subtraction.
+   *)
+   
+  Div Data * Data -> Data;
+  (*
+   * Integer division.
+   *)
+   
+  Mod Data * Data -> Data;
+  (*
+   * Integer modulus.
+   *)
+   
+  Difference Data * Data -> Data;
+  (*
+   * SET difference.
+   *)
+
+  SetExtendByElem (*s:*)Data * (*e:*)Data -> Data;
+  (*
+   * To include an integer element into a SET.
+   * e.g. s:=s+{e}
+   *)
+   
+  SetExtendByRange (*s:*)Data * (*e:*)Data * (*f:*)Data -> Data;
+  (*
+   * To include all integers out of a range into a SET.
+   * e.g. s:=s+{e..f}
+   *)
+
+(*-- Boolean control flow ------------------------------------------------------------------------------------------------------*)
+
+  NoBoolVal Boolean;
+  (*
+   * To "absorb" a boolean expression (for boolean expression which belongs to statements).
+   *)
+  
+  BoolVal (trueLabel:LAB.T; falseLabel:LAB.T) Boolean -> Data;
+  (*
+   * To transform the boolean control flow into an integer value 0 or 1.
+   *)
+
+  Not Boolean           -> Boolean;
+  And Boolean * Boolean -> Boolean;
+  Or  Boolean * Boolean -> Boolean;
+  (*
+   * Boolean operators. Do nothing.
+   *)
+
+  ConstBranch (value:BOOLEAN; trueLabel:LAB.T; falseLabel:LAB.T) Label -> Boolean;
+  (*
+   * Jumps according to a constant value.
+   *)
+  
+  Branch (isSigned:BOOLEAN; trueLabel:LAB.T; falseLabel:LAB.T) Condition -> Boolean;
+  (*
+   * Jumps according to 'Condition' to 'trueLabel' resp. 'falseLabel'.
+   * PRE: isSigned = whether to choose the signed branch instruction
+   *)
+
+  LabelDef (label:LAB.T) -> Label;
+  (*
+   * A label declaration "'label':".
+   *)
+   
+  Flag (rel:tRelation) Label * Data -> Condition;
+  (*
+   * Application of a boolean variable.
+   * PRE: Data  = value of the variable
+   *      Label = expression label
+   *      rel   = relation to be stored in 'Condition'
+   *)
+  
+  Compare (rel:tRelation) Label * (*a:*)Data * (*b:*)Data -> Condition;
+  (*
+   * Integer and SET comparisons.
+   * PRE: a,b   = compare operand values
+   *      Label = expression label
+   *      rel   = relation to be stored in 'Condition'
+   *)
+  
+  StringCompare (rel:tRelation) Label * (*a:*)Data * (*b:*)Data -> Condition;
+  (*
+   * To compare array of chars.
+   * PRE: a,b   = address of the compare operand values
+   *      Label = expression label
+   *      rel   = relation to be stored in 'Condition'
+   *)
+   
+  ConstStringCompare (rel:tRelation; str:OT.oSTRING) Label * (*a:*)Data -> Condition;
+  (*
+   * To compare an array of chars with a string.
+   * PRE: Data  = address of the array of char
+   *      str   = string constant
+   *      Label = expression label
+   *      rel   = relation to be stored in 'Condition'
+   *)
+
+  In (trueLabel:LAB.T; falseLabel:LAB.T) Label * (*a:*)Data * (*b:*)Data -> Boolean;
+  (*
+   * To perform the SET inclusion test.
+   * PRE: a          = integer value
+   *      b          = SET value
+   *      Label      = expression label
+   *      falseLabel = symbolic address for the false destination
+   *      trueLabel  = symbolic address for the true destination
+   *)
+  
+  Is (typeLabel:LAB.T; ttableElemOfs:LONGINT; trueLabel:LAB.T; falseLabel:LAB.T) Label * (*tag:*)Data -> Boolean;
+  (*
+   * To perform a type test "v IS T".
+   * PRE: tag           = address of the type descriptor for v
+   *      ttableElemOfs = offset of the type table element with extension level from T relative to the type table from v
+   *      typeLabel     = symbolic address of the type descriptor of T
+   *      Label         = expression label
+   *      falseLabel    = symbolic address for the false destination
+   *      trueLabel     = symbolic address for the true destination
+   *)
+   
+  Odd (trueLabel:LAB.T; falseLabel:LAB.T) Label * Data -> Boolean;
+  (*
+   * To calculate ODD(x).
+   * PRE: Data       = value of the argument
+   *      Label      = expression label
+   *      falseLabel = symbolic address for the false destination
+   *      trueLabel  = symbolic address for the true destination
+   *)
+   
+  Bit (trueLabel:LAB.T; falseLabel:LAB.T) Label * Address * Data -> Boolean;
+  (*
+   * To calculate SYSTEM.BIT(a,n).
+   * PRE: Data       = n
+   *      Address    = address of a
+   *      Label      = expression label
+   *      falseLabel = symbolic address for the false destination
+   *      trueLabel  = symbolic address for the true destination
+   *)
+   
+  Cc (condcoding:LONGINT; trueLabel:LAB.T; falseLabel:LAB.T) Label -> Boolean;
+  (*
+   * To calculate SYSTEM.CC(n).
+   * PRE: condcoding = integer code for the flag (see ASM.md)
+   *      Label      = expression label
+   *      falseLabel = symbolic address for the false destination
+   *      trueLabel  = symbolic address for the true destination
+   *)
+
+(*-- Assignments ---------------------------------------------------------------------------------------------------------------*)
+
+  SimpleAssignment Address * Data;
+  (*
+   * Address := Data
+   *)
+
+  MemCopy (len:LONGINT; isStringCopy:BOOLEAN) (*dst:*)Address * (*src:*)Address;
+  (*
+   * Copies 'len' bytes from 'src' to 'dst' (doesn`t handle overlapping blocks).
+   * isStringCopy --> trailing 0X doesn`t get copied, it gets generated instead.
+   *)
+
+  ShortConstStrCopy (strVal:LONGINT; len:LONGINT) (*dstReg:*)Data;
+  (*
+   * Assigns a constant "string" with length<2 to address given in 'dstReg'.
+   * PRE: Destination LEN must ly at top-of-stack.
+   *)
+  
+  StrCopy StrCopyArgs;
+  (*
+   * Common string copy routine.
+   * PRE: esi = source address
+   *      edi = destination address
+   *      ecx = number of bytes to be copied (incl. terminating 0X)
+   *)
+   
+  StrCopyArguments (*srcReg:*)Data * (*dstReg:*)Data -> StrCopyArgs;
+  (*
+   * Calculates the number of bytes to be copied.
+   * PRE : The LENs of source and destination must ly at top-of-stack(-4).
+   * POST: esi = 'srcReg'
+   *       edi = 'dstReg'
+   *       ecx = MIN(LENsrc,LENdst)
+   *)
+  
+  ImplicifyConst (len:LONGINT) (*objectLoc:*)Address -> Data;
+  (*
+   * Calculates for a string copy operand the address and (implicitly passed) LEN 
+   * of an array of char with fixed length or a string.
+   * POST: TOS    = 'len'
+   *       RESULT = register which contains the operand address
+   *)
+   
+  ImplicifyOpenIndexed (lenOfs:LONGINT; isStackObject:BOOLEAN; objOfs:LONGINT) OpenIndexedElem -> Data;
+  (*
+   * Calculates for a string copy operand the address and (implicitly passed) LEN 
+   * of an open-indexed array of char (think of 'PROC P(p:ARRAY OF ARRAY OF CHAR)' and 'COPY(p[i],v)').
+   * PRE : OpenIndexedElem.headerBaseReg   = address of the header of the object
+   *       OpenIndexedElem.displacementReg = offset of the element relative to the beginning of the array
+   *       lenOfs                          = offset of the relevant LEN header field relative to the header base
+   *       isStackObject --> objOfs        = offset of the reference of the object (relative to the header base)
+   *      ~isStackObject --> objOfs        = offset of the object (relative to the header base)
+   * POST: TOS                             = relevant LEN
+   *       RESULT                          = register which contains the operand address
+   *)
+  
+  Implicify (lenOfs:LONGINT; isStackObject:BOOLEAN; objOfs:LONGINT) (*objHeaderLoc:*)Address -> Data;
+  (*
+   * Calculates for a string copy operand the address and (implicitly passed) LEN
+   * of an open array of char (e.g. 'PROC P(p:ARRAY OF CHAR)' and 'COPY(p,v)').
+   * PRE : objHeaderLoc             = address of the header of the object
+   *       lenOfs                   = offset of the relevant LEN header field relative to the header base
+   *       isStackObject --> objOfs = offset of the reference of the object (relative to the header base)
+   *      ~isStackObject --> objOfs = offset of the object (relative to the header base)
+   * POST: TOS                            = relevant LEN
+   *       RESULT                         = register which contains the operand address
+   *)
+  
+  MemSet3 (v:LONGCARD) Address; 
+  (*
+   * Address^ := v MOD (0FFFFFFH+1), for assigning string constants with length 2.
+   *)
+  
+  MemSet8 (lrLo:LONGINT; lrHi:LONGINT) Address; 
+  (*
+   * Address^ := lrLo; (Address+4)^ := lrHi, for assigning LONGREAL constants.
+   *)
+
+(*-- Predeclareds --------------------------------------------------------------------------------------------------------------*)
+
+  Abs Data -> Data;
+  (*
+   * To calculate ABS(x).
+   *)
+   
+  Ash (*x:*)Data * (*n:*)Data -> Data;
+  (*
+   * To calculate ASH(x,n).
+   *)
+   
+  Cap Data -> Data;
+  (*
+   * To calculate CAP(x).
+   *)
+   
+  IncOrDec (code:ASMOP.tOper) (*v:*)Address * (*n:*)Data;
+  (*
+   * To calculate INC(v,n) resp. DEC(v,n).
+   * PRE: code = add, sub
+   *)
+   
+  Excl (*v:*)Address * (*x:*)Data;
+  (*
+   * To calculate EXCL(v,x).
+   *)
+   
+  Incl (*v:*)Address * (*x:*)Data;
+  (*
+   * To calculate INCL(v,x).
+   *)
+   
+  ShiftOrRotate (code:ASMOP.tOper) (*x:*)Data * (*n:*)Data -> Data;
+  (*
+   * To calculate SYSTEM.LSH(x,n) resp. SYSTEM.ROT(x,n).
+   * PRE: code = shl, rol
+   *)
+
+  StaticNew (size:LONGINT; tdescLabel:LAB.T; initLabel:LAB.T) Address;
+  (*
+   * The predeclared NEW(v) for records and static arrays.
+   * PRE: Address    = address of v
+   *      initLabel  = symbolic address of the init routine
+   *      tdescLabel = symbolic address of the type descriptor
+   *      size       = number of bytes required by v
+   *)
+   
+  OpenNew (elemSize:LONGINT; tdescLabel:LAB.T; initLabel:LAB.T; nofLens:LONGINT) Arguments * Address;
+  (*
+   * The predeclared NEW(v,x1,...,xn) for open arrays.
+   * PRE: Address    = address of v
+   *      Arguments  = xn,...,x1
+   *      nofLens    = number of dimensions
+   *      initLabel  = symbolic address of the init routine
+   *      tdescLabel = symbolic address of the type descriptor
+   *      elemSize   = number of bytes required by an array`s element
+   *)
+
+  LenCheck Data -> Data;
+  (*
+   * Runtime check for the arguments of NEW(v,x1,...,xn).
+   * xi<=0 --> LEN fault
+   *)
+   
+  SystemNew (*n:*)Data * (*v:*)Address;
+  (*
+   * SYSTEM.NEW(v,n)
+   *)
+   
+  Getreg (regcoding:LONGINT; dstSize:LONGINT) (*dst:*)Address;
+  (*
+   * SYSTEM.GETREG(regcoding,dst)
+   *)
+   
+  Putreg (regcoding:LONGINT) (*src:*)Data;
+  (*
+   * SYSTEM.PUTREG(regcoding,src)
+   *)
+   
+  Move (*srcAddr:*)Data * (*dstAddr:*)Data * (*len:*)Data;
+  (*
+   * SYSTEM.MOVE(srcAddr,dstAddr,len)
+   * (Doesn`t handle overlapping blocks!)
+   *)
+
+  Data2Retype (srcLen:LONGINT; dstLen:LONGINT; tmpOfs:LONGINT) Data -> Retype;
+  (*
+   * SYSTEM.VAL "front end" for registerable source values.
+   * PRE: Data   = value of the argument
+   *      tmpOfs = offset of a temporary variable relative to the current stack frame
+   *      dstLen = number of bytes required by the destination type
+   *      srcLen = number of bytes required by the source type
+   *)
+   
+  Addr2Retype (srcLen:LONGINT; dstLen:LONGINT; tmpOfs:LONGINT) Address -> Retype;
+  (*
+   * SYSTEM.VAL "front end" for unregisterable source values.
+   * PRE: Address = address of the argument
+   *      tmpOfs  = offset of a temporary variable relative to the current stack frame
+   *      dstLen  = number of bytes required by the destination type
+   *      srcLen  = number of bytes required by the source type
+   *)
+  
+  Retype2Data Retype -> Data;
+  (*
+   * SYSTEM.VAL "back end" for registerable destination values.
+   *)
+   
+  Retype2Float Retype -> Data;
+  (*
+   * SYSTEM.VAL "back end" for floating point destination values.
+   *)
+   
+  Retype2Addr  Retype -> Address;
+  (*
+   * SYSTEM.VAL "back end" for address destination values.
+   *)
+
+(*-- Conversions ---------------------------------------------------------------------------------------------------------------*)
+
+  Int2Shortint Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> SHORTINT (identity, truncation, truncation)
+   *)
+   
+  Int2Integer Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> INTEGER (sign extension, identity, truncation)
+   *)
+   
+  Int2Longint Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> INTEGER (sign extension, sign extension, identity)
+   *)
+  
+  Card2Shortint Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> SHORTINT (identity, truncation, truncation)
+   *)
+   
+  Card2Integer Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> INTEGER (zero extension, identity, truncation)
+   *)
+
+  Card2Longint Data -> Data;
+  (*
+   * SHORTINT, INTEGER, LONGINT --> INTEGER (zero extension, zero extension, identity)
+   *)
+
+(*-- Constants -----------------------------------------------------------------------------------------------------------------*)
+
+  CharConst (val:OT.oCHAR) -> Data;
+  (*
+   * Constructs a constant CHAR value.
+   *)
+   
+  BooleanConst (val:OT.oBOOLEAN) -> Data;
+  (*
+   * Constructs a constant BOOLEAN value.
+   *)
+   
+  ShortintConst(val:OT.oLONGINT) -> Data;
+  (*
+   * Constructs a constant SHORTINT value.
+   *)
+   
+  IntegerConst (val:OT.oLONGINT) -> Data;
+  (*
+   * Constructs a constant INTEGER value.
+   *)
+   
+  LongintConst (val:OT.oLONGINT) -> Data;
+  (*
+   * Constructs a constant LONGINT value.
+   *)
+   
+  IntConst (val:OT.oLONGINT; size:tSize) -> Data;
+  (*
+   * Constructs a constant integer value.
+   * PRE: size = b (SHORTINT), w (INTEGER), l (LONGINT)
+   *)
+   
+  RealConst (val:OT.oREAL) -> Data;
+  (*
+   * Constructs a constant REAL value.
+   *)
+   
+  SetConst (val:OT.oSET) -> Data;
+  (*
+   * Constructs a constant SET value.
+   *)
+
+(*-- Run-time checks -----------------------------------------------------------------------------------------------------------*)
+
+  RecordGuard (typeLabel:LAB.T; ttableElemOfs:LONGINT; tagOfs:LONGINT) (*headerBase:*)Address * (*newReg:*)Data  -> Address;
+  (*
+   * Performs a type guard v(T), where v is var-parameter of record type.
+   * If the type guard fails, the runtime error "guard fault" will occur.
+   * Yields 'headerBase' unchanged.
+   * PRE: newReg        = a "conjured" register
+   *      headerBase    = address of the header of the record
+   *      tagOfs        = offset of the tag field relative to the header address
+   *      ttableElemOfs = offset of the type table element with extension level from T relative to the type table from v
+   *      typeLabel     = symbolic address of the type descriptor of T
+   *)
+
+  PointerGuard (typeLabel:LAB.T; ttableElemOfs:LONGINT) (*pointerAddr:*)Address * (*new1Reg:*)Data * (*new2Reg:*)Data -> Data;
+  (*
+   * Performs a NIL check of the pointer variable referenced by 'pointerAddr'.
+   * Performs a type guard v(T), where v has a pointer type and T is a pointer type.
+   * If the type guard fails, the runtime error "guard fault" will occur.
+   * Yields the value of the pointer variable via register 'new1Reg'.
+   * PRE: new1Reg, new2Reg = "conjured" registers
+   *      pointerAddr      = address of the pointer variable
+   *      ttableElemOfs    = offset of the type table element with extension level from T relative to the type table from v
+   *      typeLabel        = symbolic address of the type descriptor of T
+   *)
+
+  SimpleGuard (typeLabel:LAB.T; tagOfs:LONGINT) (*tagAddr:*)Address -> Address;
+  (*
+   * Implicit type guard, when assigning a record to a var-parameter of record type or to a pointer base of record type.
+   * It ensures that the dynamic type of the destination is equal to its static type.
+   * If the type guard fails, the runtime error "guard fault" will occur.
+   * Yields 'tagAddr' unchanged.
+   * PRE: tagAddr   = address where to find the tag of the destination record
+   *      tagOfs    = offset of the tag relative to 'tagAddr'
+   *      typeLabel = symbolic address of the descriptor of the static type of the destination
+   *)
+
+  IndexCheck (len:LONGINT) (*x:*)Data -> Data;
+  (*
+   * Performs an index check. If ~(0 <= 'x' < 'len'), an index fault will occur.
+   * Yields 'x' unchanged.
+   *)
+   
+  NilCheck (*x:*)Data -> Data;
+  (*
+   * Performs a NIL check. If 'x' is NIL, a NIL fault will occur.
+   * Yields 'x' unchanged.
+   *)
+   
+  MinIntCheck (faultLabel:LAB.T) (*x:*)Data -> Data;
+  (*
+   * Compares 'x' according to its size with MIN(SHORTINT), MIN(INTEGER) or MIN(LONGINT).
+   * If the comparison yields TRUE, flow-of-control continues with 'faultLabel'.
+   * Yields 'x' unchanged.
+   *)
+
+  ChrRangeCheck (*x:*)Data -> Data;
+  (*
+   * Checks 'x' to be applicable by CHR, otherwise a CHR fault will occur.
+   * Yields 'x' unchanged.
+   *)
+  
+  ShortRangeCheck Data -> Data;
+  (*
+   * Checks 'x' to be applicable by SHORT, otherwise a SHORT fault will occur.
+   * Yields 'x' unchanged.
+   *)
+
+(*-- Floating point rules ------------------------------------------------------------------------------------------------------*)
+
+  FloatAssignment (size:tSize) Address * Data;
+  (*
+   * Stores a floating point value residing at top-of-stack in the ndp.
+   * PRE: Data    = the value
+   *      Address = destination address
+   *      size    = s or l
+   *)
+  
+  FloatContentOf (size:tSize) Address -> Data;
+  (*
+   * Loads a floating point value into the ndp.
+   * PRE: Address = address of the source value
+   *      size    = s or l
+   *)
+
+  FloatParam (size:tSize) Arguments * Data -> Arguments;
+  (*
+   * Passes a floating point value residing at top-of-stack in the ndp.
+   * PRE: Data = the value
+   *      size = s or l
+   *)
+   
+  FloatFuncReturn Data;
+  (*
+   * RETURN of a function procedure with floating point result type.
+   *)
+   
+  FloatFuncResultOf Address -> Data;
+  (*
+   * To connect a (bound) function procedure call into a floating point expression.
+   *)
+   
+  FloatNegate Data -> Data;
+  (*
+   * Sign inversion for floating point values.
+   *)
+   
+  FloatSymDyOper (code:ASMOP.tOper) Data + Data -> Data;
+  (*
+   * Symmetric dyadic operators for floating point values.
+   * PRE: code = fadd('+'), fmul('*')
+   *)
+   
+  FloatDyOper (code:ASMOP.tOper) Data * Data -> Data; (* fsubp, fdivp *)
+  (*
+   * Dyadic operators for floating point values.
+   * PRE: code = fsub('-'), fdiv('/')
+   *)
+
+  FloatCompare (rel:tRelation) Label * (*a:*)Data * (*b:*)Data -> Condition;
+  (*
+   * Floating point comparisons.
+   * PRE: a,b   = compare operand values
+   *      Label = expression label
+   *      rel   = relation to be stored in 'Condition'
+   *)
+  
+  Entier Data -> Data;          
+  (*
+   * To calculate ENTIER(x).
+   *)
+
+  Int2Float Data -> Data;
+  (*
+   * Loads an integer as floating point value into the ndp.
+   *)
+   
+  Card2Float Data -> Data;
+  (*
+   * Treats an integer bit pattern as floating point value and loads it into the ndp.
+   *)
+   
+  Real2Longreal Data -> Data;
+  (*
+   * Fake conversion.
+   *)
+   
+  Longreal2Real Data -> Data;
+  (*
+   * Fake conversion.
+   *)
+
+(********************************************************************************************************************************)
+REGISTERS
+         al,ah ,        bl,bh ,        cl,ch ,        dl,dh ,
+      ax<al,ah>,     bx<bl,bh>,     cx<cl,ch>,     dx<dl,dh>,     si ,     di ,
+  eax<ax,al,ah>, ebx<bx,bl,bh>, ecx<cx,cl,ch>, edx<dx,dl,dh>, esi<si>, edi<di>, ebp,esp,
+  
+  st, st1, st2, st3, st4, st5, st6, st7;
+
+(********************************************************************************************************************************)
+NONTERMINALS
+  BReg             REGISTERS < al.. dh>; 
+  WReg             REGISTERS < ax.. di>; 
+  LReg             REGISTERS <eax..edi>; 
+  Reg              REGISTERS < al..edi> COND_ATTRIBUTES (size:tSize); 
+
+  Float;          
+
+  Constant                  COND_ATTRIBUTES (size:tSize; val:LONGINT);
+  Gv               ADRMODE   (loc:ASM.tLocation);
+  Ireg             ADRMODE   (loc:ASM.tLocation);
+  Breg             ADRMODE   (loc:ASM.tLocation);
+  BregIreg         ADRMODE   (loc:ASM.tLocation);
+
+  Memory           ADRMODE   (loc:ASM.tLocation);
+  aLabel;
+  aCondition                 (rel:tRelation);
+  aBoolean;
+  aOpenIndexedElem ADRMODE   (headerBaseReg:Register; displacementReg:Register);
+  aStrCopyArgs     ADRMODE;
+  aArguments                 (paramSpace:LONGINT);
+  aImplicits       ADRMODE   (a:tImplicits);
+  aRetype                    COND_ATTRIBUTES (dstLen:LONGINT; tmpOfs:LONGINT);
+  
+  (* nonterminal classes *)
+  
+  AMem             ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  AReg             ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  AImm             ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  AMemAReg         ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  AMemAImm         ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  ARegAImm         ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+  AMemARegAImm     ADRMODE   COND_ATTRIBUTES (size:tSize) (oper:ASM.tOperand);
+
+  AVar             ADRMODE   COND_ATTRIBUTES (var:ASM.tVariable);
+
+(*** Basic chain rules ***)
+
+RULE BReg       -> r:Reg ; TARGET BReg; EVAL{ r.size:=b; }
+RULE WReg       -> r:Reg ; TARGET WReg; EVAL{ r.size:=w; }
+RULE LReg       -> r:Reg ; TARGET LReg; EVAL{ r.size:=l; }
+
+RULE Reg        -> r:BReg; TARGET Reg ; COND{ Reg.size=b }
+RULE Reg        -> r:WReg; TARGET Reg ; COND{ Reg.size=w }
+RULE Reg        -> r:LReg; TARGET Reg ; COND{ Reg.size=l }
+
+RULE i:Gv       -> o:Memory; EMIT{ o.loc:=i.loc; }
+RULE i:Ireg     -> o:Memory; EMIT{ o.loc:=i.loc; } 
+RULE i:Breg     -> o:Memory; EMIT{ o.loc:=i.loc; } 
+RULE i:BregIreg -> o:Memory; EMIT{ o.loc:=i.loc; } 
+
+(* nonterminal classes *)
+
+RULE i:Memory   -> o:AMem;         EVAL{ o.size:=l     ; } EMIT{ o.oper.kind:=ASM.okMemory   ; o.oper.loc:=i.loc; }
+RULE i:BReg     -> o:AReg;         EVAL{ o.size:=b     ; } EMIT{ o.oper.kind:=ASM.okRegister ; o.oper.reg:=i    ; }
+RULE i:WReg     -> o:AReg;         EVAL{ o.size:=w     ; } EMIT{ o.oper.kind:=ASM.okRegister ; o.oper.reg:=i    ; }
+RULE i:LReg     -> o:AReg;         EVAL{ o.size:=l     ; } EMIT{ o.oper.kind:=ASM.okRegister ; o.oper.reg:=i    ; }
+RULE i:Constant -> o:AImm;         EVAL{ o.size:=i.size; } EMIT{ o.oper.kind:=ASM.okImmediate; o.oper.val:=i.val; }
+
+RULE i:AMem     -> o:AMemAReg;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+RULE i:AReg     -> o:AMemAReg;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+
+RULE i:AMem     -> o:AMemAImm;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+RULE i:AImm     -> o:AMemAImm;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+
+RULE i:AReg     -> o:ARegAImm;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+RULE i:AImm     -> o:ARegAImm;     EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+
+RULE i:AMem     -> o:AMemARegAImm; EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+RULE i:AReg     -> o:AMemARegAImm; EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+RULE i:AImm     -> o:AMemARegAImm; EVAL{ o.size:=i.size; } EMIT{ o.oper:=i.oper; }
+
+(********************************************************************************************************************************)
+#include "oberon.cgd.min"
+#include "oberon.cgd.opt"
+#include "oberon.cgd.floats.min"
+#include "oberon.cgd.floats.opt"
+
+(********************************************************************************************************************************)
+INSERTS
+
+IpTestImport{ FROM   BETO IMPORT PrintCHAR,PrintLONGINT,PrintLONGCARD,PrintoCHAR,PrintoBOOLEAN,PrintoLONGINT,PrintoREAL,
+                     PrintoSET,PrintoSTRING,PrintT,PrinttSize,PrinttRelation,PrinttOper,PrinttIdent,PrinttOperand, 
+                     PrinttLocation,PrinttVariable; }
+IpCons_d    { IMPORT ASMOP,Idents,LAB,OT;
+              TYPE   tSize = (NoSize,b,w,l,s); 
+                     tRelation = (NoRelation,equal,unequal,less,lessORequal,greater,greaterORequal); }
+IpCons_i    { IMPORT ADR,ASM,ASMOP,Idents,LIM,LAB,OB,O,OT;
+              VAR    BooleanTab:ARRAY BOOLEAN OF LONGINT; }
+IpIR_d      { IMPORT ASM,ASMOP,Idents,LAB,OT;
+              FROM   Cons IMPORT tSize,tRelation; }
+IpIR_i      { IMPORT ASM,Target,Cons,OT,Strings; }
+IpEmit_i    { IMPORT ADR,ARG,ASM,ASMOP,CV,ERR,FIL,Idents,LAB,LIM,O,NDP; 
+              FROM   ASM IMPORT ah,al,bh,ch,cl,dh,ax,dx,eax,ebx,ecx,edx,esi,edi,ebp,esp,st,st1,
+                     i,iL,ioL,x,R,L,LIf,oB,oBI,oL,B,BI,BIf,oBIf,oIf,Loc,Operand,Variable,b,w,l,s;
+              FROM   ASMOP IMPORT add,and,bound,bt,bts,btr,call,cbw,cdq,cld,cwd,cwde,cmp,dec,inc,ja,jae,jb,jbe,jg,jge,jl,
+                     jle,jmp,jnc,jnp,jns,jno,jnz,js,jz,idiv,imul,lea,leave,lods,loopnz,mov,movs,movsbw,movsbl,movswl,
+                     movzbl,movzbw,movzwl,neg,not,or,popl,pushl,popf,pushf,sahf,sar,shl,shr,repz,ret,rol,ror,setc,setnz,
+                     seto,setp,sets,setz,sub,stos,test,xor,fdecstp,fstsw,fld,fild,fistp,fst,fstp,fcomp,fcompp,fabs,fchs,
+                     fxch;
+              FROM   Cons IMPORT tRelation; 
+              TYPE   tImplicits = RECORD
+                                   headerloc       : ASM.tLocation; 
+                                   displacementReg : Register; 
+                                   nofElemsReg     : Register; 
+                                   implOfs         ,
+                                   baseNofElems    ,
+                                   nofConstLens    ,
+                                   nofOpenLens     ,
+                                   objOfs          : LONGINT; 
+                                   isStackObj      : BOOLEAN; 
+                                   paramSpace      : LONGINT; 
+                                  END;
+              PROCEDURE PrinttImplicits(VAR a:tImplicits); BEGIN END PrinttImplicits;
+
+              VAR    oper:ASMOP.tOper; sz,s1,s2:ASM.tSize; reg,r1,r2:Register; ii,ofs,shift,len:LONGINT; set:BITSET; 
+                     label,label1,label2,label3,label4,label5:LAB.T;
+
+              PROCEDURE LR(to,from:Register);
+              BEGIN
+               IF (to>=ebp) OR (from>=ebp) THEN
+                  ASM.CS2( mov,l  ,  R(RegNil),R(RegNil) ); 
+                  IF ARG.OptionCommentsInAsm THEN ASM.CmtS('LR '); ASM.CmtR(from); ASM.CmtS(' --> '); ASM.CmtR(to); END;
+               ELSE
+                  ASM.CS2( mov,ASM.RegSizeTab[to]  ,  R(from),R(to) ); 
+                  IF ARG.OptionCommentsInAsm THEN ASM.CmtS('LR'); END;
+               END;
+               
+               IF ARG.OptionShowStatistics THEN INC(FIL.ActP^.nofLRs); END;
+              END LR;
+            
+              PROCEDURE Spill(reg:Register; loc:Spilllocation);
+              BEGIN
+               CASE reg OF
+               |Regah,Regbh,Regch,Regdh: 
+                    ASM.CS2( sub,l  ,  ASM.i(4),R(esp)           ); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('Spill'); END;
+                    ASM.CS2( mov,b  ,  R(reg),B(esp)             ); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('Spill'); END;
+               |Regal,Regbl,Regcl,Regdl,Regax..Regedi: 
+                    ASM.C1 ( pushl  ,  R(ASM.SizedRegTab[reg,l]) ); 
+                    IF ARG.OptionCommentsInAsm THEN 
+                       ASM.CmtS('Spill'); IF reg#ASM.SizedRegTab[reg,l] THEN ASM.CmtS(' '); ASM.CmtR(reg); END;
+                    END;
+               ELSE ASM.C1 ( pushl  ,  R(RegNil)                 ); 
+               END;
+
+               IF ARG.OptionShowStatistics THEN INC(FIL.ActP^.nofSpills); END;
+              END Spill;
+            
+              PROCEDURE Restore(reg:Register; loc:Spilllocation);
+              BEGIN
+               CASE reg OF
+               |Regal..Regdh:
+                    ASM.CS2( mov,b  ,  B(esp),R(reg)             ); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('Restore'); END;
+                    ASM.CS2( add,l  ,  ASM.i(4),R(esp)           ); 
+               |Regax..Regedi:
+                    ASM.C1 ( popl   ,  R(ASM.SizedRegTab[reg,l]) ); 
+                    IF ARG.OptionCommentsInAsm THEN 
+                       ASM.CmtS('Restore'); IF reg#ASM.SizedRegTab[reg,l] THEN ASM.CmtS(' '); ASM.CmtR(reg); END;
+                    END;
+               ELSE ASM.C1 ( popl   ,  R(RegNil)                 ); 
+               END;
+              END Restore; }
+
+IpIRConsInit{ BooleanTab[FALSE]:=0; BooleanTab[TRUE]:=1; }
+
+END CODE_GENERATOR_DESCRIPTION Cons.
+(********************************************************************************************************************************)
+(*** END oberon.cgd                                                                                                           ***)
+(********************************************************************************************************************************)
+

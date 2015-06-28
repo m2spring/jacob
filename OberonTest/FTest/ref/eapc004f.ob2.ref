@@ -1,0 +1,22 @@
+Compiling eapc004f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+p   VALPARAM  SYSTEM$PTR
+-------------------------------------------------------------------------------
+
+'MODULE' eapc004f
+-------------------------------------------------------------------------------
+SYS           SERVER    SYSTEM
+trecord       TYPE      RECORD
+                         f   VAR       SHORTINT
+                        END
+tarray        TYPE      ARRAY 10 OF CHAR
+trecpointer   TYPE      POINTER TO trecord
+tarrpointer   TYPE      POINTER TO tarray
+rec           VAR       trecord
+arr           VAR       tarray
+P             PROCEDURE (p:SYSTEM$PTR)
+-------------------------------------------------------------------------------
+
+eapc004f.ob2: 24,4: Actual parameter not compatible with formal
+eapc004f.ob2: 28,4: Actual parameter not compatible with formal

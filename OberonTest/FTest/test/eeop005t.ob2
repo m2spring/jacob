@@ -1,0 +1,21 @@
+(* 8. Expressions: 8.1 Operands                                              *)
+(* If a designates an array, ... If r designates a record, ...               *)
+(* If a or r are read-only, then also a[e] and r.f are read-only.            *)
+ 
+MODULE eeop005t;         (* Declarations of eeop007t:  *)
+                         (* -------------------------- *)
+IMPORT S:=eeop007t;      (* TYPE                       *) 
+                         (*  TA  = ARRAY 3 OF CHAR;    *)
+VAR                      (*  TR  = RECORD              *)                    
+ i:INTEGER;              (*         i*: INTEGER;       *)                    
+ s:SET;                  (*         s : SET;           *)                    
+ c:CHAR;                 (*        END;                *)                    
+                         (*  TRE = RECORD(TR)          *)
+BEGIN                    (*         c* : CHAR;         *)                    
+ c:=S.a[0];              (*        END;                *)                    
+                         (* VAR                        *)                    
+ i:=S.r.i;               (*  a- : TA;                  *)                    
+ c:=S.e.c;               (*  r- : TR;                  *)                    
+ S.e.c:=c;               (*  e* : TRE;                 *)                    
+ S.e.i:=1;
+END eeop005t.

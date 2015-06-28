@@ -1,0 +1,17 @@
+Compiling eeop004t
+'MODULE' eeop004t
+-------------------------------------------------------------------------------
+TA   TYPE      ARRAY 4 OF CHAR
+TX   TYPE      ARRAY 4 OF POINTER TO ARRAY 3 OF POINTER TO ARRAY 2 OF CHAR
+TR   TYPE      RECORD
+                f   VAR       INTEGER
+                p   VAR       POINTER TO TA
+               END
+T1   TYPE      POINTER TO TA
+T2   TYPE      POINTER TO TR
+T3   TYPE      POINTER TO TX
+pa   VAR       T1
+pr   VAR       T2
+px   VAR       T3
+-------------------------------------------------------------------------------
+

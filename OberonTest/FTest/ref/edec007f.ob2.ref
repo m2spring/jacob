@@ -1,0 +1,17 @@
+Compiling edec007f
+'BOUND' BoundProc
+-------------------------------------------------------------------------------
+r   RECEIVER  Rec
+-------------------------------------------------------------------------------
+
+'MODULE' edec007f
+-------------------------------------------------------------------------------
+Rec   TYPE      RECORD
+                 field       VAR       INTEGER
+                 BoundProc   BOUND     VAR r:Rec()
+                END
+i     VAR       INTEGER
+-------------------------------------------------------------------------------
+
+edec007f.ob2: 16,4: Identifier not declared
+edec007f.ob2: 19,9: Identifier not declared

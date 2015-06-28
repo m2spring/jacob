@@ -1,0 +1,17 @@
+Compiling eeop002f
+'MODULE' eeop002f
+-------------------------------------------------------------------------------
+c    CONST     <Char> = 0DX
+r    CONST     REAL = 1.00000E0
+T1   TYPE      ARRAY 1 OF CHAR
+T2   TYPE      ARRAY 1 OF ARRAY 2 OF ARRAY 3 OF CHAR
+T3   TYPE      ARRAY 1 OF ARRAY 2 OF ARRAY 3 OF CHAR
+li   VAR       LONGINT
+a1   VAR       T1
+a2   VAR       T2
+a3   VAR       T3
+-------------------------------------------------------------------------------
+
+eeop002f.ob2: 25,5: Index out of bounds
+eeop002f.ob2: 29,8: Invalid type of expression
+eeop002f.ob2: 33,10: Invalid type of expression

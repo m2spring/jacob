@@ -1,0 +1,145 @@
+MODULE of;
+
+IMPORT
+   Arguments, DRV, ED, ERR, Eval, IO, O, OD, Parser, Scanner, STR, Strings1;
+
+VAR
+   FilesSpecified      ,
+   OptionDumpToken     ,
+   OptionBrowse        ,
+   OptionDump          ,
+   OptionDumpAfterEval : BOOLEAN;
+   argc                : SHORTCARD;
+   argv                : Arguments.ArgTable;
+
+(*---------------------------------------------------------------------------*)
+PROCEDURE ShowUsage;
+BEGIN (* ShowUsage *)
+ O.Ln;
+ O.Str('usage  : of {[-options] [file(s)]}'); O.Ln;
+ O.Ln;
+ O.Str('options: h  print usage information'); O.Ln;
+ O.Str('         Y  dump scanner tokens only'); O.Ln;
+ O.Str('         b  browse module exports'); O.Ln;
+ O.Str('         d  dump representation'); O.Ln;
+ O.Str('         D  dump representation after evaluation'); O.Ln;
+ O.Ln;
+ O.Str('         Tp dump predeclared table'); O.Ln;
+ O.Str('         Ti dump imported tables'); O.Ln;
+ O.Str('         Ts dump (local) table for statement sequences'); O.Ln;
+ O.Str('         Tw dump (local) table for with-guarded statements'); O.Ln;
+ O.Str('         Ta table dump with type addresses'); O.Ln;
+ O.Str('         Tt table dump with type sizes'); O.Ln;
+ O.Str('         Tv table dump with variable addresses'); O.Ln;
+ O.Ln;
+ O.Str('         E  trace ED procedure calls'); O.Ln;
+ O.Ln;
+ O.Str('         -ldir specify the directory dir where of finds its tables'); O.Ln;
+ O.Ln;
+ HALT;
+END ShowUsage;
+
+(*---------------------------------------------------------------------------*)
+PROCEDURE AnalyzeCmdline;
+VAR
+   i, j, n : CARDINAL;
+   s       : ARRAY [0..100] OF CHAR;
+BEGIN (* AnalyzeCmdline *)
+ FilesSpecified           := FALSE;
+ OptionDumpToken          := FALSE;
+ OptionBrowse             := FALSE;
+ OptionDump               := FALSE;
+ OptionDumpAfterEval      := FALSE;
+
+ Eval.ShowPredeclTable    := FALSE;
+ Eval.ShowImportTables    := FALSE;
+ Eval.ShowStmtTables      := FALSE;
+ Eval.ShowWithTables      := FALSE;
+
+ OD.ShowTypeAddrs         := FALSE;
+ OD.ShowTypeSizes         := FALSE;
+ OD.ShowVarAddrs          := FALSE;
+
+ ED.TraceCalls            := FALSE;
+
+ FOR i:=1 TO argc-1 DO
+  Strings1.Assign(s,argv^[i]^);
+  IF s[0]='-'
+     THEN j:=1; n:=STR.Length(s); s[n]:=0C;
+          LOOP
+           IF j>=n THEN EXIT; END; (* IF *)
+
+           CASE s[j] OF
+           |'h': ShowUsage;
+           |'Y': OptionDumpToken                 := TRUE;
+           |'b': OptionBrowse                    := TRUE;
+           |'d': OptionDump                      := TRUE;
+           |'D': OptionDumpAfterEval             := TRUE;
+           |'A': OD.ShowTypeAddrs                := TRUE;
+           |'T': LOOP
+                  INC(j);
+                  CASE s[j] OF
+                  |'p': Eval.ShowPredeclTable    := TRUE;
+                  |'i': Eval.ShowImportTables    := TRUE;
+                  |'s': Eval.ShowStmtTables      := TRUE;
+                  |'w': Eval.ShowWithTables      := TRUE;
+                  |'a': OD.ShowTypeAddrs         := TRUE;
+                  |'t': OD.ShowTypeSizes         := TRUE;
+                  |'v': OD.ShowVarAddrs          := TRUE;
+                  ELSE  DEC(j);
+                        EXIT;
+                  END; (* CASE *)
+                 END; (* LOOP *)
+           |'E': ED.TraceCalls                   := TRUE;
+           |'l': STR.Delete(s,0,2);
+                 IF s[0]#0C
+                    THEN IF s[STR.Length(s)-1]#'/' THEN STR.Append(s,'/'); END; (* IF *)
+                         STR.Insert(Scanner.ScanTabName,s,0);
+                         STR.Insert(Parser .ParsTabName,s,0);
+                         STR.Insert(ERR    .ErrTabName ,s,0);
+                 END; (* IF *)
+                 EXIT;
+           ELSE  O.Str("Invalid switch '-");
+                 O.Char(s[j]);
+                 O.Str("'. Try -h for help!"); O.Ln;
+                 HALT;
+           END; (* CASE *)
+           INC(j);
+          END; (* LOOP *)
+     ELSE FilesSpecified:=TRUE;
+  END; (* IF *)
+ END; (* FOR *)
+END AnalyzeCmdline;
+
+(*---------------------------------------------------------------------------*)
+PROCEDURE Process(Filename : ARRAY OF CHAR);
+BEGIN (* Process *)
+ IF OptionBrowse
+    THEN DRV.Browse(Filename);
+ ELSIF OptionDump
+    THEN DRV.Dump(Filename);
+ ELSIF OptionDumpToken
+    THEN DRV.DumpTokens(Filename);
+    ELSE DRV.Compile(Filename,OptionDumpAfterEval);
+ END; (* IF *)
+END Process;
+
+(*---------------------------------------------------------------------------*)
+VAR
+   i : CARDINAL;
+   s : ARRAY [0..100] OF CHAR;
+BEGIN (* of *)
+ Arguments.GetArgs(argc,argv);
+ AnalyzeCmdline;
+
+ IF ~FilesSpecified
+    THEN Process('');
+    ELSE FOR i:=1 TO argc-1 DO
+          Strings1.Assign(s,argv^[i]^);
+          IF s[0]#'-' THEN Process(s); END; (* IF *)
+         END; (* FOR *)
+ END; (* IF *)
+
+ IO.CloseIO;
+END of.
+

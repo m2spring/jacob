@@ -1,0 +1,168 @@
+Compiling LDes03 (LDes03.ob2) 
+Linking LDes03
+	.comm	LDes03$G,8
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+LDes03$N:
+	.asciz	"LDes03"
+	.align	2,144
+	.long	LDes03$N
+	.long	0
+	.long	_NILPROC
+	.globl	LDes03$D
+LDes03$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# TDesc for LDes03.P2.po^
+L2$N:
+	.asciz	"LDes03.P2.po^"
+	.align	2,144
+L2$S:
+	movl	(%ebx),%eax
+	leal	15(%ebx,%eax),%ebx
+	andl	$0xfffffff8,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	L2$N	# -12 name
+	.long	-1	# -8  size/odim
+	.long	L2$S	# -4  skipper
+
+L2$D:
+
+#------------------------------------------------------------------------------
+# PROCEDURE P1()
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L0$N:
+	.asciz	"LDes03.P1"
+	.align	2,144
+	.long	L0$N
+	.long	0
+	.long	_NILPROC
+L0$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L0:
+	pushl	%ebp
+	pushl	$L0$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L3,%esp
+
+	leave
+	ret
+L3=	0
+
+#------------------------------------------------------------------------------
+# PROCEDURE P2()
+# LEVEL  = 1
+# LSPACE = 36
+# TSPACE = 0
+#     -9 bo: BOOLEAN
+#    -10 ch: CHAR
+#    -11 si: SHORTINT
+#    -14 in: INTEGER
+#    -20 li: LONGINT
+#    -24 re: REAL
+#    -32 lr: LONGREAL
+#    -36 se: SET
+#    -40 po: POINTER TO ARRAY OF CHAR
+#    -44 pr: PROCEDURE()
+
+# TDesc for proc locals
+L1$N:
+	.asciz	"LDes03.P2"
+	.align	2,144
+	.long	L1$N
+	.long	0
+	.long	_NILPROC
+L1$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L1:
+	pushl	%ebp
+	pushl	$L1$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$36+L4,%esp
+
+	# pointer variable init code
+	movl	$0,-40(%ebp)
+
+	# proc variable init code
+	movl	$_NILPROC,-44(%ebp)
+
+	# bo:=FALSE;
+	movb	$0,-9(%ebp)	# bo 
+
+	# ch:=0X;
+	movb	$0,-10(%ebp)	# ch 
+
+	# si:=2;
+	movb	$2,-11(%ebp)	# si 
+
+	# in:=128;
+	movw	$128,-14(%ebp)	# in 
+
+	# li:=2000000;
+	movl	$2000000,-20(%ebp)	# li 
+
+	# re:=2.00000E0;
+	movl	$1073741823,-24(%ebp)	# re 
+
+	# lr:=2.0000000000000D0;
+	movl	$-1,-32(%ebp)	# lr 
+	movl	$1073741823,-28(%ebp)	# lr 
+
+	# se:={};
+	movl	$0,-36(%ebp)	# se 
+
+	# po:=NIL;
+	movl	$0,-40(%ebp)	# po 
+
+	# pr:=P1;
+	leal	L0,%eax	# P1 
+	movl	%eax,-44(%ebp)	# pr 
+
+	leave
+	ret
+L4=	0
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+LDes03$I$N:
+	.asciz	"LDes03$I"
+	.align	2,144
+	.long	LDes03$I$N
+	.long	0
+	.long	_NILPROC
+LDes03$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	LDes03$I
+LDes03$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$LDes03$I$D
+	subl	$L5,%esp
+
+	leave
+	ret
+L5=	0
+

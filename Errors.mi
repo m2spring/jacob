@@ -1,0 +1,117 @@
+IMPLEMENTATION MODULE Errors;
+
+IMPORT ERR, Idents, IO, Parser, POS, Sets, Strings, SYSTEM;
+
+(*---------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE ErrorMessage(ErrorCode  ,
+                       ErrorClass : CARDINAL;
+                       Position   : POS.tPosition);
+BEGIN (* ErrorMessage *)
+ ErrorMessageI(ErrorCode,ErrorClass,Position,None,NIL);
+END ErrorMessage;
+
+(*---------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE ErrorMessageI(ErrorCode  ,
+                        ErrorClass : CARDINAL;
+                        Position   : POS.tPosition;
+                        InfoClass  : CARDINAL;
+                        Info       : SYSTEM.ADDRESS);
+BEGIN (* ErrorMessageI *)
+ IF UseGeneratedCode OR (ErrorClass=Fatal)
+    THEN WriteErrorMessage(ErrorCode,ErrorClass,Position);
+         WriteInfo(InfoClass,Info);
+         IO.WriteNl(IO.StdError);
+         IF ErrorClass=Fatal THEN IO.CloseIO; HALT; END;
+    ELSE ERR.MsgI(ErrorCode,ErrorClass,Position,InfoClass,Info);
+ END; (* IF *)
+END ErrorMessageI;
+
+(*---------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WriteErrorMessage(ErrorCode  ,
+                            ErrorClass : CARDINAL;
+                            Position   : POS.tPosition);
+BEGIN (* WriteErrorMessage *)
+ IO.WriteI(IO.StdError,Position.Line,3);
+ IO.WriteS(IO.StdError,",");
+ IO.WriteI(IO.StdError,Position.Column,2);
+ IO.WriteS(IO.StdError,": ");
+
+ CASE ErrorClass OF
+ |Fatal      : IO.WriteS(IO.StdError,"Fatal        ");
+ |Restriction: IO.WriteS(IO.StdError,"Restriction  ");
+ |Error      : IO.WriteS(IO.StdError,"Error        ");
+ |Warning    : IO.WriteS(IO.StdError,"Warning      ");
+ |Repair     : IO.WriteS(IO.StdError,"Repair       ");
+ |Note       : IO.WriteS(IO.StdError,"Note         ");
+ |Information: IO.WriteS(IO.StdError,"Information  ");
+ ELSE          IO.WriteS(IO.StdError,"Error class: ");
+               IO.WriteI(IO.StdError,ErrorClass,0   );
+ END; (* CASE *)
+
+ CASE ErrorCode OF
+ |NoText         :
+ |SyntaxError    : IO.WriteS(IO.StdError,"syntax error"           );
+ |ExpectedTokens : IO.WriteS(IO.StdError,"expected tokens"        );
+ |RestartPoint   : IO.WriteS(IO.StdError,"restart point"          );
+ |TokenInserted  : IO.WriteS(IO.StdError,"token inserted "        );
+ |WrongParseTable: IO.WriteS(IO.StdError,"parse table mismatch"   );
+ |OpenParseTable : IO.WriteS(IO.StdError,"cannot open parse table");
+ |ReadParseTable : IO.WriteS(IO.StdError,"cannot read parse table");
+ ELSE              IO.WriteS(IO.StdError," error code: "          );
+                   IO.WriteI(IO.StdError,ErrorCode,0              );
+ END; (* CASE *)
+END WriteErrorMessage;
+
+(*---------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WriteInfo(InfoClass : CARDINAL; Info : SYSTEM.ADDRESS);
+VAR
+   PtrToInteger   : POINTER TO INTEGER;
+   PtrToShort     : POINTER TO SHORTCARD;
+   PtrToLong      : POINTER TO LONGINT;
+   PtrToReal      : POINTER TO REAL;
+   PtrToBoolean   : POINTER TO BOOLEAN;
+   PtrToCharacter : POINTER TO CHAR;
+   PtrToString    : POINTER TO Strings.tString;
+   PtrToArray     : POINTER TO ARRAY [0..1023] OF CHAR;
+   PtrToIdent     : POINTER TO Idents.tIdent;
+BEGIN (* WriteInfo *)
+ IF InfoClass=None THEN RETURN END; (* IF *)
+
+ IO.WriteS(IO.StdError, ": ");
+ CASE InfoClass OF
+ |Integer  : PtrToInteger   := Info; IO.WriteI        (IO.StdError,PtrToInteger^,0);
+ |Short    : PtrToShort     := Info; IO.WriteI        (IO.StdError,PtrToShort^,0);
+ |Long     : PtrToLong      := Info; IO.WriteLong     (IO.StdError,PtrToLong^,0);
+ |Real     : PtrToReal      := Info; IO.WriteR        (IO.StdError,PtrToReal^,1,10,1);
+ |Boolean  : PtrToBoolean   := Info; IO.WriteB        (IO.StdError,PtrToBoolean^);
+ |Character: PtrToCharacter := Info; IO.WriteC        (IO.StdError,PtrToCharacter^);
+ |String   : PtrToString    := Info; Strings.WriteS   (IO.StdError,PtrToString^);
+ |Array    : PtrToArray     := Info; IO.WriteS        (IO.StdError,PtrToArray^);
+ |Ident    : PtrToIdent     := Info; Idents.WriteIdent(IO.StdError, PtrToIdent^);
+ ELSE        IO.WriteS(IO.StdError,"info class: ");
+             IO.WriteI(IO.StdError,InfoClass,0);
+ END; (* CASE *)
+END WriteInfo;
+
+(*
+(*---------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WriteIdent(File : IO.tFile; Token : CARDINAL);
+VAR
+   Name : ARRAY [0..31] OF CHAR;
+BEGIN (* WriteIdent *)
+ Parser.xxTokenName(Token,Name);
+ IO.WriteS(File,Name);
+END WriteIdent;
+*)
+
+(*---------------------------------------------------------------------------*)
+BEGIN (* Errors *)
+ UseGeneratedCode:=FALSE;
+END Errors.
+
+

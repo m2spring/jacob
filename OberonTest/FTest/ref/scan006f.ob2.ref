@@ -1,0 +1,27 @@
+File scan006f.ob2
+0004,001: <string>   'Ein ungeschlossener String,'
+0005,001: <ident>    da
+0005,004: <ident>    er
+0005,007: <ident>    ueber
+0005,013: <ident>    zwei
+0005,018: <ident>    Zeilen
+0005,025: <ident>    geht
+0005,029: <string>   ''
+0007,001: <string>   "dieser string endet mit falschem zeichen'"
+0008,001: <string>   'dito, nur andersherum"'
+0010,001: <string>   'im string hab'
+0010,017: <ident>    ich
+0010,021: <ident>    das
+0010,025: <ident>    falsche
+0010,033: <ident>    zeichen
+0010,041: <ident>    benutzt
+0010,048: <string>   ''
+0012,001: <string>   'und dieser string hoert ueberhaupt nicht mehr auf'
+0013,001: <eof>      
+
+scan006f.ob2: 4,1: String not terminated
+scan006f.ob2: 5,29: String not terminated
+scan006f.ob2: 7,1: String not terminated
+scan006f.ob2: 8,1: String not terminated
+scan006f.ob2: 10,48: String not terminated
+scan006f.ob2: 12,1: String not terminated

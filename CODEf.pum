@@ -1,0 +1,362 @@
+/********************************************************************************************************************************/
+/*** CODEf.pum / produces CODE according to a Fixed scheme                                                                    ***/
+/********************************************************************************************************************************/
+TRAFO CODEf TREE CoderTree, OB PUBLIC
+
+ /*** procedure prologue ***/
+
+ StackFrameLinks                                              /* base pointer and display                                       */
+ RefdValParamsCopy                                            /* copying of value parameters which get passed call-by-reference */
+ VarInitializing                                              /* initialization of local pointer or procedure variables         */
+
+ /*** type descriptors ***/
+
+ NamePath
+ GlobalTDesc                                                  /* for modul global variables                                     */
+ LocalTDesc                                                   /* for local variables and procedure parameters                   */
+ TDescList                                                    /* for all types in the list                                      */
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT ASM,LAB;
+        TYPE   tLabel  = LAB.T       ;
+               tOperId = ASM.tOperId ; }
+
+GLOBAL{ FROM   Storage  IMPORT ALLOCATE, DEALLOCATE;  
+        FROM   ASM IMPORT al,ah,bl,bh,cl,ch,dl,dh,ax,bx,cx,dx,si,di,eax,ebx,ecx,edx,esi,edi,ebp,esp,b,w,l,S,i,x,iL,ioL,R,oLBIf,
+               oLBI,oLB,oLIf,oL,o,oBIf,oBI,oB,oIf,LBIf,LBI,LB,LIf,BIf,BI,B,If,L;
+        FROM   ASMOP IMPORT add,and,bts,call,cld,dec,enter,imul,inc,jc,jmp,jnz,jz,lea,leave,loop,mov,movs,nop,or,popl,pushl,
+               repz,ret,shl,shr,stos,sub,test,xor;
+        IMPORT ADR,ARG,ASM,BL,CMT,E,ERR,FIL,LAB,LIM,O,STR,T;
+
+        TYPE   tLevel      = OB.tLevel      ;
+               tAddress    = OB.tAddress    ;
+               tProcTab    = POINTER TO ARRAY [0..100000] OF OB.tOB; 
+        VAR    ProcTab     : tProcTab       ;
+               ProcTabSize : LONGINT        ;
+               BaseTypes   : ARRAY [1..LIM.MaxExtensionLevel] OF OB.tOB;
+
+        PROCEDURE InitProcTab(s:LONGINT); 
+        VAR i:LONGINT; 
+        BEGIN              
+         IF s>ProcTabSize THEN 
+            DEALLOCATE(ProcTab,ProcTabSize*SIZE(OB.tOB)); 
+            ProcTabSize:=s; 
+            ALLOCATE(ProcTab,ProcTabSize*SIZE(OB.tOB)); 
+         END;
+         FOR i:=0 TO ProcTabSize-1 DO ProcTab^[i]:=NIL; END;
+        END InitProcTab; 
+
+        PROCEDURE oG(ofs:LONGINT):ASM.tOp;
+        BEGIN
+         RETURN oL(ofs,FIL.ActP^.ModuleEntry^.ModuleEntry.globalLabel); 
+        END oG; 
+
+        PROCEDURE oGIf(ofs:LONGINT; r:ASM.tReg; f:LONGINT):ASM.tOp;
+        BEGIN
+         RETURN oLIf(ofs,FIL.ActP^.ModuleEntry^.ModuleEntry.globalLabel,r,f); 
+        END oGIf; 
+
+        PROCEDURE oGB(ofs:LONGINT; r:ASM.tReg):ASM.tOp;
+        BEGIN
+         RETURN oLB(ofs,FIL.ActP^.ModuleEntry^.ModuleEntry.globalLabel,r); 
+        END oGB; 
+
+        PROCEDURE PV(isPtr:BOOLEAN):ASM.tOp;
+        BEGIN
+         IF isPtr THEN RETURN i(0); 
+                  ELSE RETURN iL(LAB.NILPROC); END;
+        END PV; }
+
+BEGIN{  ProcTabSize:=16; ALLOCATE(ProcTab,ProcTabSize*SIZE(OB.tOB)); }
+
+#include "CODEf.pum.Init"
+#include "CODEf.pum.TDesc"
+
+/********************************************************************************************************************************/
+PROCEDURE StackFrameLinks ( Entries , localSpace:LONGINT , fTempLabel:tLabel => tOperId , LONGINT )
+
+ BoundProcEntry(_,_,_,_,level,_,_,_,_,_,label,_,_,_,env),.. ;
+ ProcedureEntry(_,_,_,_,level,_,_,_,_  ,label,_    ,env),.. => idOfLocalSub , spaceAdjust
+ ? StackFrameLinks1(level,env,label,localSpace,fTempLabel=>idOfLocalSub,spaceAdjust);.
+
+/*END StackFrameLinks */
+
+/********************************************************************************************************************************/
+PROCEDURE StackFrameLinks1 ( level:tLevel , env:OB , label:tLabel , localSpace:LONGINT , fTempLabel:tLabel => tOperId , LONGINT )
+LOCAL{ VAR ii,spaceAdjust:LONGINT; idOfdispN,idOfLocalSub:ASM.tOperId; }
+ .. => {idOfLocalSub},{spaceAdjust} ?{
+    spaceAdjust:=0; 
+    IF level<LIM.FirstNestingDepthToUseEnter THEN                       
+       ASM.C1                      ( pushl  ,  R(ebp)                                        ); 
+       ASM.C1                      ( pushl  ,  iL(LAB.AppS(label,'$D'))                      ); 
+       IF ARG.OptionCommentsInAsm THEN ASM.CmtS('TDesc of proc'); END;  
+                                                                        
+       FOR ii:=2 TO level DO ASM.C1( pushl  ,  oB(-4*ii,ebp)                                 ); END;
+                                                                                                      
+       ASM.CS2                     ( lea,l  ,  oB(4*level,esp),R(ebp)                        ); 
+
+       ASM.C1                      ( pushl  ,  R(ebp)                                        ); 
+       IF ARG.OptionCommentsInAsm THEN ASM.CmtS('disp-next'); END;
+       IF ~((level+1) IN E.LevelsOfEnv(env)) THEN 
+          ASM.GetLastOperId(idOfdispN);
+          ASM.MakeObsolete(idOfdispN); 
+          spaceAdjust:=4; 
+       END;
+
+       ASM.CS2                     ( sub,l  ,  ioL(ADR.Align4(localSpace),fTempLabel),R(esp) ); 
+       ASM.GetLastOperId(idOfLocalSub);
+    ELSE 
+       ASM.C2                      ( enter  ,  i(ADR.Align4(localSpace)),i(level+1)          ); 
+         
+       ASM.CS2                     ( mov,l  ,  iL(LAB.AppS(label,'$D')),oB(-4,ebp)           ); 
+       IF ARG.OptionCommentsInAsm THEN ASM.CmtS('TDesc of proc'); END;
+       ASM.NoOperId(idOfLocalSub);
+    END;
+    ASM.Ln;
+ };.
+
+/*END StackFrameLinks1 */
+
+/********************************************************************************************************************************/
+PROCEDURE RefdValParamsCopy ( SignatureRepr )
+LOCAL{ VAR size,elemSize,shift:LONGINT; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Signature 
+ (next:SignatureRepr
+ ,VarEntry
+  (/* prevEntry     =: */ _
+  ,/* moduleIdent   =: */ _
+  ,/* ident         =: */ ident
+  ,/* exportMode    =: */ _
+  ,/* level         =: */ _
+  ,/* declStatus    =: */ _
+  ,/* typeRepr      =: */ typeRepr
+  ,/* isParam       =: */ _
+  ,/* isReceiverPar =: */ _
+  ,/* parMode       =: */ {OB.VALPAR}
+  ,/* address       =: */ ofs
+  ,/* refMode       =: */ {OB.REFPAR}
+  ,/* isWithed      =: */ _
+  ,/* isLaccessed   =: */ isLaccessed)
+ )?{
+    IF ARG.OptionCommentsInAsm THEN 
+       ASM.CmtLnS('Local copy for parameter '); ASM.CmtId(ident); 
+    END;
+    IF ~ARG.OptionOptRefdValParam OR isLaccessed THEN 
+       IF T.OpenDimOfArrayType(typeRepr)=0 THEN 
+          size:=T.SizeOfType(typeRepr); 
+          CASE size OF
+          |0..4 : ;
+   
+          |5..8 : ASM.CS2   ( sub,l   ,  i(8),R(esp)                      );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         ); 
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.Ln;                                                 
+                                                                          
+          |9..12: ASM.CS2   ( sub,l   ,  i(12),R(esp)                     );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         ); 
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.Ln;                                     
+                                                              
+          ELSE    size:=ADR.Align4(size);                     
+                  ASM.CS2   ( mov,l   ,  i(size DIV 4),R(ecx)             );
+                  ASM.CS2   ( sub,l   ,  i(size),R(esp)                   );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         ); 
+                  ASM.C0    ( repz                                        );
+                  ASM.CS0   ( movs,l                                      );
+                  ASM.Ln;
+          END;
+       ELSE 
+          elemSize:=T.ElemSizeOfOpenArrayType(typeRepr);
+          CASE elemSize OF
+   
+          |1:     ASM.CS2   ( mov,l   ,  oB(4+ofs,ebp),R(ecx)             );
+                  ASM.CS2   ( add,l   ,  i(3),R(ecx)                      );
+                  ASM.CS2   ( and,b   ,  x(0FCH),R(cl)                    );
+                  ASM.CS2   ( sub,l   ,  R(ecx),R(esp)                    );
+                  ASM.CS2   ( shr,l   ,  i(2),R(ecx)                      );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         );    
+                  ASM.C0    ( repz                                        );   
+                  ASM.CS0   ( movs,l                                      ); 
+                                                              
+          |2:     ASM.CS2   ( mov,l   ,  oB(4+ofs,ebp),R(ecx)             );
+                  ASM.CS2   ( lea,l   ,  oIf(3,ecx,2),R(ecx)              );
+                  ASM.CS2   ( and,b   ,  x(0FCH),R(cl)                    );
+                  ASM.CS2   ( sub,l   ,  R(ecx),R(esp)                    );
+                  ASM.CS2   ( shr,l   ,  i(2),R(ecx)                      );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         );    
+                  ASM.C0    ( repz                                        );   
+                  ASM.CS0   ( movs,l                                      ); 
+                                                                          
+          |3:     ASM.CS2   ( mov,l   ,  oB(4+ofs,ebp),R(ecx)             );
+                  ASM.CS2   ( lea,l   ,  oBIf(3,ecx,ecx,2),R(ecx)         );
+                  ASM.CS2   ( and,b   ,  x(0FCH),R(cl)                    );
+                  ASM.CS2   ( sub,l   ,  R(ecx),R(esp)                    );
+                  ASM.CS2   ( shr,l   ,  i(2),R(ecx)                      );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         );    
+                  ASM.C0    ( repz                                        );   
+                  ASM.CS0   ( movs,l                                      ); 
+                                                                          
+          |4:     ASM.CS2   ( mov,l   ,  oB(4+ofs,ebp),R(ecx)             );
+                  ASM.CS2   ( mov,l   ,  R(ecx),R(eax)                    );
+                  ASM.CS2   ( shl,l   ,  i(2),R(eax)                      );
+                  ASM.CS2   ( sub,l   ,  R(eax),R(esp)                    );
+                  ASM.CS2   ( mov,l   ,  R(esp),R(edi)                    );
+                  ASM.CS2   ( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                  ASM.CS2   ( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                  ASM.C0    ( cld                                         ); 
+                  ASM.C0    ( repz                                        );
+                  ASM.CS0   ( movs,l                                      );
+   
+          ELSE    IF ADR.IntLog2(elemSize,shift) THEN
+                     ASM.CS2( mov,l   ,  oB(4+ofs,ebp),R(ecx)             );
+                     ASM.CS2( shl,l   ,  i(shift),R(ecx)                  );
+                     ASM.CS2( add,l   ,  i(3),R(ecx)                      );
+                     ASM.CS2( and,b   ,  x(0FCH),R(cl)                    );
+                     ASM.CS2( sub,l   ,  R(ecx),R(esp)                    );
+                     ASM.CS2( shr,l   ,  i(2),R(ecx)                      );
+                     ASM.CS2( mov,l   ,  R(esp),R(edi)                    );
+                     ASM.CS2( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                     ASM.CS2( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                     ASM.C0 ( cld                                         );    
+                     ASM.C0 ( repz                                        );   
+                     ASM.CS0( movs,l                                      ); 
+                  ELSE                  
+                     ASM.CS3( imul,l  ,  i(elemSize),oB(4+ofs,ebp),R(ecx) );
+                     ASM.CS2( add,l   ,  i(3),R(ecx)                      );
+                     ASM.CS2( and,b   ,  x(0FCH),R(cl)                    );
+                     ASM.CS2( sub,l   ,  R(ecx),R(esp)                    );
+                     ASM.CS2( shr,l   ,  i(2),R(ecx)                      );
+                     ASM.CS2( mov,l   ,  R(esp),R(edi)                    );
+                     ASM.CS2( mov,l   ,  oB(ofs,ebp),R(esi)               );
+                     ASM.CS2( mov,l   ,  R(edi),oB(ofs,ebp)               );
+                     ASM.C0 ( cld                                         );    
+                     ASM.C0 ( repz                                        );
+                     ASM.CS0( movs,l                                      );
+                  END;
+          END;
+          ASM.Ln;
+       END;
+    ELSE 
+       IF ARG.OptionCommentsInAsm THEN ASM.CmtS(' obsolete (not L-accessed)'); END;
+    END;
+
+    RefdValParamsCopy(next); 
+ };.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Signature(next:SignatureRepr,_)?{
+    RefdValParamsCopy(next); 
+ };.
+ 
+/*END RefdValParamsCopy */
+
+/********************************************************************************************************************************/
+PROCEDURE Skipper ( type:TypeReprs )
+LOCAL{ VAR arrayOfs,openDim,elemSize,shift:LONGINT; }
+
+ TypeRepr(_,size,..) ? (size>0); {
+    ASM.CS2( add,l  ,  i(ADR.Align8(4+size)),R(ebx) ); 
+    ASM.C1 ( jmp    ,  R(esi)                       ); 
+ };.
+
+ RecordTypeRepr(_,size,..) ? (size=0); { (* An open array has also size=0! *)
+    ASM.CS2( add,l  ,  i(8),R(ebx) ); 
+    ASM.C1 ( jmp    ,  R(esi)      ); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,..) ? (len=OB.OPENARRAYLEN); {
+    openDim       := T.OpenDimOfArrayType(type); 
+    elemSize      := T.ElemSizeOfOpenArrayType(type); 
+    CASE openDim OF
+    |0:  arrayOfs := 0; 
+    |1:  arrayOfs := 4; 
+    ELSE arrayOfs := 4+4*openDim; 
+    END;
+    
+    CASE elemSize OF
+
+    |0  : ASM.CS2( add,l  ,  i(ADR.Align8(4+arrayOfs)),R(ebx)              ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |1  : ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  oBI(11+arrayOfs,ebx,eax),R(ebx)               ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |2,4: ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  oBIf(11+arrayOfs,ebx,eax,elemSize),R(ebx)     ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |3  : ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  BIf(eax,eax,2),R(eax)                         ); 
+          ASM.CS2( lea,l  ,  oBI(11+arrayOfs,ebx,eax),R(ebx)               ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |5  : ASM.CS2( mov,l  ,  B(ebx),B(eax)                                 ); 
+          ASM.CS2( lea,l  ,  BIf(eax,eax,4),R(eax)                         ); 
+          ASM.CS2( lea,l  ,  oBI(11+arrayOfs,ebx,eax),R(ebx)               ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |6  : ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  BIf(eax,eax,2),R(eax)                         ); 
+          ASM.CS2( lea,l  ,  oBIf(11+arrayOfs,ebx,eax,2),R(ebx)            ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |7  : ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( shl,l  ,  i(3),R(eax)                                   ); 
+          ASM.CS2( sub,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  oBI(11+arrayOfs,ebx,eax),R(ebx)               ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    |8  : ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( lea,l  ,  oBIf(ADR.Align8(4+arrayOfs),ebx,eax,8),R(ebx) ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+
+    ELSE  IF ADR.IntLog2(elemSize,shift) THEN 
+          ASM.CS2( mov,l  ,  B(ebx),R(eax)                                 ); 
+          ASM.CS2( shl,l  ,  i(shift),R(eax)                               ); 
+          ASM.CS2( lea,l  ,  oBI(ADR.Align8(4+arrayOfs),ebx,eax),R(ebx)    ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+    ELSE
+          ASM.CS3( imul,l ,  i(elemSize),B(ebx),R(eax)                     ); 
+          ASM.CS2( lea,l  ,  oBI(11+arrayOfs,ebx,eax),R(ebx)               ); 
+          ASM.CS2( and,b  ,  x(0F8H),R(bl)                                 ); 
+          ASM.C1 ( jmp    ,  R(esi)                                        ); 
+    END;
+    END;
+ };.
+ 
+/*END Skipper */
+
+/********************************************************************************************************************************/
+/*** END CODEf.pum                                                                                                            ***/
+/********************************************************************************************************************************/
+

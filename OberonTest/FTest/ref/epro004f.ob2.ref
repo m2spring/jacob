@@ -1,0 +1,33 @@
+Compiling epro004f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+a   REFPARAM  SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+x   VALPARAM  SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' R
+-------------------------------------------------------------------------------
+a   VALPARAM  ARRAY OF ARRAY OF SET
+-------------------------------------------------------------------------------
+
+'PROCEDURE' S
+-------------------------------------------------------------------------------
+i   VALPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'MODULE' epro004f
+-------------------------------------------------------------------------------
+P   PROCEDURE ()
+Q   PROCEDURE (x:SET)
+R   PROCEDURE (a:ARRAY OF ARRAY OF CHAR)
+S   PROCEDURE (VAR i:INTEGER)
+-------------------------------------------------------------------------------
+
+epro004f.ob2: 10,11: Actual declaration doesn't match with forward decl
+epro004f.ob2: 18,11: Actual declaration doesn't match with forward decl
+epro004f.ob2: 26,11: Actual declaration doesn't match with forward decl
+epro004f.ob2: 33,11: Actual declaration doesn't match with forward decl

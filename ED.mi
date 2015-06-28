@@ -1,0 +1,653 @@
+IMPLEMENTATION MODULE ED;
+
+IMPORT
+   ARG, Idents, O, OT, STR, Strings, SYSTEM, UTI;
+FROM Storage IMPORT
+   ALLOCATE, DEALLOCATE;
+
+CONST
+   MaxStringLength = 1000;
+   MaxTabCount     = 10;
+TYPE
+   tStringPtr      = POINTER TO tString;
+   tString         = ARRAY [1..MaxStringLength] OF CHAR;
+
+   tData           = RECORD
+                      len : tCol;
+                      ch  : ARRAY [1..MaxStringLength] OF CHAR;
+                     END;
+
+   tLinePtr        = POINTER TO tLine;
+   tLine           = RECORD
+                      len   : tCol;
+                      sP    : tStringPtr;
+                      prevP ,
+                      nextP : tLinePtr;
+                     END;
+
+   tEnvPtr         = POINTER TO tEnv;
+   tEnv            = RECORD
+                      indentCol : tCol;
+                      tabCol    : ARRAY [1..MaxTabCount] OF tCol;
+                      prevP     : tEnvPtr;
+                     END;
+
+   tEditor         = POINTER TO tEditorStruct;
+   tEditorStruct   = RECORD
+                      headLineP ,
+                      actLineP  ,
+                      tailLineP : tLinePtr;
+
+                      curX      : tCol;
+                      actEnvP   : tEnvPtr;
+                     END;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE TraceBegin(s : ARRAY OF CHAR);
+BEGIN (* TraceBegin *)
+ IF ARG.OptionTraceEdCalls
+    THEN O.Str('BEGIN Ed.');
+         O.Str(s);
+         O.Ln;
+ END; (* IF *)
+END TraceBegin;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE TraceEnd(s : ARRAY OF CHAR);
+BEGIN (* TraceEnd *)
+ IF ARG.OptionTraceEdCalls
+    THEN O.Str('END   Ed.');
+         O.Str(s);
+         O.Ln;
+ END; (* IF *)
+END TraceEnd;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Length(VAR s : ARRAY OF CHAR) : CARDINAL;
+VAR
+   i : CARDINAL;
+BEGIN (* Length *)
+ i:=0;
+ WHILE i<=HIGH(s) DO
+  IF s[i]=0C THEN RETURN i; END; (* IF *)
+  INC(i);
+ END; (* WHILE *)
+ RETURN 1+HIGH(s);
+END Length;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE GetLine(Editor : tEditor; VAR Data : tData);
+VAR
+   i : tCol;
+BEGIN (* GetLine *)
+ WITH Editor^ DO
+  IF actLineP=NIL
+     THEN Data.len:=0;
+     ELSE WITH actLineP^ DO
+           Data.len:=len;
+           FOR i:=1 TO len DO
+            Data.ch[i]:=sP^[i];
+           END; (* FOR *)
+          END; (* WITH *)
+  END; (* IF *)
+ END; (* WITH *)
+END GetLine;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE PutLine(Editor : tEditor; VAR Data : tData);
+VAR
+   i : tCol;
+BEGIN (* PutLine *)
+ WITH Editor^ DO
+  IF actLineP=NIL
+     THEN NEW(actLineP);
+          actLineP^.len   := 0;
+          actLineP^.sP    := NIL;
+          actLineP^.prevP := NIL;
+          actLineP^.nextP := NIL;
+          headLineP       := actLineP;
+          tailLineP       := actLineP;
+  END; (* IF *)
+
+  WITH actLineP^ DO
+   IF len>0 THEN DEALLOCATE(sP,len); sP:=NIL; END; (* IF *)
+
+   len:=Data.len;
+   IF len>0
+      THEN ALLOCATE(sP,len);
+           FOR i:=1 TO len DO
+            sP^[i]:=Data.ch[i];
+           END; (* FOR *)
+   END; (* IF *)
+  END; (* WITH *)
+ END; (* WITH *)
+END PutLine;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE InsLine(Editor : tEditor);
+VAR
+   lP : tLinePtr;
+BEGIN (* InsLine *)
+ WITH Editor^ DO
+  NEW(lP);
+  WITH lP^ DO
+   len   := 0;
+   sP    := NIL;
+   prevP := NIL;
+   nextP := NIL;
+  END; (* WITH *)
+
+  IF actLineP=NIL
+     THEN headLineP                := lP;
+          actLineP                 := lP;
+          tailLineP                := lP;
+     ELSE lP^.prevP                := actLineP;
+          lP^.nextP                := actLineP^.nextP;
+          IF lP^.nextP=NIL
+             THEN tailLineP        := lP;
+             ELSE lP^.nextP^.prevP := lP;
+          END; (* IF *)
+          actLineP^.nextP          := lP;
+          actLineP                 := lP;
+  END; (* IF *)
+ END; (* WITH *)
+END InsLine;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE NewEnv(prevEnvP : tEnvPtr) : tEnvPtr;
+VAR
+   eP : tEnvPtr;
+   i  : tCol;
+BEGIN (* NewEnv *)
+ NEW(eP);
+ WITH eP^ DO
+  indentCol:=1;
+  IF prevEnvP=NIL
+     THEN FOR i:=1 TO MaxTabCount DO tabCol[i]:=1; END; (* FOR *)
+     ELSE tabCol:=prevEnvP^.tabCol;
+  END; (* IF *)
+  prevP:=prevEnvP;
+ END; (* WITH *)
+ RETURN eP;
+END NewEnv;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Create() : tEditor;
+VAR
+   Editor : tEditor;
+BEGIN (* Create *)
+ TraceBegin('Create');
+
+ NEW(Editor);
+ WITH Editor^ DO
+  headLineP := NIL;
+  actLineP  := NIL;
+  tailLineP := NIL;
+  curX      := 1;
+  actEnvP   := NewEnv(NIL);
+ END; (* WITH *)
+
+ TraceEnd('Create');
+ RETURN Editor;
+END Create;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Kill(VAR Editor : tEditor);
+VAR
+   ilP, dlP : tLinePtr;
+   ieP, deP : tEnvPtr;
+BEGIN (* Kill *)
+ TraceBegin('Kill');
+
+ WITH Editor^ DO
+  ilP:=headLineP;
+  WHILE ilP#NIL DO
+   WITH ilP^ DO
+    IF len>0 THEN DEALLOCATE(sP,len); END; (* IF *)
+    dlP:=ilP; ilP:=nextP;
+   END; (* WITH *)
+   DISPOSE(dlP);
+  END; (* WHILE *)
+
+  ieP:=actEnvP;
+  WHILE ieP#NIL DO
+   deP:=ieP; ieP:=ieP^.prevP;
+   DISPOSE(deP);
+  END; (* WHILE *)
+ END; (* WITH *)
+ DISPOSE(Editor);
+
+ TraceEnd('Kill');
+END Kill;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE curCol(Editor : tEditor) : tCol;
+BEGIN (* curCol *)
+ TraceBegin('curCol');
+ TraceEnd('curCol');
+
+ RETURN Editor^.curX;
+END curCol;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE indCol(Editor : tEditor) : tCol;
+BEGIN (* indCol *)
+ TraceBegin('indCol');
+ TraceEnd('indCol');
+
+ RETURN Editor^.actEnvP^.indentCol;
+END indCol;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Text(Editor : tEditor; str : ARRAY OF CHAR);
+VAR
+   s    : ARRAY [0..500] OF CHAR;
+   d    : tData;
+   i, n : tCol;
+BEGIN (* Text *)
+ STR.Conc3(s,'Text           ("',str,'")');
+ TraceBegin(s);
+
+ IF str[0]=0C THEN TraceEnd('Text'); RETURN; END; (* IF *)
+
+ n:=Length(str);
+ WITH Editor^ DO
+  GetLine(Editor,d);
+
+  IF curX>d.len+1
+     THEN FOR i:=d.len+1 TO curX-1 DO
+           d.ch[i]:=' ';
+          END; (* FOR *)
+          d.len:=curX-1;
+  ELSIF curX<=d.len
+     THEN FOR i:=curX TO curX+n-1 DO
+           d.ch[i+n]:=d.ch[i];
+          END; (* FOR *)
+  END; (* IF *)
+
+  FOR i:=0 TO n-1 DO
+   d.ch[curX+i]:=str[i];
+  END; (* FOR *)
+  INC(d.len,n);
+  INC(curX,n);
+  PutLine(Editor,d);
+ END; (* WITH *)
+
+ TraceEnd('Text');
+END Text;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE TextLn(Editor : tEditor; str : ARRAY OF CHAR);
+BEGIN (* TextLn *)
+ TraceBegin('TextLn');
+
+ Text(Editor,str);
+ CR(Editor);
+
+ TraceEnd('TextLn');
+END TextLn;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE CharRep(Editor : tEditor; c : CHAR; count : CARDINAL);
+VAR
+   s : ARRAY [0..MaxStringLength] OF CHAR;
+   i : CARDINAL;
+BEGIN (* CharRep *)
+ TraceBegin('CharRep');
+
+ IF count<=0 THEN TraceEnd('CharRep'); RETURN; END; (* IF *)
+
+ IF count>=MaxStringLength THEN count:=MaxStringLength; END; (* IF *)
+ FOR i:=0 TO count-1 DO
+  s[i]:=c;
+ END; (* FOR *)
+ s[count]:=0C;
+
+ Text(Editor,s);
+
+ TraceEnd('CharRep');
+END CharRep;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Line(Editor : tEditor);
+BEGIN (* Line *)
+ TraceBegin('Line');
+
+ CharRep(Editor,'-',79);
+ CR(Editor);
+
+ TraceEnd('Line');
+END Line;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Ident(Editor : tEditor; ident : Idents.tIdent);
+VAR
+   s : Strings.tString;
+   a : ARRAY [0..MaxStringLength] OF CHAR;
+BEGIN (* Ident *)
+ TraceBegin('Ident');
+
+ Idents.GetString(ident,s);
+ Strings.StringToArray(s,a);
+ Text(Editor,a);
+
+ TraceEnd('Ident');
+END Ident;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Boolean(Editor : tEditor; val : OT.oBOOLEAN);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Boolean *)
+ TraceBegin('Boolean');
+
+ OT.oBOOLEAN2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Boolean');
+END Boolean;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Char(Editor : tEditor; val : OT.oCHAR);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Char *)
+ TraceBegin('Char');
+
+ OT.oCHAR2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Char');
+END Char;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE String(Editor : tEditor; val : OT.oSTRING);
+VAR
+   s : ARRAY [0..500] OF CHAR;
+BEGIN (* String *)
+ TraceBegin('String');
+
+ OT.oSTRING2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('String');
+END String;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Set(Editor : tEditor; val : OT.oSET);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Set *)
+ TraceBegin('Set');
+
+ OT.oSET2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Set');
+END Set;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE SetElems(Editor : tEditor; val : OT.oSET);
+VAR a,b:SHORTCARD; f:BOOLEAN; s,t:ARRAY [0..80] OF CHAR; 
+BEGIN (* SetElems *)
+ TraceBegin('SetElems');
+
+ s:=''; f:=TRUE; 
+ a:=OT.MINoSET;
+ WHILE a<=OT.MAXoSET DO
+  IF a IN val THEN b:=a;
+     WHILE (b<OT.MAXoSET) & ((b+1) IN val) DO INC(b); END; (* WHILE *)
+
+     IF ~f THEN STR.Append(s,','); ELSE f:=FALSE; END; (* IF *)
+     UTI.Shortcard2Arr(a,t); STR.Append(s,t);
+     IF b>a THEN UTI.Shortcard2Arr(b,t); STR.App2(s,'..',t); END; (* IF *)
+
+     a:=b;
+  END; (* IF *)
+  INC(a);
+ END; (* WHILE *)
+
+ Text(Editor,s);
+
+ TraceEnd('SetElems');
+END SetElems;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Longint(Editor : tEditor; val : OT.oLONGINT);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Longint *)
+ TraceBegin('Longint');
+
+ OT.oLONGINT2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Longint');
+END Longint;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Num(Editor : tEditor; val, width : CARDINAL);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Num *)
+ TraceBegin('Num');
+
+ STR.StrNum(s,val,width);
+ Text(Editor,s);
+
+ TraceEnd('Num');
+END Num;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Addr(Editor : tEditor; val : SYSTEM.ADDRESS);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Addr *)
+ TraceBegin('Addr');
+
+ UTI.Addr2ArrHex(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Addr');
+END Addr;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Real(Editor : tEditor; val : OT.oREAL);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Real *)
+ TraceBegin('Real');
+
+ OT.oREAL2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Real');
+END Real;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Longreal(Editor : tEditor; val : OT.oLONGREAL);
+VAR
+   s : ARRAY [0..50] OF CHAR;
+BEGIN (* Longreal *)
+ TraceBegin('Longreal');
+
+ OT.oLONGREAL2ARR(val,s);
+ Text(Editor,s);
+
+ TraceEnd('Longreal');
+END Longreal;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE CR(Editor : tEditor);
+BEGIN (* CR *)
+ TraceBegin('CR');
+
+ WITH Editor^ DO
+  InsLine(Editor);
+  curX:=1+actEnvP^.indentCol-1;
+ END; (* WITH *)
+
+ TraceEnd('CR');
+END CR;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Indent(Editor : tEditor; ind : tCol);
+BEGIN (* Indent *)
+ TraceBegin('Indent');
+
+ WITH Editor^ DO
+  actEnvP:=NewEnv(actEnvP);
+  actEnvP^.indentCol := actEnvP^.prevP^.indentCol+ind;
+  curX               := actEnvP^.indentCol;
+ END; (* WITH *)
+
+ TraceEnd('Indent');
+END Indent;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE IndentCur(Editor : tEditor);
+BEGIN (* IndentCur *)
+ TraceBegin('IndentCur');
+
+ WITH Editor^ DO
+  Indent(Editor,curX-actEnvP^.indentCol);
+ END; (* WITH *)
+
+ TraceEnd('IndentCur');
+END IndentCur;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Undent(Editor : tEditor);
+VAR
+   eP : tEnvPtr;
+BEGIN (* Undent *)
+ TraceBegin('Undent');
+
+ WITH Editor^ DO
+  IF actEnvP^.prevP#NIL
+     THEN eP      := actEnvP;
+          actEnvP := actEnvP^.prevP;
+          DISPOSE(eP);
+          curX    := actEnvP^.indentCol;
+  END; (* IF *)
+ END; (* WITH *)
+
+ TraceEnd('Undent');
+END Undent;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE SetTab(Editor : tEditor; tNum : SHORTCARD; col : tCol);
+BEGIN (* SetTab *)
+ TraceBegin('SetTab');
+
+ WITH Editor^.actEnvP^ DO
+  IF (col>0) & (1<=tNum) & (tNum<=MaxTabCount)
+     THEN tabCol[tNum]:=indentCol+col-1;
+  END; (* IF *)
+ END; (* WITH *)
+
+ TraceEnd('SetTab');
+END SetTab;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Home(Editor : tEditor);
+BEGIN (* Home *)
+ TraceBegin('Home');
+
+ WITH Editor^ DO
+  curX:=actEnvP^.indentCol;
+ END; (* WITH *)
+
+ TraceEnd('Home');
+END Home;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Eol(Editor : tEditor);
+BEGIN (* Eol *)
+ TraceBegin('Eol');
+
+ WITH Editor^ DO
+  IF actLineP#NIL
+     THEN curX:=1+actLineP^.len;
+  END; (* IF *)
+ END; (* WITH *)
+
+ TraceEnd('Eol');
+END Eol;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Tab(Editor : tEditor; tNum : SHORTCARD);
+BEGIN (* Tab *)
+ TraceBegin('Tab');
+
+ WITH Editor^ DO
+  IF (1<=tNum) & (tNum<=MaxTabCount)
+     THEN IF actEnvP^.tabCol[tNum]>curX THEN curX:=actEnvP^.tabCol[tNum]; END; (* IF *)
+  END; (* IF *)
+ END; (* WITH *)
+
+ TraceEnd('Tab');
+END Tab;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Dump(Editor : tEditor);
+VAR
+   i  : tCol;
+   lP : tLinePtr;
+BEGIN (* Dump *)
+ TraceBegin('Dump');
+
+ WITH Editor^ DO
+  lP:=headLineP;
+  WHILE lP#NIL DO
+   WITH lP^ DO
+    FOR i:=1 TO len DO
+     O.Char(sP^[i]);
+    END; (* FOR *)
+    O.Ln;
+    lP:=nextP;
+   END; (* WITH *)
+  END; (* WHILE *)
+ END; (* WITH *)
+
+ TraceEnd('Dump');
+END Dump;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+END ED.
+

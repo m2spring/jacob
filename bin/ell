@@ -1,0 +1,1 @@
+exec /usr/cctb/lib/ell/ell $*

@@ -1,0 +1,234 @@
+/********************************************************************************************************************************/
+/*** CODEf.pum.Init                                                                                                           ***/
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE LoadEaxWithInitVal ( isPtr:BOOLEAN )
+
+ _ ? (isPtr); { ASM.CS2( xor,l  ,  R(eax),R(eax)             ); };.
+ _ ?          { ASM.CS2( lea,l  ,  ASM.L(LAB.NILPROC),R(eax) ); };.
+
+/*END LoadEaxWithInitVal */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE VarInitializing ( bl:Blocklists , isGlobal:BOOLEAN , isPtr:BOOLEAN )
+
+ Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. ? (count=1); {
+    IF ARG.OptionCommentsInAsm THEN 
+       IF isPtr THEN ASM.CmtLnS('	pointer'); ELSE ASM.CmtLnS('	proc'); END;
+       ASM.CmtS(' variable init code'); 
+    END;
+
+    IF isGlobal THEN ASM.CS2( mov,l  ,  PV(isPtr),oG(ofs)     ); 
+                ELSE ASM.CS2( mov,l  ,  PV(isPtr),oB(ofs,ebp) ); END;
+    ASM.Ln; 
+ };.
+
+ Blocklist,.. ?{
+    IF ARG.OptionCommentsInAsm THEN 
+       IF isPtr THEN ASM.CmtLnS('	pointer'); ELSE ASM.CmtLnS('	proc'); END;
+       ASM.CmtS(' variable init code'); 
+    END;
+
+    LoadEaxWithInitVal(isPtr); 
+    VarInit(bl,isGlobal,0); 
+    ASM.Ln;
+ };.
+
+/*END VarInitializing */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE TypeInitializing ( bl:Blocklists , isPtr:BOOLEAN )
+LOCAL{ VAR incrSub,dontcare:LONGINT; lab:tLabel; tmp:ASM.tReg; }
+
+ NoBlocklist,.. ?.
+ 
+ Blocklist(_,_,_,count,_,_),.. ? (count<1); {
+    OpenTypeInitializing(bl,isPtr); 
+ };.
+
+ Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. ? (count=1); {
+    IF isPtr THEN ASM.CS2( mov,l  ,  i(0),oB(ofs,edi)            ); 
+             ELSE ASM.CS2( mov,l  ,  iL(LAB.NILPROC),oB(ofs,edi) ); END;
+ };.
+
+ Blocklist(_,_,_,count,_,_),.. ? (count>0); {
+    LoadEaxWithInitVal(isPtr); 
+    SubVarInit(bl,dontcare); 
+ };.                                     
+ 
+ .. ?{ ERR.Fatal('CODEf.TypeInitializing: failed'); };.
+
+/*END TypeInitializing */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE OpenTypeInitializing ( bl:Blocklists , isPtr:BOOLEAN )
+LOCAL{ VAR height,incrSub:LONGINT; lab:tLabel; tmp:ASM.tReg; }
+
+ Blocklist(NoBlocklist,subl:Blocklist(_,_,_,_,_,h),_,count,incr,_),.. ?{
+    LoadEaxWithInitVal(isPtr); 
+
+    height:=h+1; 
+    CASE height OF 1:tmp:=ebx; | 2:tmp:=edx; | 3:tmp:=esi; ELSE tmp:=ecx; END;
+    ASM.CS2                       ( mov,l   ,  B(edi),R(tmp)                          ); 
+    ASM.CS2                       ( add,l   ,  i(ADR.ArrayOfsFromODim(-count)),R(edi) );
+                                                                      
+    ASM.Label(LAB.New               (lab)                                             );                                          
+    IF height>3 THEN ASM.C1       ( pushl   ,  R(ecx)                                 ); END;
+    SubVarInit(subl,incrSub);                                                          
+    IF height>3 THEN ASM.C1       ( popl    ,  R(ecx)                                 ); END;
+
+    IF incr-incrSub#0 THEN ASM.CS2( add,l   ,  i(incr-incrSub),R(edi)                 ); END;
+
+    CASE height OF						                      
+    |1,2,3: ASM.CS2               ( sub,l   ,  i(1),R(tmp)                            ); 
+            ASM.C1                ( jnz     ,  ASM.L(lab)                             ); 
+    ELSE    ASM.C1                ( loop    ,  ASM.L(lab)                             ); 
+    END;
+ };.
+
+/*END OpenTypeInitializing */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE VarInit ( bl:Blocklists , isGlobal:BOOLEAN , base:LONGINT )
+LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; tmp:ASM.tReg; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,_,ofs,count,_,_),.. ? (count=1); {
+    VarInit(prev,isGlobal,base); 
+    
+    IF isGlobal THEN ASM.CS2( mov,l  ,  R(eax),oG(base+ofs)     ); 
+                ELSE ASM.CS2( mov,l  ,  R(eax),oB(base+ofs,ebp) ); END;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. ?{
+    VarInit(prev,isGlobal,base); 
+    
+    IF count<=LIM.BlocklistLoopUnrollingThreshold THEN 
+       FOR ii:=0 TO count-1 DO
+        IF isGlobal THEN ASM.CS2( mov,l  ,  R(eax),oG(base+ofs+ii*incr)     ); 
+                    ELSE ASM.CS2( mov,l  ,  R(eax),oB(base+ofs+ii*incr,ebp) ); END;
+       END;
+    ELSE 
+       IF isGlobal THEN ASM.CS2 ( lea,l  ,  oG(base+ofs),R(edi)             ); 
+                   ELSE ASM.CS2 ( lea,l  ,  oB(base+ofs,ebp),R(edi)         ); END;
+       ASM.CS2                  ( mov,l  ,  i(count),R(ecx)                 ); 
+       
+       IF incr<=4 THEN 
+          ASM.C0                ( cld                                       ); 
+          ASM.C0                ( repz                                      ); 
+          ASM.CS0               ( stos,l                                    ); 
+       ELSE 
+          ASM.Label(LAB.New       (lab)                                     ); 
+          ASM.CS2               ( mov,l  ,  R(eax),B(edi)                   ); 
+          ASM.CS2               ( add,l  ,  i(incr),R(edi)                  ); 
+          ASM.C1                ( loop   ,  ASM.L(lab)                      );
+       END;
+    END;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. ?{
+    VarInit(prev,isGlobal,base); 
+    
+    IF isGlobal THEN ASM.CS2      ( lea,l  ,  oG(base+ofs),R(edi)     ); 
+                ELSE ASM.CS2      ( lea,l  ,  oB(base+ofs,ebp),R(edi) ); END;
+
+    CASE height OF 1:tmp:=ebx;
+    |              2:tmp:=edx;
+    |              3:tmp:=esi; 
+    ELSE             tmp:=ecx; END;
+    ASM.CS2                       ( mov,l  ,  i(count),R(tmp)         ); 
+                                                                     
+    ASM.Label(LAB.New(lab));                                         
+    IF height>3 THEN ASM.C1       ( pushl  ,  R(ecx)                  ); END;
+    SubVarInit(subl,incrSub);                                         
+    IF height>3 THEN ASM.C1       ( popl   ,  R(ecx)                  ); END;
+
+    IF incr-incrSub#0 THEN ASM.CS2( add,l  ,  i(incr-incrSub),R(edi)  ); END;
+
+    CASE height OF
+    |1,2,3: ASM.CS2               ( sub,l  ,  i(1),R(tmp)             ); 
+            ASM.C1                ( jnz    ,  ASM.L(lab)              ); 
+    ELSE    ASM.C1                ( loop   ,  ASM.L(lab)              ); 
+    END;
+ };.
+ 
+/*END VarInit */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE SubVarInit ( bl:Blocklists => incrOut:LONGINT )
+LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; op2:ASM.tOp; tmp:ASM.tReg; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,_,ofs,count,_,_),.. => incrOut ? (count=1); {
+    SubVarInit(prev,incrOut); 
+    
+    ASM.CS2( mov,l  ,  R(eax),oB(ofs-incrOut,edi) ); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. => incrOut ?{
+    SubVarInit(prev,incrOut); 
+    
+    IF count<=LIM.BlocklistLoopUnrollingThreshold THEN 
+       FOR ii:=0 TO count-1 DO ASM.CS2( mov,l  ,  R(eax),oB(ofs+ii*incr-incrOut,edi) ); END;
+    ELSE 
+       IF ofs-incrOut#0 THEN ASM.CS2  ( add,l  ,  i(ofs-incrOut),R(edi)              ); END;
+       ASM.CS2                        ( mov,l  ,  i(count),R(ecx)                    ); 
+                                      
+       IF incr<=4 THEN                
+          ASM.C0                      ( cld                                          ); 
+          ASM.C0                      ( repz                                         ); 
+          ASM.CS0                     ( stos,l                                       ); 
+       ELSE                           
+          ASM.Label(LAB.New             (lab)                                        );    
+          ASM.CS2                     ( mov,l  ,  R(eax),B(edi)                      ); 
+          ASM.CS2                     ( add,l  ,  i(incr),R(edi)                     ); 
+          ASM.C1                      ( loop   ,  ASM.L(lab)                         );
+       END;
+       incrOut:=ofs+count*incr;
+    END;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. => incrOut ?{
+    SubVarInit(prev,incrOut); 
+    
+    IF ofs-incrOut#0 THEN ASM.CS2 ( add,l  ,  i(ofs-incrOut),R(edi)  ); END;
+
+    CASE height OF 1:tmp:=ebx;
+    |              2:tmp:=edx;
+    |              3:tmp:=esi;
+    ELSE             tmp:=ecx; END;
+    ASM.CS2                       ( mov,l  ,  i(count),R(tmp)        ); 
+    
+    ASM.Label(LAB.New               (lab)                            ); 
+    IF height>3 THEN ASM.C1       ( pushl  ,  R(ecx)                 ); END;
+    SubVarInit(subl,incrSub); 
+    IF height>3 THEN ASM.C1       ( popl   ,  R(ecx)                 ); END;
+
+    IF incr-incrSub#0 THEN ASM.CS2( add,l  ,  i(incr-incrSub),R(edi) ); END;
+
+    CASE height OF
+    |1,2,3: ASM.CS2               ( sub,l  ,  i(1),R(tmp)            ); 
+            ASM.C1                ( jnz    ,  ASM.L(lab)             ); 
+    ELSE    ASM.C1                ( loop   ,  ASM.L(lab)             ); 
+    END;
+    incrOut:=ofs+count*incr;
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ .. => 0 ?.
+
+/*END SubVarInit */
+
+/********************************************************************************************************************************/
+/*** END CODEf.pum.Init                                                                                                       ***/
+/********************************************************************************************************************************/
+

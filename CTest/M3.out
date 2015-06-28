@@ -1,0 +1,30 @@
+Compiling M3 E00010002 CCodeModule
+CodeProc
+0001CodeStmts.AssignStmt
+CodeAssignment.Default
+CodeLDesignator
+CodeImplicitLDesignator
+CodeLDesignator1.Var
+CodeLDesignator1.Var => 1619896
+CodeImplicitLDesignator => 1619896
+CodeLDesignator => 1619896
+CodeAssign.StandardType
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeImplicitLDesignator
+CodeLDesignator1.Var
+CodeLocalOpenDesignations.OpenIndex
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeImplicitLDesignator
+CodeLDesignator1.Var
+CodeLDesignator1.Var => 1619556
+CodeImplicitLDesignator => 1619556
+CodeLDesignator => 1619556
+CodeRDesignator1.StandardTypedVar => 1619280
+CodeRDesignator => 1619280
+CodeRExpr.DesignExpr => 1619280

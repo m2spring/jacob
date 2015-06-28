@@ -1,0 +1,3 @@
+MODULE M20;
+BEGIN (* M20 *)
+END M20.

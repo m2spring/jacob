@@ -1,0 +1,2 @@
+Compiling pars004f
+pars004f.ob2: 4,6: Expected: ident BEGIN CONST END PROCEDURE TYPE VAR 

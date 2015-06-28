@@ -1,0 +1,44 @@
+MODULE Display;
+
+PROCEDURE P;
+VAR p:LONGINT; 
+
+ PROCEDURE Q;
+ VAR q:LONGINT; 
+ 
+  PROCEDURE R;
+  VAR r:LONGINT; 
+  
+   PROCEDURE S;
+   VAR s:LONGINT; 
+   
+    PROCEDURE T;
+    BEGIN (* T *)
+     p:=0; 
+     q:=0; 
+     r:=0; 
+     s:=0; 
+    END T;
+
+   BEGIN (* S *)
+    T;
+    T;
+    T;
+    T;
+   END S;
+
+  BEGIN (* R *)
+   S;
+  END R;
+
+ BEGIN (* Q *)
+  R;
+ END Q;
+
+BEGIN (* P *)
+ Q;
+END P;
+
+BEGIN (* Display *)
+ P;
+END Display.

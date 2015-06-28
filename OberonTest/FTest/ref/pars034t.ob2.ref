@@ -1,0 +1,113 @@
+MODULE pars034t;
+
+BEGIN (* pars034t *)
+   IF A
+   THEN B;
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE C;
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE IF C
+        THEN D;
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE IF C
+        THEN D;
+        ELSE E;
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE IF C
+        THEN D;
+        ELSE IF E
+             THEN F;
+             ELSE G;
+             END; (* IF *)
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN IF B
+        THEN C;
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN IF B
+        THEN C;
+        ELSE IF D
+             THEN E;
+             ELSE F;
+             END; (* IF *)
+        END; (* IF *)
+   ELSE G;
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE IF C
+        THEN IF D
+             THEN E;
+             ELSE F;
+             END; (* IF *)
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN IF B
+        THEN C;
+        ELSE IF D
+             THEN E;
+             ELSE IF F
+                  THEN G;
+                  END; (* IF *)
+             END; (* IF *)
+        END; (* IF *)
+   ELSE IF H
+        THEN IF I
+             THEN J;
+             END; (* IF *)
+        ELSE IF K
+             THEN IF L
+                  THEN M;
+                  ELSE IF N
+                       THEN O;
+                       ELSE IF P
+                            THEN Q;
+                            ELSE R;
+                            END; (* IF *)
+                       END; (* IF *)
+                  END; (* IF *)
+             ELSE IF S
+                  THEN T;
+                  ELSE U;
+                  END; (* IF *)
+             END; (* IF *)
+        END; (* IF *)
+   END; (* IF *)
+   IF A
+   THEN B;
+   ELSE IF C
+        THEN IF D
+             THEN E;
+             ELSE F;
+             END; (* IF *)
+        ELSE IF G
+             THEN IF H
+                  THEN IF I
+                       THEN IF J
+                            THEN IF G
+                                 THEN H;
+                                 ELSE I;
+                                 END; (* IF *)
+                            END; (* IF *)
+                       END; (* IF *)
+                  END; (* IF *)
+             ELSE G;
+             END; (* IF *)
+        END; (* IF *)
+   END; (* IF *)
+END pars034t.
+

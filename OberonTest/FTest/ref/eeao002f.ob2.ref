@@ -1,0 +1,9 @@
+Compiling eeao002f
+'MODULE' eeao002f
+-------------------------------------------------------------------------------
+a   CONST     <ErrorType> = <?Value>
+b   CONST     SHORTINT = <?Value>
+-------------------------------------------------------------------------------
+
+eeao002f.ob2: 10,11: Operator not applicable
+eeao002f.ob2: 14,11: Const arithmetic error

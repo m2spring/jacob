@@ -1,0 +1,6 @@
+#
+for i in ../test/scan*.ob2
+do
+ browse $i>$i.bro
+done
+

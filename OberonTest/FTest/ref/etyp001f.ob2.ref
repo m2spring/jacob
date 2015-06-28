@@ -1,0 +1,11 @@
+Compiling etyp001f
+'MODULE' etyp001f
+-------------------------------------------------------------------------------
+A   TYPE      RECORD
+               x   VAR       A
+              END
+B   TYPE      ARRAY 3 OF B
+-------------------------------------------------------------------------------
+
+etyp001f.ob2: 7,17: Illegal recursive type application
+etyp001f.ob2: 12,23: Illegal recursive type application

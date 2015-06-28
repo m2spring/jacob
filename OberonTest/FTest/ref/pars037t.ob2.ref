@@ -1,0 +1,31 @@
+MODULE pars037t;
+
+BEGIN (* pars037t *)
+   REPEAT
+      statementseq;
+   UNTIL expr;
+   REPEAT
+      REPEAT
+         REPEAT
+            REPEAT
+               REPEAT
+                  REPEAT
+                     ein;
+                     paar;
+                     statements;
+                  UNTIL 1=2;
+               UNTIL 2=3;
+            UNTIL 3=4;
+         UNTIL 4=5;
+      UNTIL 5=6;
+   UNTIL FALSE;
+   REPEAT
+   UNTIL a OR (x & y);
+   REPEAT
+      RETURN 3;
+   UNTIL a OR (x & y);
+   REPEAT
+      RETURN a<b;
+   UNTIL a OR (x & y);
+END pars037t.
+

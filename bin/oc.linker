@@ -1,0 +1,26 @@
+#!/bin/sh
+
+SYSDIR=`dirname $0`/..
+
+case $1 in
+'-elf' ) LD='/usr/bin/ld -m elf_i386 -rpath /lib' ;
+	 PRE='/usr/lib/crt1.o /usr/lib/crti.o /usr/lib/crtbegin.o' ;
+	 RTS="$SYSDIR/OB2RTS-elf.o $SYSDIR/Storage-elf.o $SYSDIR/UTIS-elf.o";
+	 POST='/usr/lib/crtend.o /usr/lib/crtn.o'
+	 shift ;;
+*      ) LD='/usr/i486-linuxaout/bin/ld -m i386linux' ;
+	 PRE='/usr/i486-linuxaout/lib/crt0.o' ;
+	 RTS="$SYSDIR/OB2RTS-aout.o $SYSDIR/Storage-aout.o $SYSDIR/UTIS-aout.o";
+	 POST= ;;
+esac;
+
+case $1 in
+'-static' ) STAT='-static' ; shift ;;
+*         ) STAT='-dynamic-linker /lib/ld-linux.so.1' ;;
+esac;
+
+LIB="-lc"
+
+PROGRAM=$1 ; shift ; OBJECTS=$*
+$LD -o $PROGRAM $STAT $PRE $RTS $OBJECTS $LIB $POST
+chmod 770 $PROGRAM

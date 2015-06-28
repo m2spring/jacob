@@ -1,0 +1,89 @@
+Compiling Sel03 (Sel03.ob2) 
+Linking Sel03
+	.comm	Sel03$G,32
+#      8 r: Sel03.tRec1
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Sel03$N:
+	.asciz	"Sel03"
+	.align	2,144
+	.long	Sel03$N
+	.long	0
+	.long	_NILPROC
+	.globl	Sel03$D
+Sel03$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# TDesc for Sel03.tRec1
+Sel03_tRec1$N:
+	.asciz	"Sel03.tRec1"
+	.align	2,144
+Sel03_tRec1$S:
+	addl	$32,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	Sel03_tRec1$D	# -44 type0
+	.long	0	# -40 type1
+	.long	0	# -36 type2
+	.long	0	# -32 type3
+	.long	0	# -28 type4
+	.long	0	# -24 type5
+	.long	0	# -20 type6
+	.long	0	# -16 type7
+
+	.long	Sel03_tRec1$N	# -12 name
+	.long	22	# -8  size/odim
+	.long	Sel03_tRec1$S	# -4  skipper
+
+	.globl	Sel03_tRec1$D
+Sel03_tRec1$D:
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Sel03$I$N:
+	.asciz	"Sel03$I"
+	.align	2,144
+	.long	Sel03$I$N
+	.long	0
+	.long	_NILPROC
+Sel03$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Sel03$I
+Sel03$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Sel03$I$D
+	subl	$L0,%esp
+
+	# pointer variable init code
+	movl	$0,22+Sel03$G
+
+	# r.s1:={};
+	movl	$0,8+Sel03$G	# r 
+
+	# r.r1.a[0]:=0X;
+	movb	$0,13+Sel03$G	# r 
+
+	# r.r1.r2.lr:=$RE_LR(2.00000E0);
+	movl	$-536870912,14+Sel03$G	# r 
+	movl	$1073741823,18+Sel03$G	# r 
+
+	# r.r1.r2.r3.p4:=NIL;
+	movl	$0,22+Sel03$G	# r 
+
+	# r.r1.r2.r3.r4.s5:={};
+	movl	$0,26+Sel03$G	# r 
+
+	leave
+	ret
+L0=	0
+

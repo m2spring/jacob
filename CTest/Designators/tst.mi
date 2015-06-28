@@ -1,0 +1,22 @@
+MODULE tst;
+VAR s:ARRAY [0..20] OF CHAR; 
+    i:LONGINT; 
+
+PROCEDURE P(s:ARRAY OF CHAR);
+BEGIN (* P *)
+ s[i]:=0C; 
+END P;
+
+(*<<<<<<<<<<<<<<<
+VAR i,j:INTEGER; 
+    a,b:REAL;
+    c,d:LONGREAL;
+>>>>>>>>>>>>>>>*)
+BEGIN (* tst *)  
+(*<<<<<<<<<<<<<<<
+ i:=ABS(j); 
+ a:=ABS(b); 
+ c:=ABS(d); 
+>>>>>>>>>>>>>>>*)
+ s[i]:=0C; 
+END tst.

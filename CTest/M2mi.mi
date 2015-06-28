@@ -1,0 +1,6 @@
+MODULE M2mi;
+TYPE T=SHORTINT;
+VAR a:ARRAY [0..9],[0..3] OF T; i,j:LONGINT; c:T; 
+BEGIN (* M2 *)              
+ c:=a[i,j]; 
+END M2mi.

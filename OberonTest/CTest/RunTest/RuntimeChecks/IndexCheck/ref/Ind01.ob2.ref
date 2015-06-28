@@ -1,0 +1,8 @@
+A
+B
+
+
+*** RUNTIME ERROR: Index out of bounds
+*** procedure stack:
+Ind01.OpenPar
+Ind01$I

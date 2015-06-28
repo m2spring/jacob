@@ -1,0 +1,15 @@
+Compiling etar001t
+'MODULE' etar001t
+-------------------------------------------------------------------------------
+d1        CONST     SHORTINT = 10
+d2        CONST     SHORTINT = MAX(SHORTINT)
+t1Array   TYPE      ARRAY 10 OF INTEGER
+t2Array   TYPE      ARRAY 127 OF CHAR
+t3Array   TYPE      ARRAY 1 OF ARRAY 1 OF BOOLEAN
+t4Array   TYPE      ARRAY 1 OF t3Array
+v1        VAR       t1Array
+v2        VAR       t2Array
+v3        VAR       t3Array
+v4        VAR       t4Array
+-------------------------------------------------------------------------------
+

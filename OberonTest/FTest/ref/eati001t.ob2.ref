@@ -1,0 +1,10 @@
+Compiling eati001t
+'MODULE' eati001t
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+r    VAR       REAL
+lr   VAR       LONGREAL
+-------------------------------------------------------------------------------
+

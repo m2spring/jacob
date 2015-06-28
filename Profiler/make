@@ -1,0 +1,3 @@
+#
+as -o pro.o pro.s -a >pro.lst
+/usr/bin/ld -static -o ./pro /usr/lib/crt0.o /usr/mocka/sys/M2RTS.o ./_M2ROOT.o /usr/mocka/lib/SysLib.o /usr/mocka/lib/LREAL.o /usr/mocka/lib/RealConv.o /usr/mocka/lib/Strings1.o /usr/mocka/lib/BasicIO.o /usr/mocka/lib/Storage.o /usr/mocka/lib/ByteIO.o /usr/mocka/lib/TextIO.o /usr/mocka/lib/InOut.o ./pro.o -lc

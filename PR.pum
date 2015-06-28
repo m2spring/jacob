@@ -1,0 +1,335 @@
+/********************************************************************************************************************************/
+/*** PR.pum / Pre- & SYSTEM-declared table construction                                                                       ***/
+/********************************************************************************************************************************/
+TRAFO PR TREE OB PUBLIC
+
+ GetTablePREDECL                                                               /* Yields the table with the predeclared objects */
+ GetTableSYSTEM                                                                /* Yields the table of the module SYSTEM         */
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT Idents          ,
+               POS             ;
+        TYPE   tIdent          = Idents.tIdent;                             (* These types are re-declared due to the fact that *)
+               tParMode        = OB.tParMode;                               (* qualidents are illegal in a puma specification.  *)
+               tPosition       = POS.tPosition; }
+
+EXPORT{ VAR    Ident_CASEFAULT ,
+               Ident_WITHFAULT ,
+               IdentPREDECL    ,
+               IdentSYSTEM     : Idents.tIdent; 
+               ModuleSYSTEM    ,
+               ModulePREDECL   : OB.tOB; }
+
+GLOBAL{ IMPORT ASM             ,
+               ERR             ,
+	       LAB             ,
+               OT              ,
+               T               ,
+               UTI             ,
+               V               ;
+
+        CONST  Name_CASEFAULT  = '_CASEFAULT';
+               Name_WITHFAULT  = '_WITHFAULT';
+        TYPE   tName           = ARRAY [0..15] OF CHAR;
+               tLabel          = LAB.T;
+        VAR    TablePREDECL    ,
+               TableSYSTEM     : OB.tOB; }
+
+BEGIN{  Ident_CASEFAULT := UTI.IdentOf('_CASEFAULT');
+        Ident_WITHFAULT := UTI.IdentOf('_WITHFAULT');
+        IdentPREDECL    := UTI.IdentOf('_PREDECL'  );
+        IdentSYSTEM     := UTI.IdentOf('SYSTEM'    );
+        TablePREDECL    := NIL;
+        TableSYSTEM     := NIL; }
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION GetTablePREDECL () Entries
+ .. RETURN {TablePREDECL} ? {IF TablePREDECL=NIL THEN BuildTables; END; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION GetTableSYSTEM () Entries
+ .. RETURN {TableSYSTEM} ? {IF TableSYSTEM=NIL THEN BuildTables; END; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION bC ( n:tName , t:TypeReprs , v:ValueReprs ) Entries
+
+ .. RETURN ConstEntry
+           (/* prevEntry   := */ {OB.NoOB}
+           ,/* module      := */ _
+           ,/* ident       := */ UTI.IdentOf(n)
+           ,/* exportMode  := */ {OB.PUBLIC}
+           ,/* level       := */ 0
+           ,/* declStatus  := */ {OB.DECLARED}
+           ,/* typeRepr    := */ t
+           ,/* value       := */ v
+           ,/* label       := */ {LAB.MT}) ?.
+                              
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION bI ( n:tName , val:LONGINT ) Entries
+
+ .. RETURN ConstEntry
+           (/* prevEntry   := */ {OB.NoOB}
+           ,/* module      := */ _
+           ,/* ident       := */ UTI.IdentOf(n)
+           ,/* exportMode  := */ {OB.PUBLIC}
+           ,/* level       := */ 0
+           ,/* declStatus  := */ {OB.DECLARED}
+           ,/* typeRepr    := */ {T.MinimalIntegerType(val)}
+           ,/* value       := */ IntegerValue({val})
+           ,/* label       := */ {LAB.MT}) ?.
+                              
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION bT ( n:tName , t:TypeReprs ) Entries
+
+ .. RETURN TypeEntry
+           (/* prevEntry   := */ {OB.NoOB}
+           ,/* module      := */ _
+           ,/* ident       := */ UTI.IdentOf(n)
+           ,/* exportMode  := */ {OB.PUBLIC}
+           ,/* level       := */ 0
+           ,/* declStatus  := */ {OB.DECLARED}
+           ,/* typeRepr    := */ t) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION bP ( n:tName , kind:SHORTCARD ) Entries
+
+ .. RETURN {bP1(UTI.IdentOf(n),OB.MakeOB(kind))} ?.
+
+FUNCTION bP1 ( i:tIdent , t:PreDeclProcTypeRepr ) Entries
+
+ _,     PreDeclProcTypeRepr
+        (/* entry          =: */ entry
+        ,/* size           =: */ size
+        ,/* typeBlocklists =: */ typeBlocklists
+        ,/* isInTDescList  =: */ isInTDescList
+        ,/* label          =: */ label
+        ,/* signatureRepr  =: */ signatureRepr
+        ,/* resultType     =: */ resultType
+        ,/* paramSpace     =: */ paramSpace) 
+ RETURN ProcedureEntry     
+        (/* prevEntry      := */ {OB.NoOB}
+        ,/* module         := */ _
+        ,/* ident          := */ i
+        ,/* exportMode     := */ {OB.PUBLIC}
+        ,/* level          := */ 0
+        ,/* declStatus     := */ {OB.DECLARED}
+        ,/* typeRepr       := */ t
+        ,/* complete       := */ TRUE
+        ,/* position       := */ _
+        ,/* label          := */ {LAB.MT}
+        ,/* namePath       := */ {OB.cmtEntry}
+        ,/* env            := */ NIL)? { entry          := OB.cNonameEntry;
+                                         size           := OT.SIZEoPROCEDURE;
+                                         typeBlocklists := OB.cmtTypeBlocklist; 
+                                         isInTDescList  := FALSE; 
+                                         label          := LAB.MT; 
+                                         signatureRepr  := OB.cGenericSignature;
+                                         resultType     := OB.cmtTypeRepr; 
+                                         paramSpace     := 0; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE EnterPRE ( entry:Entries )
+
+ TypeEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ module
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ exportMode
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) ? { prev         := TablePREDECL; 
+                                                     module       := OB.cPredeclModuleEntry; 
+                                                     exportMode   := OB.PRIVATE; 
+                                                     entryOfType  := entry; 
+                                                     TablePREDECL := entry; };.
+ DataEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ module     
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ exportMode
+ ,/* level       =: */ ..)                       ? { prev         := TablePREDECL; 
+                                                     module       := OB.cPredeclModuleEntry;
+                                                     exportMode   := OB.PRIVATE; ; 
+                                                     TablePREDECL := entry; };.
+
+ ..                                              ? { ERR.Fatal('PR.EnterPRE'); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE EnterSYS ( entry:Entries )
+
+ TypeEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ module     
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) ? { prev         := TableSYSTEM; 
+                                                     module       := OB.cSystemModuleEntry; 
+                                                     entryOfType  := entry; 
+                                                     TableSYSTEM  := entry; };.
+ DataEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ module     
+ ,/* ident       =: */ ..)                       ? { prev         := TableSYSTEM; 
+                                                     module       := OB.cSystemModuleEntry;
+                                                     TableSYSTEM  := entry; };.
+
+ ..                                              ? { ERR.Fatal('PR.EnterSYS'); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE DefLabel ( entry:Entries , label:tLabel )
+
+ ProcedureEntry
+ (/* prevEntry     := */ _
+ ,/* module        := */ _
+ ,/* ident         := */ _
+ ,/* exportMode    := */ _
+ ,/* level         := */ _
+ ,/* declStatus    := */ _
+ ,/* typeRepr      := */ _
+ ,/* complete      := */ _
+ ,/* position      := */ _
+ ,/* label         := */ l
+ ,/* namePath      := */ ..),_ ? l:=label;.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE DefEmptySignature ( Entries )
+
+ ProcedureEntry     
+ (/* prevEntry      := */ _
+ ,/* module         := */ _
+ ,/* ident          := */ _
+ ,/* exportMode     := */ _
+ ,/* level          := */ _
+ ,/* declStatus     := */ _
+ ,/* typeRepr       := */ PreDeclProcTypeRepr
+                          (/* entry          =: */ _
+                          ,/* size           =: */ _
+                          ,/* typeBlocklists =: */ _
+                          ,/* isInTDescList  =: */ _
+                          ,/* label          =: */ _
+                          ,/* signatureRepr  =: */ signatureRepr
+                          ,/* resultType     =: */ _
+                          ,/* paramSpace     =: */ _) 
+ ,/* complete       := */ ..) ?{ signatureRepr:=OB.cmtSignature; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE BuildTables ()
+ ..?{
+
+ (*** runtime library procedures ***)
+
+    EnterPRE( bP('_CASEFAULT',OB.CaseFaultTypeRepr)); DefLabel(TablePREDECL,LAB.CaseFault); DefEmptySignature(TablePREDECL); 
+    EnterPRE( bP('_WITHFAULT',OB.WithFaultTypeRepr)); DefLabel(TablePREDECL,LAB.WithFault); DefEmptySignature(TablePREDECL); 
+
+ (*** predeclared constants ***)
+
+    EnterPRE( bC('FALSE'     ,OB.cBooleanTypeRepr,OB.cFalseValue));
+    EnterPRE( bC('TRUE'      ,OB.cBooleanTypeRepr,OB.cTrueValue ));
+
+ (*** predeclared types ***)
+
+    EnterPRE( bT('BOOLEAN'   ,OB.cBooleanTypeRepr               ));
+    EnterPRE( bT('CHAR'      ,OB.cCharTypeRepr                  ));
+    EnterPRE( bT('SET'       ,OB.cSetTypeRepr                   ));
+    EnterPRE( bT('SHORTINT'  ,OB.cShortintTypeRepr              ));
+    EnterPRE( bT('INTEGER'   ,OB.cIntegerTypeRepr               ));
+    EnterPRE( bT('LONGINT'   ,OB.cLongintTypeRepr               ));
+    EnterPRE( bT('REAL'      ,OB.cRealTypeRepr                  ));
+    EnterPRE( bT('LONGREAL'  ,OB.cLongrealTypeRepr              ));
+
+ (*** predeclared function procedures ***)
+
+    EnterPRE( bP('ABS'       ,OB.AbsTypeRepr                    ));
+    EnterPRE( bP('ASH'       ,OB.AshTypeRepr                    ));
+    EnterPRE( bP('CAP'       ,OB.CapTypeRepr                    ));
+    EnterPRE( bP('CHR'       ,OB.ChrTypeRepr                    ));
+    EnterPRE( bP('ENTIER'    ,OB.EntierTypeRepr                 ));
+    EnterPRE( bP('LEN'       ,OB.LenTypeRepr                    ));
+    EnterPRE( bP('LONG'      ,OB.LongTypeRepr                   ));
+    EnterPRE( bP('MAX'       ,OB.MaxTypeRepr                    ));
+    EnterPRE( bP('MIN'       ,OB.MinTypeRepr                    ));
+    EnterPRE( bP('ODD'       ,OB.OddTypeRepr                    ));
+    EnterPRE( bP('ORD'       ,OB.OrdTypeRepr                    ));
+    EnterPRE( bP('SHORT'     ,OB.ShortTypeRepr                  ));
+    EnterPRE( bP('SIZE'      ,OB.SizeTypeRepr                   ));
+
+ (*** predeclared proper procedures ***)
+
+    EnterPRE( bP('ASSERT'    ,OB.AssertTypeRepr                 ));
+    EnterPRE( bP('COPY'      ,OB.CopyTypeRepr                   ));
+    EnterPRE( bP('DEC'       ,OB.DecTypeRepr                    ));
+    EnterPRE( bP('EXCL'      ,OB.ExclTypeRepr                   ));
+    EnterPRE( bP('HALT'      ,OB.HaltTypeRepr                   ));
+    EnterPRE( bP('INC'       ,OB.IncTypeRepr                    ));
+    EnterPRE( bP('INCL'      ,OB.InclTypeRepr                   ));
+    EnterPRE( bP('NEW'       ,OB.NewTypeRepr                    ));
+
+ (*** SYSTEM constants ***)
+ 
+    EnterSYS( bI('eax'       ,ASM.codeEAX                       ));
+    EnterSYS( bI('ebx'       ,ASM.codeEBX                       ));
+    EnterSYS( bI('ecx'       ,ASM.codeECX                       ));
+    EnterSYS( bI('edx'       ,ASM.codeEDX                       ));
+    EnterSYS( bI('esi'       ,ASM.codeESI                       ));
+    EnterSYS( bI('edi'       ,ASM.codeEDI                       ));
+    EnterSYS( bI('ebp'       ,ASM.codeEBP                       ));
+    EnterSYS( bI('esp'       ,ASM.codeESP                       ));
+    EnterSYS( bI('eflags'    ,ASM.codeEFLAGS                    ));
+
+    EnterSYS( bI('st0'       ,ASM.codeST0                       ));
+    EnterSYS( bI('st1'       ,ASM.codeST1                       ));
+    EnterSYS( bI('st2'       ,ASM.codeST2                       ));
+    EnterSYS( bI('st3'       ,ASM.codeST3                       ));
+    EnterSYS( bI('st4'       ,ASM.codeST4                       ));
+    EnterSYS( bI('st5'       ,ASM.codeST5                       ));
+    EnterSYS( bI('st6'       ,ASM.codeST6                       ));
+    EnterSYS( bI('st7'       ,ASM.codeST7                       ));
+
+    EnterSYS( bI('cf'        ,ASM.codeCF                        ));
+    EnterSYS( bI('pf'        ,ASM.codePF                        ));
+    EnterSYS( bI('af'        ,ASM.codeAF                        ));
+    EnterSYS( bI('zf'        ,ASM.codeZF                        ));
+    EnterSYS( bI('sf'        ,ASM.codeSF                        ));
+    EnterSYS( bI('tf'        ,ASM.codeTF                        ));
+    EnterSYS( bI('if'        ,ASM.codeIF                        ));
+    EnterSYS( bI('df'        ,ASM.codeDF                        ));
+    EnterSYS( bI('of'        ,ASM.codeOF                        ));
+    EnterSYS( bI('nt'        ,ASM.codeNT                        ));
+    EnterSYS( bI('rf'        ,ASM.codeRF                        ));
+    EnterSYS( bI('vm'        ,ASM.codeVM                        ));
+    EnterSYS( bI('ac'        ,ASM.codeAC                        ));
+
+ (*** SYSTEM types ***)
+
+    EnterSYS( bT('BYTE'      ,OB.cByteTypeRepr                  ));
+    EnterSYS( bT('PTR'       ,OB.cPtrTypeRepr                   ));
+
+ (*** SYSTEM function procedures ***)
+
+    EnterSYS( bP('ADR'       ,OB.SysAdrTypeRepr                 ));
+    EnterSYS( bP('BIT'       ,OB.SysBitTypeRepr                 ));
+    EnterSYS( bP('CC'        ,OB.SysCcTypeRepr                  ));
+    EnterSYS( bP('LSH'       ,OB.SysLshTypeRepr                 ));
+    EnterSYS( bP('ROT'       ,OB.SysRotTypeRepr                 ));
+    EnterSYS( bP('VAL'       ,OB.SysValTypeRepr                 ));
+
+ (*** SYSTEM proper procedures ***)
+
+    EnterSYS( bP('GET'       ,OB.SysGetTypeRepr                 ));
+    EnterSYS( bP('PUT'       ,OB.SysPutTypeRepr                 ));
+    EnterSYS( bP('GETREG'    ,OB.SysGetregTypeRepr              ));
+    EnterSYS( bP('PUTREG'    ,OB.SysPutregTypeRepr              ));
+    EnterSYS( bP('MOVE'      ,OB.SysMoveTypeRepr                ));
+    EnterSYS( bP('NEW'       ,OB.SysNewTypeRepr                 ));
+    EnterSYS( bP('ASM'       ,OB.SysAsmTypeRepr                 ));
+ };.
+
+/********************************************************************************************************************************/
+/*** END PR.pum                                                                                                               ***/
+/********************************************************************************************************************************/
+
+

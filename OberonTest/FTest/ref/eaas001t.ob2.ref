@@ -1,0 +1,37 @@
+Compiling eaas001t
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+s   REFPARAM  SET
+-------------------------------------------------------------------------------
+
+'BOUND' P
+-------------------------------------------------------------------------------
+r   RECEIVER  TR0
+e   VAR       TR1
+-------------------------------------------------------------------------------
+
+'MODULE' eaas001t
+-------------------------------------------------------------------------------
+TR0    TYPE      RECORD
+                  f   VAR       INTEGER
+                  P   BOUND     VAR r:TR0()
+                 END
+                 (-->TR1)
+
+TR1    TYPE      RECORD(TR0)
+                  f   VAR       INTEGER
+                  P   INHERITED VAR r:TR0()
+                 END
+PT0    TYPE      POINTER TO TR0
+PT1    TYPE      POINTER TO TR1
+r1     VAR       TR0
+r2     VAR       TR0
+si     VAR       SHORTINT
+i      VAR       INTEGER
+p0     VAR       PT0
+p1     VAR       PT1
+proc   VAR       (VAR x:SET)
+a      VAR       ARRAY 5 OF CHAR
+Q      PROCEDURE (VAR s:SET)
+-------------------------------------------------------------------------------
+

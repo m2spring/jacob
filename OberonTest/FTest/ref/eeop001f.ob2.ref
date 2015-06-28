@@ -1,0 +1,20 @@
+Compiling eeop001f
+'MODULE' eeop001f
+-------------------------------------------------------------------------------
+Point     TYPE      RECORD
+                     x   VAR       INTEGER
+                     y   VAR       INTEGER
+                    END
+                    (-->Point3D)
+
+Point3D   TYPE      RECORD(Point)
+                     x   VAR       INTEGER
+                     y   VAR       INTEGER
+                     z   VAR       INTEGER
+                    END
+p         VAR       Point
+p3        VAR       Point3D
+i         VAR       INTEGER
+-------------------------------------------------------------------------------
+
+eeop001f.ob2: 20,11: Field selector not applicable

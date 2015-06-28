@@ -1,0 +1,27 @@
+MODULE M3;
+
+TYPE T0* = RECORD i:INTEGER; l:LONGINT; END;
+     T1* = RECORD(T0)
+           END;
+VAR r0:T0; p:POINTER TO T0; r1:T1; a:ARRAY 20 OF POINTER TO T0; 
+    i:LONGINT; 
+
+PROCEDURE P1(VAR r:T0);
+BEGIN (* P1 *)	 
+END P1;
+
+PROCEDURE P2(VAR r:T0);
+BEGIN (* P2 *)
+ P1(r); 
+END P2;
+
+PROCEDURE P3(r:T1);
+BEGIN (* P3 *)	    
+ P2(r); 
+END P3;
+
+BEGIN (* M3 *)
+ P3(r1); 
+ P2(p^); 
+ P2(a[i]^); 
+END M3.

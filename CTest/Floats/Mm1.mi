@@ -1,0 +1,5 @@
+MODULE Mm1;
+VAR a,b,c,d,e:LONGREAL;
+BEGIN (* Mm1 *)	       
+ a:=b+c; 
+END Mm1.

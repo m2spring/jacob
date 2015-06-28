@@ -1,0 +1,9 @@
+MODULE sizes;
+IMPORT O, SYSTEM, General;
+
+TYPE T = RECORD b1: BOOLEAN; r:REAL; c:CHAR; END;
+
+BEGIN
+ O.Card(SYSTEM.TSIZE(T)); O.Ln;
+ O.Int(General.MaxAlign); O.Ln;
+END sizes.
