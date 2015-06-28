@@ -1,0 +1,565 @@
+/********************************************************************************************************************************/
+/*** oberon.pre / Predeclared and SYSTEM-declared evaluator rules and context checks                                          ***/
+/********************************************************************************************************************************/
+MODULE Predeclareds
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+RULE
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PredeclArgumenting =
+[ typeRepr  : tOB ]
+[ valueRepr : tOB ]
+{
+  typeRepr                      := \OB.\cmtTypeRepr;
+  valueRepr                     := \OB.\cmtValue;
+
+  Nextion                       := \TT.\DesignorToDesignation
+                                   (/* entry              := */ EntryIn
+                                   ,/* typeRepr           := */ typeRepr
+                                   ,/* designor           := */ Nextor
+                                   ,/* mtDesignor         =: */ Nextor);
+
+  Nextion:EntryIn               := \OB.\cmtEntry;
+  Nextion:TypeReprIn            := \T.\ConstTypeCorrection                                               /* !MinimalIntegerType */
+                                   (/* Type               := */ typeRepr
+                                   ,/* Value              := */ valueRepr);
+  Nextion:ValueReprIn           := valueRepr;
+  Nextion:IsWritableIn          := FALSE;
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PredeclArgumenting1 =
+{
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+
+  CHECK ~\TT.\IsEmptyExpr(Expr)                                                                     /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+}.
+
+/*---------------------------------------------------------------------------*/
+AbsArgumenting =
+[ OK : BOOLEAN ]
+{
+  typeRepr                      := \T.\LegalAbsTypesOnly(Expr:TypeReprOut);                                      /* !PredeclAbs */
+  valueRepr, OK                 := { valueRepr:=\V.\AbsValue(Expr:ValueReprOut,OK); };
+
+  CHECK \T.\IsNumericType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK OK
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,EntryPosition);
+}.
+
+/*---------------------------------------------------------------------------*/
+CapArgumenting =
+{
+  typeRepr                      := \OB.\cCharTypeRepr;                                                           /* !PredeclCap */
+  valueRepr                     := \V.\CapValue(Expr:ValueReprOut);
+
+  CHECK \T.\IsCharType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+ChrArgumenting =
+[ OK : BOOLEAN ]
+{
+  typeRepr                      := \OB.\cCharTypeRepr;                                                           /* !PredeclChr */
+  valueRepr, OK                 := { valueRepr:=\V.\ChrValue(Expr:ValueReprOut,OK); };
+
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK OK
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,EntryPosition);
+}.
+
+/*---------------------------------------------------------------------------*/
+EntierArgumenting =
+[ OK : BOOLEAN ]
+{
+  typeRepr                      := \OB.\cLongintTypeRepr;                                                     /* !PredeclEntier */
+  valueRepr, OK                 := { valueRepr:=\V.\EntierValue(Expr:ValueReprOut,OK); };
+
+  CHECK \T.\IsRealType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK OK
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,EntryPosition);
+}.
+
+/*---------------------------------------------------------------------------*/
+LongArgumenting =
+{
+  typeRepr                      := \T.\TypeLonged(Expr:TypeReprOut);                                            /* !PredeclLong */
+  valueRepr                     := \V.\LongValue(Expr:ValueReprOut);
+
+  Nextion:TypeReprIn            := typeRepr;
+
+  CHECK \T.\IsShortType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+OddArgumenting =
+{
+  typeRepr                      := \OB.\cBooleanTypeRepr;                                                        /* !PredeclOdd */
+  valueRepr                     := \V.\OddValue(Expr:ValueReprOut);
+
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+OrdArgumenting =
+{
+  typeRepr                      := \OB.\cIntegerTypeRepr;                                                        /* !PredeclOrd */
+  valueRepr                     := \V.\OrdValue(Expr:ValueReprOut);
+
+  CHECK \T.\IsCharType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+ShortArgumenting =
+[ OK : BOOLEAN ]
+{
+  typeRepr                      := \T.\TypeShortened(Expr:TypeReprOut);                                        /* !PredeclShort */
+  valueRepr, OK                 := { valueRepr:=\V.\ShortValue(Expr:TypeReprOut,Expr:ValueReprOut,OK); };
+
+  CHECK \T.\IsLongType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK OK
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,EntryPosition);
+}.
+
+/*---------------------------------------------------------------------------*/
+HaltArgumenting =
+{
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)                                                                     /* !PredeclHalt */
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK \V.\IsValidConstValue(Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysAdrArgumenting =
+{
+  typeRepr                      := \OB.\cLongintTypeRepr;                                                        /* !SysdeclAdr */
+
+  CHECK Expr:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysCcArgumenting =
+{
+  typeRepr                      := \OB.\cBooleanTypeRepr;                                                         /* !SysdeclCc */
+
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK \V.\IsValidConstValue(Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PredeclArgumenting2Opt =
+[ areEnoughParameters : BOOLEAN ]
+[ isEmptyExpr2        : BOOLEAN ]
+{
+  isEmptyExpr2                  := \TT.\IsEmptyExpr(Expr2);
+  areEnoughParameters           := ~\TT.\IsEmptyExpr(Expr1);
+
+  Coerce1                       := \OB.\cmtCoercion;
+  Coerce2                       := \OB.\cmtCoercion;
+
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+
+  CHECK areEnoughParameters                                                                         /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+}.
+
+/*---------------------------------------------------------------------------*/
+AssertArgumenting =
+{
+  CHECK \T.\IsBooleanType(Expr1:TypeReprOut)                                                                  /* !PredeclAssert */
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK isEmptyExpr2
+     OR \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK isEmptyExpr2
+     OR \V.\IsValidConstValue(Expr2:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+LenArgumenting =
+{
+  typeRepr                      := \OB.\cLongintTypeRepr;                                                        /* !PredeclLen */
+  valueRepr                     := \T.\TypeDimensioned(Expr1:TypeReprOut,Expr2:ValueReprOut);
+
+  CHECK \T.\IsArrayType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK Expr1:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr1:Position);
+
+  CHECK isEmptyExpr2
+     OR \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK isEmptyExpr2
+     OR \V.\IsValidConstValue(Expr2:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr2:Position);
+
+  CHECK isEmptyExpr2
+     OR \T.\IsValidLenDim(Expr1:TypeReprOut,Expr2:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalLenDimension,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+DecIncArgumenting =
+{
+  Coerce2                       := \CO.\GetCoercion                                                           /* !PredeclDecInc */
+                                   (/* SrcType            := */ Expr2:TypeReprOut
+                                   ,/* DstType            := */ Expr1:TypeReprOut);
+
+  CHECK \T.\IsIntegerType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK Expr1:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr1:Position);
+
+  CHECK isEmptyExpr2
+     OR ( \T.\IsIntegerType(Expr2:TypeReprOut)
+        & \T.\IsIncludedBy(Expr2:TypeReprOut,Expr1:TypeReprOut))
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PredeclArgumenting2 =
+{
+  areEnoughParameters           := ~\TT.\IsEmptyExpr(Expr1)
+                                 & ~\TT.\IsEmptyExpr(Expr2);
+
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+}.
+
+/*---------------------------------------------------------------------------*/
+AshArgumenting =
+[ OK : BOOLEAN ]
+{
+  typeRepr                      := \OB.\cLongintTypeRepr;                                                        /* !PredeclAsh */
+  valueRepr, OK                 := { valueRepr:=\V.\AshValue(Expr1:ValueReprOut,Expr2:ValueReprOut,OK); };
+
+  Coerce1                       := \CO.\GetCoercion
+                                   (/* SrcType            := */ Expr1:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+  Coerce2                       := \CO.\GetCoercion
+                                   (/* SrcType            := */ Expr2:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  CHECK \T.\IsIntegerType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK OK
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,EntryPosition);
+}.
+
+/*---------------------------------------------------------------------------*/
+CopyArgumenting =
+{
+  CHECK \T.\IsStringOrCharArrayType(Expr1:TypeReprOut)                                                          /* !PredeclCopy */
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsStringOrCharArrayType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsCharArrayType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK Expr2:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+ExclInclArgumenting =
+{
+  Coerce2                       := \CO.\GetCoercion                                                         /* !PredeclExclIncl */
+                                   (/* SrcType            := */ Expr2:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  CHECK \T.\IsSetType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK Expr1:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK \V.\IsLegalSetValue(Expr2:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIntOutOfSet,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysBitArgumenting =
+{
+  typeRepr                      := \OB.\cBooleanTypeRepr;                                                        /* !SysdeclBit */
+
+  Coerce2                       := \CO.\GetCoercion
+                                   (/* SrcType            := */ Expr2:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  CHECK \T.\IsLongintType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysLshRotArgumenting =
+{
+  typeRepr                      := \T.\LegalShiftableTypesOnly(Expr1:TypeReprOut);                            /* !SysdeclLshRot */
+
+  CHECK \T.\IsShiftableType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysGetPutArgumenting =
+{
+  CHECK \T.\IsLongintType(Expr1:TypeReprOut)                                                                  /* !SysdeclGetPut */
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsRegisterableType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+SysGetArgumenting =
+{
+  CHECK Expr2:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysGetregPutregArgumenting =
+{
+  CHECK \T.\IsIntegerType(Expr1:TypeReprOut)                                                            /* !SysdeclGetregPutreg */
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \V.\IsValidConstValue(Expr1:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr1:Position);
+
+  CHECK \T.\IsRegisterableType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+SysGetregArgumenting =
+{
+  CHECK Expr2:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr2:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysNewArgumenting =
+[ pointerBaseType : tOB ]
+{
+  Coerce2                       := \CO.\GetCoercion                                                              /* !SysdeclNew */
+                                   (/* SrcType            := */ Expr2:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  pointerBaseType               := \T.\BaseTypeOfPointerType(Expr1:TypeReprOut);
+  
+  CHECK \T.\IsPointerType(Expr1:TypeReprOut)
+      & ~\T.\HasPointerSubType(pointerBaseType)
+      & ~\T.\IsOpenArrayType(pointerBaseType)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK Expr1:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PredeclArgumenting3 =
+{
+  Coerce3                       := \OB.\cmtCoercion;
+
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+
+  CHECK ~\TT.\IsEmptyExpr(Expr1)                                                                    /* !CorrespondingParameters */
+      & ~\TT.\IsEmptyExpr(Expr2)
+      & ~\TT.\IsEmptyExpr(Expr3)
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysMoveArgumenting =
+{
+  Coerce3                       := \CO.\GetCoercion                                                             /* !SysdeclMove */
+                                   (/* SrcType            := */ Expr3:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  CHECK \T.\IsLongintType(Expr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+
+  CHECK \T.\IsLongintType(Expr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr2:Position);
+
+  CHECK \T.\IsIntegerType(Expr3:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr3:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+TypeArgumenting =
+[ argTypeRepr : tOB ]
+{
+  argTypeRepr                   := \E.\TypeOfTypeEntry(Qualidents:EntryOut);
+
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+
+  CHECK \TT.\IsNotEmptyQualident(Qualidents)                                                        /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+
+  CHECK \E.\IsTypeEntry(Qualidents:EntryOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Qualidents:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+MaxMinArgumenting =
+{
+  typeRepr                      := \T.\TypeLimited(argTypeRepr);                                              /* !PredeclMaxMin */
+
+  CHECK \T.\IsBasicType(argTypeRepr)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Qualidents:Position);
+}.
+
+MaxArgumenting =
+{
+  valueRepr                     := \V.\MaxValue(argTypeRepr);
+}.
+
+MinArgumenting =
+{
+  valueRepr                     := \V.\MinValue(argTypeRepr);
+}.
+
+/*---------------------------------------------------------------------------*/
+SizeArgumenting =
+{
+  typeRepr                      := \OB.\cLongintTypeRepr;                                                       /* !PredeclSize */
+  valueRepr                     := \V.\SizeValue(argTypeRepr);
+
+  CHECK \T.\IsNotOpenArrayType(argTypeRepr)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalOpenArray,Qualidents:Position);
+}.
+
+/*---------------------------------------------------------------------------*/
+SysValArgumenting =
+{
+  typeRepr                      := argTypeRepr;                                                                  /* !SysdeclVal */
+  TypeTypeRepr                  := argTypeRepr; 
+
+  ExprLists:SignatureIn         := \OB.\cmtSignature;
+  ExprLists:ClosingPosIn        := Op2Pos;
+
+  EntryOut,IsWritableOut        := { IF isParamContextIn THEN 
+                                        EntryOut      := Expr:EntryOut;
+                                        IsWritableOut := ~\E.\IsExternEntry(Expr:EntryOut,ModuleIn)
+                                                      OR  \E.\IsWritableEntry(Expr:EntryOut);
+                                     ELSE 
+                                        EntryOut      := EntryIn;
+                                        IsWritableOut := IsWritableIn;
+                                     END; };.
+
+  CHECK ~\TT.\IsEmptyExpr(Expr)                                                                     /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NewArgumenting =
+{
+  NewExprLists:TypeReprIn       := \T.\BaseTypeOfPointerType(Expr:TypeReprOut);
+  NewExprLists:ClosingPosIn     := Op2Pos;
+
+  CHECK \T.\IsPointerType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK Expr:IsLValueOut
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NewExprLists =                                                                                                   /* !PredeclNew */
+[ TypeReprIn   : tOB       INHERITED ]
+[ ClosingPosIn : tPosition INHERITED ]
+.
+
+/*---------------------------------------------------------------------------*/
+mtNewExprList =
+{
+  CHECK \T.\IsNotOpenArrayType(TypeReprIn)                                                          /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,ClosingPosIn);
+}.
+
+/*---------------------------------------------------------------------------*/
+NewExprList =
+{
+  Coerce                        := \CO.\GetCoercion
+                                   (/* SrcType            := */ Expr:TypeReprOut
+                                   ,/* DstType            := */ \OB.\cLongintTypeRepr);
+
+  Next:TypeReprIn               := \T.\TypeOpenIndexed(TypeReprIn);
+
+  CHECK \T.\IsOpenArrayType(TypeReprIn)                                                             /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooManyParams,Expr:Position);
+
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  CHECK \V.\IsGreaterZeroInteger(Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidArrayLen,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+SysAsmArgumenting =
+{
+  CHECK ~\TT.\IsEmptyExprList(SysAsmExprLists)
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,Op2Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+SysAsmExprList =
+{
+  CHECK \V.\IsStringValue(Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+END Predeclareds
+
+/********************************************************************************************************************************/
+/*** END oberon.pre                                                                                                           ***/
+/********************************************************************************************************************************/
+

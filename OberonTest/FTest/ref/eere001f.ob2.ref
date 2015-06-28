@@ -1,0 +1,24 @@
+Compiling eere001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r   VALPARAM  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eere001f
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+                s   VAR       SET
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+                s   VAR       SET
+                i   VAR       INTEGER
+               END
+p    VAR       POINTER TO T1
+P    PROCEDURE (r:T0)
+-------------------------------------------------------------------------------
+
+eere001f.ob2: 23,7: Type test not applicable
+eere001f.ob2: 23,20: Record field not found
+eere001f.ob2: 27,7: Type test not applicable

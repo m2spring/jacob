@@ -1,0 +1,12 @@
+MODULE M1;
+IMPORT SL:=SysLib, SYS:=SYSTEM;
+VAR s:ARRAY 100 OF CHAR; n:LONGINT; 
+
+PROCEDURE P():INTEGER; 
+END P;
+
+
+BEGIN (* M1 *) 
+ s:='ls'; 
+ n:=SL.system(SYS.ADR(s)); 
+END M1.

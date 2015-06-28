@@ -1,0 +1,20 @@
+Compiling eeso001t
+'MODULE' eeso001t
+-------------------------------------------------------------------------------
+a   CONST     SET = {1..9}
+b   CONST     SET = {1,3,5,7,9}
+c   CONST     SET = {2,4,6,8}
+d   CONST     SET = {}
+e   CONST     SET = {1..2}
+f   CONST     SET = {0,10..31}
+g   CONST     SET = {1..9}
+h   CONST     SET = {2,4,6,8}
+i   CONST     SET = {2,4,6,8}
+j   CONST     SET = {1,4,6,8}
+k   CONST     BOOLEAN = TRUE
+l   CONST     BOOLEAN = TRUE
+m   CONST     BOOLEAN = TRUE
+n   CONST     BOOLEAN = TRUE
+o   CONST     BOOLEAN = TRUE
+-------------------------------------------------------------------------------
+

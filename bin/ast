@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/cctb/lib/cg/cg -l/usr/cctb/lib/cg $*

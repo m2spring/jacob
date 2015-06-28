@@ -1,0 +1,21 @@
+#
+dir=`pwd`
+
+rm $dir/out/* 2>/dev/null
+rm $dir/differences 2>/dev/null
+rm $dir/*.s $dir/*.o $dir/*.lst 2>/dev/null
+
+for i in *.ob2 
+do
+   oc -it -kt $i >temp
+   name=`basename $i .ob2`.s
+   if [ -f $name ]
+   then 
+     mv temp $dir/out/$i.out
+     cat $name >>$dir/out/$i.out
+   else
+     mv temp $dir/out/$i.out
+     echo "Compiler Error: No Output-File created!" >>$dir/out/$i.out
+   fi
+done
+

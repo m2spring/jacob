@@ -1,0 +1,13 @@
+MODULE IndexM;
+VAR s:ARRAY [0..19] OF CHAR; 
+    i:LONGINT; 
+
+PROCEDURE P(s:ARRAY OF CHAR);
+BEGIN (* P *)              
+ s[i]:=0C; 
+END P;
+
+BEGIN (* IndexM *)
+ i:=0; 
+ s[i]:=0C; 
+END IndexM.

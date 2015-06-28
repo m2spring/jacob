@@ -1,0 +1,9 @@
+Compiling eeao001f
+'MODULE' eeao001f
+-------------------------------------------------------------------------------
+a   CONST     <ErrorType> = <?Value>
+b   CONST     <ErrorType> = <?Value>
+-------------------------------------------------------------------------------
+
+eeao001f.ob2: 11,11: Operator not applicable
+eeao001f.ob2: 15,19: Operator not applicable

@@ -1,0 +1,19 @@
+MODULE M;
+VAR arr:ARRAY BOOLEAN OF LONGINT;
+    li,lj,lk:LONGINT; 
+    bo:BOOLEAN;
+    sc:SHORTCARD;
+    si:SHORTINT;
+    re:REAL;
+BEGIN (* M *)
+(*<<<<<<<<<<<<<<<
+ arr[FALSE]:=0; arr[TRUE]:=1; 
+ li:=arr[bo]; 
+
+ li:=si; 
+ li:=LONGINT(BITSET(re)); 
+ li:=VAL(LONGINT,sc MOD 256); 
+>>>>>>>>>>>>>>>*)
+ 
+ li:=-4*(lj-lk+1); 
+END M.

@@ -1,0 +1,40 @@
+MODULE Jacob;
+
+IMPORT ARG,DRV,IO,O,STR,SysLib;
+
+CONST Date = "06/28/98";
+
+(************************************************************************************************************************)
+PROCEDURE Process(Filename:ARRAY OF CHAR);
+BEGIN (* Process *)
+ CASE ARG.Command OF
+ |ARG.CommandDumpTokens: DRV.DumpTokens(Filename); 
+ |ARG.CommandReadOnly  : DRV.Read(Filename); 
+ |ARG.CommandScanOnly  : DRV.Scan(Filename); 
+ |ARG.CommandParseOnly : DRV.Parse(Filename); 
+ ELSE                    DRV.Compile(Filename); 
+ END; (* CASE *)
+END Process;
+
+(************************************************************************************************************************)
+VAR i:INTEGER; 
+BEGIN (* Jacob *)
+ ARG.Init;
+ DRV.Init;
+ 
+ CASE ARG.Command OF
+ |ARG.CommandShowUsage  : ARG.ShowUsage;
+ |ARG.CommandShowVersion: O.Str('Jacob V0.2, '); O.StrLn(Date); 
+ ELSE                     IF ARG.FileC<=0 THEN 
+                             ARG.ShowUsage;
+                          ELSE
+                             FOR i:=0 TO ARG.FileC-1 DO 
+                              Process(ARG.FileP^[i]^); 
+                             END; (* FOR *)
+                          END; (* IF *)
+ END; (* CASE *)
+
+ IO.CloseIO;
+ SysLib.exit(DRV.ProgramReturnCode); 
+END Jacob.
+

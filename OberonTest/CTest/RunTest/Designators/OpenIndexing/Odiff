@@ -1,0 +1,26 @@
+1588a1589,1613
+> 	# P1(p4^[9][9][9]);
+> 	movl	20+O01$G,%eax	# p4 
+> 	leal	(%eax),%edx
+> 	movl	$9,%eax
+> 	pushl	%eax
+> 	movl	$9,%eax
+> 	pushl	%eax
+> 	movl	$9,%eax
+> 	pushl	%eax
+> 	movl	16(%edx),%ebx	# %ebx:=1 * 16(%edx); headerBaseReg=%edx displacementReg=%ecx sizeReg=%ebx tmpReg=%eax
+> 	popl	%ecx
+> 	imull	%ebx,%ecx
+> 	imull	12(%edx),%ebx
+> 	popl	%eax
+> 	imull	%ebx,%eax
+> 	addl	%eax,%ecx
+> 	imull	8(%edx),%ebx
+> 	popl	%eax
+> 	imull	%ebx,%eax
+> 	addl	%eax,%ecx
+> 	leal	20(%edx,%ecx),%eax
+> 	pushl	%eax
+> 	call	L4
+> 	addl	$8,%esp
+> 

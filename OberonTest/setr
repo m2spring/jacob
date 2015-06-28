@@ -1,0 +1,8 @@
+#
+for i in `find . -type d`
+do
+   echo $i
+   chmod g+w $i
+done
+exit 0
+

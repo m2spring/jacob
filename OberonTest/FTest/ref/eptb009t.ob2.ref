@@ -1,0 +1,49 @@
+Compiling eptb009t
+'BOUND' BoundRecReceiver
+-------------------------------------------------------------------------------
+r   RECEIVER  BoundRecType
+-------------------------------------------------------------------------------
+
+'BOUND' BoundPtrReceiver
+-------------------------------------------------------------------------------
+p   RECEIVER  BoundPtrType
+-------------------------------------------------------------------------------
+
+'MODULE' eptb009t
+-------------------------------------------------------------------------------
+BoundRecType   TYPE      RECORD
+                          BoundRecReceiver   BOUND     VAR r:BoundRecType()
+                         END
+BoundPtrType   TYPE      POINTER TO T0
+<T0>           TYPE      RECORD
+                          i                  VAR       INTEGER
+                          r                  VAR       BoundRecType
+                          p                  VAR       BoundPtrType
+                          BoundPtrReceiver   BOUND     p:BoundPtrType()
+                         END
+T0             TYPE      RECORD
+                          i                  VAR       INTEGER
+                          r                  VAR       BoundRecType
+                          p                  VAR       BoundPtrType
+                          BoundPtrReceiver   BOUND     p:BoundPtrType()
+                         END
+T1             TYPE      RECORD
+                          h   VAR       RECORD
+                                         r   VAR       BoundRecType
+                                         p   VAR       BoundPtrType
+                                        END
+                          s   VAR       SET
+                         END
+T2             TYPE      ARRAY 12 OF T0
+T3             TYPE      ARRAY 10 OF ARRAY 5 OF RECORD
+                                                 a   VAR       ARRAY 2 OF T0
+                                                 e   VAR       RECORD
+                                                                a   VAR       ARRAY 2 OF ARRAY 3 OF T0
+                                                               END
+                                                END
+r0             VAR       T0
+r1             VAR       T1
+r2             VAR       T2
+r3             VAR       T3
+-------------------------------------------------------------------------------
+

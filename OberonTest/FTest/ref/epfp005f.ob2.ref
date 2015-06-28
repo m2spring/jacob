@@ -1,0 +1,13 @@
+Compiling epfp005f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+f   VALPARAM  ARRAY OF ARRAY OF CHAR
+-------------------------------------------------------------------------------
+
+'MODULE' epfp005f
+-------------------------------------------------------------------------------
+a   VAR       ARRAY 4 OF ARRAY 5 OF INTEGER
+P   PROCEDURE (f:ARRAY OF ARRAY OF CHAR)
+-------------------------------------------------------------------------------
+
+epfp005f.ob2: 17,4: Actual parameter not compatible with formal

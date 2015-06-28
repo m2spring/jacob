@@ -1,0 +1,10 @@
+(* Feste Token: (Specials + reserved words) Case-Signifikanz *)
+
++ - * / ~ & . , ; | ( ) [ ] { } := ^ = # < > <= >= .. :
+ARRAY BEGIN BY CASE CONST DIV DO ELSE ELSIF END EXIT FOR IF IMPORT IN IS LOOP
+MOD MODULE NIL OF OR POINTER PROCEDURE RECORD REPEAT RETURN THEN TO TYPE UNTIL
+VAR WHILE WITH
+Array
+BEGIn
+MODU LE
+PROCE DURE

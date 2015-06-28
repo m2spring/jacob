@@ -1,0 +1,181 @@
+(********************************************************************************************************************************)
+(*** oberon.cgd.floats.min / OBERON-2 Code Generator Description (FLOATing pointS / MINimal)                                  ***)
+(********************************************************************************************************************************)
+(*$2*)
+RULE op:FloatAssignment m:Memory Float;
+COST 1;
+EMIT{ NDP.CS1                                        ( fstp,op.size  ,  Loc(m.loc)                                              );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatContentOf m:Memory -> o:AMem;
+COST 1;
+EVAL{ o.size:=op.size; }
+EMIT{ o.oper.kind := ASM.okMemory; 
+      o.oper.loc  := m.loc;
+    }
+(*$2*)
+RULE i:AMem -> Float;
+COST 1;
+EMIT{ NDP.CS1                                        ( fld,i.size    ,  Operand(i.oper)                                         );
+    }
+      
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatParam in:aArguments Float -> out:aArguments;
+COST 2;
+EMIT{ out.paramSpace:=in.paramSpace+ASM.FloatByteSizeTab[op.size]; 
+      ASM.CS2                                        ( sub,l         ,  i(ASM.FloatByteSizeTab[op.size]),R(esp)                 );
+      NDP.CS1                                        ( fstp,op.size  ,  B(esp)                                                  );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE FloatFuncReturn Float;
+EMIT{ ASM.CS2                                        ( mov,l         ,  R(ebp),R(esp)                                           ); 
+      ASM.C1                                         ( popl          ,  R(ebp)                                                  );
+      ASM.C0                                         ( ret                                                                      );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatFuncResultOf Memory -> Float;
+CHANGE <eax,ebx,ecx,edx,esi,edi>;
+EMIT{ NDP.SetTop(1);
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:MonOper a:Float -> r:Float;
+EMIT{ NDP.C0                                         ( fchs                                                                     );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatSymDyOper Float Float -> Float;
+COST 1;
+EMIT{ NDP.C0                                         ( ASMOP.PopFloatTab[op.code]                                               );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatDyOper Float Float -> Float;
+COST 1;
+EMIT{ NDP.C0                                         ( ASMOP.RevFloatTab[ASMOP.PopFloatTab[op.code]]                            );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:Branch
+       cc:FloatCompare aLabel Float Float
+     -> aBoolean;
+COST 5;
+CHANGE <ax>;
+EMIT{ oper:=ASM.BranchOperTab[ASM.InvRelTab[cc.rel],(*isSignedRelation:=*)FALSE]; 
+      NDP.C0                                         ( fcompp                                                                   );
+      NDP.C1                                         ( fstsw         ,  R(ax)                                                   );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper          ,  L(op.falseLabel)                                        );
+      ASM.C1                                         ( jmp           ,  L(op.trueLabel)                                         );
+    }
+RULE op:Branch
+       cc:FloatCompare aLabel Float Float
+     -> aBoolean;
+COST 5;
+CHANGE <ax>;
+EMIT{ oper:=ASM.BranchOperTab[ASM.InvRelTab[ASM.RevRelTab[cc.rel]],(*isSignedRelation:=*)FALSE]; 
+      NDP.C0                                         ( fcompp                                                                   );
+      NDP.C1                                         ( fstsw         ,  R(ax)                                                   );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper          ,  L(op.falseLabel)                                        );
+      ASM.C1                                         ( jmp           ,  L(op.trueLabel)                                         );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE BoolVal
+       op:Branch
+         cc:FloatCompare aLabel Float Float
+     -> r:BReg;
+COST 4;
+CHANGE <ax>;
+EMIT{ oper:=ASM.FlagSetOperTab[cc.rel,(*isSignedRelation:=*)FALSE]; 
+      NDP.C0                                         ( fcompp                                                                   );
+      NDP.C1                                         ( fstsw         ,  R(ax)                                                   );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper          ,  R(r)                                                    );
+    }
+RULE BoolVal
+       op:Branch
+         cc:FloatCompare aLabel Float Float
+     -> r:BReg;
+COST 4;
+CHANGE <ax>;
+EMIT{ oper:=ASM.FlagSetOperTab[ASM.RevRelTab[cc.rel],(*isSignedRelation:=*)FALSE]; 
+      NDP.C0                                         ( fcompp                                                                   );
+      NDP.C1                                         ( fstsw         ,  R(ax)                                                   );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper          ,  R(r)                                                    );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE Abs a:Float -> Float;
+COST 1;
+EMIT{ NDP.C0                                         ( fabs                                                                     );
+    }
+(*$1*)
+RULE Entier a:Float -> r:LReg;
+COST 3;
+EMIT{ ASM.CS2                                        ( sub,l         ,  i(4),R(esp)                                             );
+      NDP.CS1                                        ( fistp,l       ,  B(esp)                                                  ); 
+      ASM.C1                                         ( popl          ,  R(r)                                                    );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE Int2Float r:BReg -> Float;
+COST 4;
+SCRATCH tmp <eax..edi>;
+EMIT{ ASM.C2                                         ( movsbl        ,  R(r),R(tmp)                                             ); 
+      ASM.C1                                         ( pushl         ,  R(tmp)                                                  ); 
+      NDP.CS1                                        ( fild,l        ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+RULE Int2Float r:WReg -> Float;
+COST 3;
+EMIT{ ASM.C1                                         ( pushl         ,  R(ASM.SizedRegTab[r,l])                                 ); 
+      NDP.CS1                                        ( fild,w        ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+RULE Int2Float r:LReg -> Float;
+COST 3;
+EMIT{ ASM.C1                                         ( pushl         ,  R(r)                                                    ); 
+      NDP.CS1                                        ( fild,l        ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE Card2Float r:BReg -> Float;
+COST 4;
+SCRATCH tmp <eax..edi>;
+EMIT{ ASM.C2                                         ( movzbl        ,  R(r),R(tmp)                                             ); 
+      ASM.C1                                         ( pushl         ,  R(tmp)                                                  ); 
+      NDP.CS1                                        ( fld,s         ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+RULE Card2Float r:WReg -> Float;
+COST 4;
+SCRATCH tmp <eax..edi>;
+EMIT{ ASM.C2                                         ( movzwl        ,  R(r),R(tmp)                                             ); 
+      ASM.C1                                         ( pushl         ,  R(tmp)                                                  ); 
+      NDP.CS1                                        ( fld,s         ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+RULE Card2Float r:LReg -> Float;
+COST 3;
+EMIT{ ASM.C1                                         ( pushl         ,  R(r)                                                    ); 
+      NDP.CS1                                        ( fld,s         ,  B(esp)                                                  );
+      ASM.CS2                                        ( add,l         ,  i(4),R(esp)                                             );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE Real2Longreal a:Float -> Float;
+(*$1*)
+RULE Longreal2Real a:Float -> Float;
+
+(********************************************************************************************************************************)
+(*** END oberon.cgd.floats.min                                                                                                ***)
+(********************************************************************************************************************************)
+

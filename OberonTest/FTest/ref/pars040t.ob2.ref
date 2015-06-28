@@ -1,0 +1,32 @@
+MODULE pars040t;
+
+BEGIN (* pars040t *)
+   WITH laber:bla DO
+   ELSE _WITHFAULT;
+   END; (* WITH *)
+   WITH rec$field:mod$ident DO
+        stmts;
+   ELSE _WITHFAULT;
+   END; (* WITH *)
+   WITH rec$field:mod$ident DO
+        stmts;
+   ELSE nochmehrstmts;
+   END; (* WITH *)
+   WITH la:ber DO
+        st1;
+   |qual$ident:bla DO
+        st2;
+   |last:not$least DO
+        st3;
+   ELSE st4;
+   END; (* WITH *)
+   WITH la:ber DO
+        st1;
+   |qual$ident:bla DO
+        st2;
+   |last:not$least DO
+        st3;
+   ELSE _WITHFAULT;
+   END; (* WITH *)
+END pars040t.
+

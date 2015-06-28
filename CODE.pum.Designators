@@ -1,0 +1,703 @@
+/********************************************************************************************************************************/
+PROCEDURE CodeRDesignator ( designator:Designator => DCode ) 
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ Designator(_,_,_,Importing(entry,_,_,_,d:Designations,_,_),type,_    ,_,_,exprList) ;
+ Designator(_,_,_,d:Designations                           ,type,entry,_,_,exprList) => {dcode}?{ TRACE(CodeRDesignator); 
+    IF exprList#Tree.NoTree THEN 
+       CodeLDesignator(designator,acode); 
+       IF T.IsRealType(type) THEN 
+          Cons.FloatFuncResultOf(acode,dcode); 
+       ELSE 
+          Cons.FuncResultOf(ASM.SizeTab[T.SizeOfType(type)],acode,dcode); 
+       END;
+    ELSE 
+       CodeRDesignator1(entry,type,designator,d,dcode); 
+    END;
+    SHOWCODE(CodeRDesignator,dcode); 
+ };.	  
+ 
+/*END CodeRDesignator */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeRDesignator1 ( entry:Entries , type:TypeReprs , designator:Designator , designations:Designations => DCode ) 
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ VarEntry,FloatTypeRepr(_,size,..),.. => {dcode} ?{ TRACE(CodeRDesignator1.Float); 
+    CodeLDesignator(designator,acode); 
+    Cons.FloatContentOf(ASM.FloatSizeTab[size],acode,dcode); 
+    SHOWCODE(CodeRDesignator1.Float,dcode); 
+ };.         
+ 
+ VarEntry,TypeRepr(_,size,..),.. => {dcode} ? ((size<32) & (size IN {{1,2,4}}));{ TRACE(CodeRDesignator1.StandardTypedVar); 
+    CodeLDesignator(designator,acode); 
+    Cons.ContentOf(ASM.SizeTab[size],acode,dcode); 
+    SHOWCODE(CodeRDesignator1.StandardTypedVar,dcode); 
+ };.         
+ 
+ VarEntry,.. => {dcode} ?{ TRACE(CodeRDesignator1.Var); 
+    CodeLDesignator(designator,acode); 
+    Cons.AddressOf(acode,dcode); 
+    SHOWCODE(CodeRDesignator1.Var,dcode); 
+ };.
+ 
+ ConstEntry,.. => {dcode} ?{ TRACE(CodeRDesignator1.Const); 
+    CodeLDesignator(designator,acode); 
+    Cons.AddressOf(acode,dcode); 
+    SHOWCODE(CodeRDesignator1.Const,dcode); 
+ };.
+ 
+ ProcedureEntry(_,_,ident,_,_,_,_,_,_,label,_,_),_,_,mtDesignation => {dcode} ?{ TRACE(CodeRDesignator1.Proc); 
+    Cons.GlobalVariable(label,0,ident,acode); 
+    Cons.AddressOf(acode,dcode);
+    SHOWCODE(CodeRDesignator1.Proc,dcode); 
+ };.
+ 
+ _,_,_,PredeclArgumenting => {dcode} ?{ TRACE(CodeRDesignator1.PredeclArgumenting); 
+    CodePredeclFuncs(designations,type,dcode); 
+    SHOWCODE(CodeRDesignator1.PredeclArgumenting,dcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeRDesignator1: failed'); };.
+ 
+/*END CodeRDesignator1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeSimpleLDesignator ( entry:Entries , curLevel:tLevel => ACode ) 
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ VarEntry(_,ModuleEntry(_,mLabel,_),ident,_,level,_,type,_,_,_,address,refMode,_,_),_ => {acode} ?{ TRACE(CodeSimpleLDesignator); 
+    IF level<=OB.MODULELEVEL THEN 
+       Cons.GlobalVariable(mLabel,address,ident,acode); 
+    ELSE
+       IF level=curLevel THEN
+          Cons.LocalVariable(address,ident,acode); 
+       ELSE
+          Cons.LocalVariable(-4*(1+level-OB.MODULELEVEL),Idents.NoIdent,acode); 
+          Cons.ContentOf(l,acode,dcode); 
+          Cons.PointerFrom(dcode,acode); 
+          Cons.Selector(address,acode,acode); 
+       END;
+
+       IF refMode=OB.REFPAR THEN 
+          Cons.ContentOf(l,acode,dcode); 
+          Cons.PointerFrom(dcode,acode); 
+       END;
+    END;
+    SHOWCODE(CodeSimpleLDesignator,acode); 
+ };.
+  
+ .. => NIL ?{ ERR.Fatal('CODE.CodeSimpleLDesignator: failed'); };.
+
+/*END CodeSimpleLDesignator */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeLDesignator ( designator:Designator => ACode ) 
+LOCAL{ VAR acode:ACode; idData:tImplicitDesignationData; retypecode:RetypeCode; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ Designator(_,_,_
+           ,Importing(_,_,_,_
+                     ,SysValArgumenting(_,_,_,_,_,_,_,_,expr:Exprs(_,sType,_),dType,tmpOfs),_,_
+                     ),_,_,_,_,_
+           )
+ => {acode} ?{ TRACE(CodeLDesignator.SYSTEM.VAL); 
+    CodeSysValSource(sType,dType,expr,tmpOfs,retypecode); 
+    Cons.Retype2Addr(retypecode,acode);     
+    SHOWCODE(CodeLDesignator.SYSTEM.VAL,acode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ _ => {acode} ?{ TRACE(CodeLDesignator); 
+    CodeImplicitLDesignator(designator,idData,acode); 
+    SHOWCODE(CodeLDesignator,acode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*END CodeLDesignator */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeImplicitLDesignator ( Designator , REF idData:tImplicitDesignationData => ACode ) 
+LOCAL{ VAR acode:ACode; }
+
+ Designator(id,_,_,Importing(entry,_,_,_,d:Designations,_,_),_,_    ,..),_ ;
+ Designator(id,_,_,d:Designations                           ,_,entry,..),_ => {acode}?{ TRACE(CodeImplicitLDesignator); 
+    CodeLDesignator1(entry,d,idData,acode); 
+    SHOWCODE(CodeImplicitLDesignator,acode); 
+ };.
+ 
+/*END CodeImplicitLDesignator */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeLDesignator1 ( entry:Entries , designations:Designations , REF idData:tImplicitDesignationData => ACode ) 
+LOCAL{ VAR lab:OB.tLabel; acode:ACode; dcode:DCode; nextDesignations:Tree.tTree; argcode:ArgCode; }
+
+ VarEntry(_,ModuleEntry(_,mLabel,isForeign),ident,_,level,_,type,_,_,_,address,refMode,isWithed,_)
+,Designations(_,curLevel),_ => {acode} ?{ TRACE(CodeLDesignator1.Var); 
+    
+    idData.typeOfObject          := type;
+    idData.isStackObject         := FALSE; 
+    idData.acodeToObjHeader      := NIL;
+    idData.ofsOfObjHeader        := 0; 
+    idData.ofsOfObject           := 0; 
+    idData.ofsOfLEN0             := 0; 
+    idData.ofsOfLastLEN          := 0; 
+    idData.nofOpenIndexings      := 0; 
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+    idData.codeToOpenIndexedElem := NIL;
+
+    nextDesignations:=designations;
+    IF level<=OB.MODULELEVEL THEN 
+       IF isForeign THEN
+          Cons.GlobalVariable(LAB.MakeForeign(ident),0,ident,acode); 
+       ELSE
+          Cons.GlobalVariable(mLabel,address,ident,acode); 
+       END;
+    ELSE
+       IF refMode=OB.REFPAR THEN 
+          IF level=curLevel THEN
+             Cons.LocalVariable(address,ident,acode); 
+
+             CodeLocalImplicitDesignations(type,designations,idData,isWithed,address,acode
+             (* => *)                     ,acode,nextDesignations);
+          ELSE
+             Cons.LocalVariable(-4*(1+level-OB.MODULELEVEL),Idents.NoIdent,acode); 
+             Cons.ContentOf(l,acode,dcode); 
+             Cons.PointerFrom(dcode,acode); 
+
+             CodeStackImplicitDesignations(type,designations,idData,isWithed,address,acode
+             (* => *)                     ,acode,nextDesignations);
+          END;
+       ELSE 
+          IF level=curLevel THEN
+             Cons.LocalVariable(address,ident,acode); 
+          ELSE
+             Cons.LocalVariable(-4*(1+level-OB.MODULELEVEL),Idents.NoIdent,acode); 
+             Cons.ContentOf(l,acode,dcode); 
+             Cons.PointerFrom(dcode,acode); 
+             Cons.Selector(address,acode,acode); 
+          END;
+       END;
+    END;
+
+    CodeDesignations(nextDesignations,idData,isWithed,acode,acode); 
+    SHOWCODE(CodeLDesignator1.Var,acode); 
+ };.         
+ 
+ ConstEntry(_,_,ident,exportMode,_,_,_,value:MemValueRepr,label),.. => {acode} ?{ TRACE(CodeLDesignator1.Const); 
+    IF exportMode=OB.PRIVATE THEN 
+       lab:=V.LabelOfMemValue(value); 
+    ELSE 
+       lab:=label; 
+    END;
+    Cons.GlobalVariable(lab,0,ident,acode); 
+
+    CodeDesignations(designations,idData,(*isWithed:=*)FALSE,acode,acode); 
+    SHOWCODE(CodeLDesignator1.Const,acode); 
+ };.
+ 
+ ProcedureEntry(_,_,_,_,_,_,procType:ProcedureTypeRepr(_,_,_,_,_,_,_,paramSpace),_,_,label,_,_)
+,Argumenting(_,_,_,_,_,_,exprList,..),_ => {acode} ?{ TRACE(CodeLDesignator1.Proc); 
+    CodeProcArgs(procType,exprList,argcode);
+    Cons.DirectCall(label,argcode,acode);
+    SHOWCODE(CodeLDesignator1.Proc,acode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.LDesignator1: failed'); };.
+
+/*END CodeLDesignator1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeDesignations ( Designations , REF idData:tImplicitDesignationData , isWithed:BOOLEAN , acodeIn:ACode => ACode )
+LOCAL{ VAR acode:ACode; dcode:DCode; nextDesignations:Tree.tTree; argcode:ArgCode; }
+
+ Selecting(entry,_,_,_,next:Designations,_,_),.. => {acode} ?{ TRACE(CodeDesignations.Selecting); 
+    Cons.Selector(E.AddressOfVarEntry(entry),acodeIn,acode); 
+    CodeDesignations(next,idData,(*isWithed:=*)FALSE,acode,acode); 
+    SHOWCODE(CodeDesignations.Selecting,acode); 
+ };.
+ 
+ Indexing(_,_,_,_,next:Designations,_,Exprs(_,_,value),_,elemType,tmpOfs),.. => {acode} ? (V.IsValidConstValue(value));
+ { TRACE(CodeDesignations.ConstIndexing); 
+    Cons.Selector(V.ValueOfInteger(value)*T.SizeOfType(elemType),acodeIn,acode); 
+    CodeDesignations(next,idData,(*isWithed:=*)FALSE,acode,acode); 
+    SHOWCODE(CodeDesignations.ConstIndexing,acode); 
+ };.
+
+ Indexing(_,_,_,_,next:Designations,_,expr:Exprs(_,type,_),len,elemType,tmpOfs),.. => {acode} ?{ TRACE(CodeDesignations.Indexing); 
+    CodeRExpr(type,expr,CO.GetCoercion(type,OB.cLongintTypeRepr),dcode); 
+    IF ARG.OptionIndexChecking THEN Cons.IndexCheck(len,dcode,dcode); END;
+    Cons.Index(T.SizeOfType(elemType),acodeIn,dcode,acode); 
+    CodeDesignations(next,idData,(*isWithed:=*)FALSE,acode,acode); 
+    SHOWCODE(CodeDesignations.Indexing,acode); 
+ };.
+
+ Dereferencing(_,_,_,_,next:Designations,baseType),.. => {acode} ?{ TRACE(CodeDesignations.Dereferencing); 
+    Cons.ContentOf(l,acodeIn,dcode); 
+    IF ARG.OptionNilChecking THEN Cons.NilCheck(dcode,dcode); END;
+    Cons.PointerFrom(dcode,acode); 
+
+    CodeHeapImplicitDesignations(baseType,next,idData,ADR.ArrayOfs(baseType),acode
+    (* => *)                    ,acode,nextDesignations);
+    CodeDesignations(nextDesignations,idData,(*isWithed:=*)FALSE,acode,acode); 
+    SHOWCODE(CodeDesignations.Dereferencing,acode); 
+ };.
+ 
+ d:Argumenting(entry,curLevel,_,_,_,_,exprList,procType,rcvEntry),.. => {acode}?{ TRACE(CodeDesignations.Argumenting); 
+    CodeProcArgs(procType,exprList,argcode);
+    IF ~E.IsBoundProcEntry(entry) THEN 
+       CodeIndirectCall(procType,argcode,acodeIn,acode); 
+    ELSE 
+       CodeBoundCall((* procEntry := *) E.BoundProcEntryOfBoundProc(entry)
+                    ,(* aRcvEntry := *) rcvEntry
+                    ,(* rcvType   := *) T.ReceiverRecordTypeOfType(E.ReceiverTypeOfBoundProc(entry))
+                    ,(* curLevel  := *) curLevel
+                    ,(* bprocLab  := *) LAB.MT	   
+                    ,(* argcodeIn := *) argcode
+                    ,(* acodeIn   := *) acodeIn
+                    ,(*           => *) acode); 
+    END;
+    SHOWCODE(CodeDesignations.Argumenting,acode); 
+ };.
+
+ Supering(entry,curLevel,_,_,d:Argumenting(_,_,_,_,_,_,exprList,procType,_),rcvEntry),.. => {acode}?
+ { TRACE(CodeDesignations.Supering); 
+    CodeProcArgs(procType,exprList,argcode);
+    CodeBoundCall((* procEntry := *) E.BoundProcEntryOfBoundProc(entry)
+                 ,(* aRcvEntry := *) rcvEntry
+                 ,(* rcvType   := *) T.RecordBaseTypeOfType(E.ReceiverTypeOfBoundProc(entry))
+                 ,(* curLevel  := *) curLevel
+                 ,(* bprocLab  := *) E.LabelOfRedefinedBoundProc(entry)
+                 ,(* argcodeIn := *) argcode
+                 ,(* acodeIn   := *) acodeIn
+                 ,(*           => *) acode); 
+    SHOWCODE(CodeDesignations.Supering,acode); 
+ };.
+
+ Guarding(_,_,_,_,next:Designations,_,_,staticType,testType),.. => {acode}?{ TRACE(CodeDesignations.Guarding); 
+    CodePointerGuarding(staticType,testType,isWithed,acodeIn,acode); 
+    CodeDesignations(next,idData,isWithed,acode,acode); 
+    SHOWCODE(CodeDesignations.Guarding,acode); 
+ };.
+
+ mtDesignation,.. => acodeIn ?.
+ 
+ .. => NIL ?{ ERR.Fatal('CODE.Designations: failed'); };.
+
+/*END CodeDesignations */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeProcArgs ( procType:TypeReprs , exprList:ExprLists => ArgCode )
+LOCAL{ VAR argcode:ArgCode; }
+
+ ProcedureTypeRepr(e,_,_,_,_,signature,..),_ => {argcode} ?{ TRACE(CodeProcArgs);
+    Cons.NoParam(argcode);
+    CodeArguments(signature,exprList,E.IsForeignEntry(e),argcode,argcode);
+    SHOWCODE(CodeProcArgs,argcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeProcArgs: failed'); };.
+ 
+/*END CodeProcArgs */
+
+/********************************************************************************************************************************/
+PROCEDURE CodePointerGuarding ( StaticType:TypeReprs , TestType:TypeReprs , isWithed:BOOLEAN , acodeIn:ACode => ACode )
+LOCAL{ VAR acode:ACode; dcode,new1Reg,new2Reg:DCode; ofs:LONGINT; }
+
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,staticType:TypeReprs))
+,PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,testType  :TypeReprs)),.. => {acode} ?{ TRACE(CodePointerGuarding); 
+    IF (ADR.TTableElemOfsInTDesc(staticType,testType,ofs) OR isWithed) & (ofs#0) THEN 
+       Cons.ConjureRegister(new1Reg); Cons.ConjureRegister(new2Reg); 
+       Cons.PointerGuard(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,acodeIn,new1Reg,new2Reg,dcode); 
+       Cons.PointerFrom(dcode,acode); 
+    ELSE 
+       acode:=acodeIn; 
+    END;
+    SHOWCODE(CodePointerGuarding,acode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodePointerGuarding: failed'); };.
+
+/*END CodePointerGuarding */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeLocalImplicitDesignations ( type:TypeReprs , designations:Designations , REF idData:tImplicitDesignationData 
+                                        , isWithed:BOOLEAN , objOfs:LONGINT , acodeIn:ACode => ACode , Designations )
+LOCAL{ VAR acode:ACode; dcode,exprDcode,displDcode,newReg:DCode; tailDesignations:Tree.tTree; ofs:LONGINT; }
+                                    
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)
+,Indexing(_,_,_,_,next:Designations,_,expr:Exprs(_,exprType,value),_,_,tmpOfs),.. 
+ => {acode},{tailDesignations} ? (len=OB.OPENARRAYLEN); { TRACE(CodeLocalImplicitDesignations.OpenIndex); 
+    idData.isStackObject         := TRUE; 
+    Cons.Selector(-objOfs,acodeIn,idData.acodeToObjHeader);
+    idData.ofsOfObjHeader        := objOfs; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := objOfs+4+4*LONGINT(ORD(T.IsOpenArrayType(elemType))); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofOpenIndexings      := 1; 
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+
+    CodeRExpr(exprType,expr,CO.GetCoercion(exprType,OB.cLongintTypeRepr),exprDcode); 
+    Cons.OpenIndexFirst(tmpOfs,idData.ofsOfLEN0,idData.acodeToObjHeader,exprDcode,displDcode);
+    CodeOpenIndexing(elemType,next,tmpOfs,idData.ofsOfLEN0+4,objOfs,(*isStackObj:=*)TRUE,displDcode,idData
+                    ,acode,tailDesignations);
+
+    SHOWCODE(CodeLocalImplicitDesignations.OpenIndex,acode); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType),.. 
+ => {acode},designations ? (len=OB.OPENARRAYLEN);{ TRACE(CodeLocalImplicitDesignations.Open); 
+    idData.isStackObject         := TRUE; 
+    Cons.Selector(-objOfs,acodeIn,idData.acodeToObjHeader);
+    idData.ofsOfObjHeader        := objOfs; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := objOfs+4+4*LONGINT(ORD(T.IsOpenArrayType(elemType))); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+
+    Cons.ContentOf(l,acodeIn,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeLocalImplicitDesignations.Open,acode); 
+ };.
+
+ RecordTypeRepr,Guarding(entry,_,_,_,next:Designations,_,_,staticType,testType),.. => {acode},next ?
+ {TRACE(CodeLocalImplicitDesignations.Guard); 
+    idData.isStackObject         := TRUE; 
+    Cons.Selector(-objOfs,acodeIn,idData.acodeToObjHeader);
+    idData.ofsOfObjHeader        := objOfs-4; 
+    idData.ofsOfObject           := objOfs; 
+
+    IF (ADR.TTableElemOfsInTDesc(staticType,testType,ofs) OR isWithed) & (ofs#0) THEN 
+       Cons.ConjureRegister(newReg); 
+       Cons.RecordGuard(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,-4,acodeIn,newReg,acode); 
+    ELSE 
+       acode:=acodeIn; 
+    END;
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeLocalImplicitDesignations.Guard,acode); 
+ };.
+
+ RecordTypeRepr,.. => {acode},designations ?{TRACE(CodeLocalImplicitDesignations.RecordTypeRepr); 
+    idData.isStackObject         := TRUE; 
+    Cons.Selector(-objOfs,acodeIn,idData.acodeToObjHeader);
+    idData.ofsOfObjHeader        := objOfs-4; 
+    idData.ofsOfObject           := objOfs; 
+
+    Cons.ContentOf(l,acodeIn,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeLocalImplicitDesignations.RecordTypeRepr,acode); 
+ };.
+
+ .. => {acode},designations ?{ TRACE(CodeLocalImplicitDesignations.Default); 
+    Cons.ContentOf(l,acodeIn,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeLocalImplicitDesignations.Default,acode); 
+ };.
+
+/*END CodeLocalImplicitDesignations */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeStackImplicitDesignations ( type:TypeReprs , designations:Designations , REF idData:tImplicitDesignationData 
+                                        , isWithed:BOOLEAN , objOfs:LONGINT , acodeIn:ACode => ACode , Designations )                          
+LOCAL{ VAR acode:ACode; dcode,exprDcode,displDcode,newReg:DCode; tailDesignations:Tree.tTree; ofs:LONGINT; }
+                                    
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)
+,Indexing(_,_,_,_,next:Designations,_,expr:Exprs(_,exprType,value),_,_,tmpOfs),..
+ => {acode},{tailDesignations}? (len=OB.OPENARRAYLEN); { TRACE(CodeStackImplicitDesignations.OpenIndex); 
+    idData.isStackObject         := TRUE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := objOfs; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := objOfs+4+4*LONGINT(ORD(T.IsOpenArrayType(elemType))); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofOpenIndexings      := 1; 
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+
+    CodeRExpr(exprType,expr,CO.GetCoercion(exprType,OB.cLongintTypeRepr),exprDcode); 
+    Cons.OpenIndexFirst(tmpOfs,idData.ofsOfLEN0,idData.acodeToObjHeader,exprDcode,displDcode);
+    CodeOpenIndexing(elemType,next,tmpOfs,idData.ofsOfLEN0+4,objOfs,(*isStackObj:=*)TRUE,displDcode,idData
+                    ,acode,tailDesignations);
+
+    SHOWCODE(CodeStackImplicitDesignations.OpenIndex,acode); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType),.. => {acode},designations? (len=OB.OPENARRAYLEN);
+ { TRACE(CodeStackImplicitDesignations.Open); 
+    idData.isStackObject         := TRUE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := objOfs; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := objOfs+4+4*LONGINT(ORD(T.IsOpenArrayType(elemType))); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+
+    Cons.Selector(objOfs,acodeIn,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeStackImplicitDesignations.Open,acode); 
+ };.
+
+ RecordTypeRepr,Guarding(entry,_,_,_,next:Designations,_,_,staticType,testType),.. => {acode},next ?
+ {TRACE(CodeStackImplicitDesignations.Guard); 
+    idData.isStackObject         := TRUE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := objOfs-4; 
+    idData.ofsOfObject           := objOfs; 
+
+    Cons.Selector(objOfs,acodeIn,acode); 
+    IF (ADR.TTableElemOfsInTDesc(staticType,testType,ofs) OR isWithed) & (ofs#0) THEN 
+       Cons.ConjureRegister(newReg); 
+       Cons.RecordGuard(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,-4,acode,newReg,acode); 
+    END;
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeStackImplicitDesignations.Guard,acode); 
+ };.
+
+ RecordTypeRepr,.. => {acode},designations ?{TRACE(CodeStackImplicitDesignations.RecordTypeRepr); 
+    idData.isStackObject         := TRUE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := objOfs-4; 
+    idData.ofsOfObject           := objOfs; 
+
+    Cons.Selector(objOfs,acodeIn,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeStackImplicitDesignations.RecordTypeRepr,acode); 
+ };.
+
+ .. => {acode},designations ?{ TRACE(CodeStackImplicitDesignations.Default); 
+    Cons.Selector(objOfs,acodeIn,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    SHOWCODE(CodeStackImplicitDesignations.Default,acode); 
+ };.
+
+/*END CodeStackImplicitDesignations */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeHeapImplicitDesignations ( type:TypeReprs , designations:Designations , REF idData:tImplicitDesignationData 
+                                       , objOfs:LONGINT , acodeIn:ACode => ACode , Designations )                          
+LOCAL{ VAR acode:ACode; dcode,exprDcode,displDcode:DCode; tailDesignations:Tree.tTree; }
+                                    
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)
+,Indexing(_,_,_,_,next:Designations,_,expr:Exprs(_,exprType,value),_,_,tmpOfs),.. 
+ => {acode},{tailDesignations}? (len=OB.OPENARRAYLEN);{ TRACE(CodeHeapImplicitDesignations.OpenIndex); 
+    idData.typeOfObject          := type;
+    idData.isStackObject         := FALSE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := -4; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := 4*ORD(T.IsOpenArrayType(elemType)); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofOpenIndexings      := 1; 
+    idData.nofUnindexedLens      := 0; 
+    idData.staticSize            := 0; 
+
+    CodeRExpr(exprType,expr,CO.GetCoercion(exprType,OB.cLongintTypeRepr),exprDcode); 
+    Cons.OpenIndexFirst(tmpOfs,idData.ofsOfLEN0,idData.acodeToObjHeader,exprDcode,displDcode);
+    CodeOpenIndexing(elemType,next,tmpOfs,idData.ofsOfLEN0+4,objOfs,(*isStackObj:=*)FALSE,displDcode,idData
+                    ,acode,tailDesignations);
+
+    SHOWCODE(CodeStackImplicitDesignations.OpenIndex,acode); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType),.. => {acode},designations? (len=OB.OPENARRAYLEN);
+ { TRACE(CodeHeapImplicitDesignations.Open); 
+    idData.typeOfObject          := type;
+    idData.isStackObject         := FALSE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := -4; 
+    idData.ofsOfObject           := objOfs; 
+    idData.ofsOfLEN0             := 4*ORD(T.IsOpenArrayType(elemType)); 
+    idData.ofsOfLastLEN          := idData.ofsOfLEN0;
+    idData.nofOpenIndexings      := 0; 
+    idData.nofUnindexedLens      := 0; 
+    idData.codeToOpenIndexedElem := NIL;
+    idData.staticSize            := 0; 
+
+    Cons.Selector(objOfs,acodeIn,acode);
+    SHOWCODE(CodeStackImplicitDesignations.Open,acode); 
+ };.
+
+ RecordTypeRepr,.. => {acode},designations ?{TRACE(CodeHeapImplicitDesignations.RecordTypeRepr); 
+    idData.typeOfObject          := type;
+    idData.isStackObject         := FALSE; 
+    idData.acodeToObjHeader      := acodeIn;
+    idData.ofsOfObjHeader        := -4; 
+    idData.ofsOfObject           := objOfs; 
+
+    Cons.Selector(objOfs,acodeIn,acode);
+    SHOWCODE(CodeStackImplicitDesignations.RecordTypeRepr,acode); 
+ };.
+
+ .. => {acode},designations ?{ TRACE(CodeHeapImplicitDesignations.Default); 
+    idData.typeOfObject          := type;
+    idData.isStackObject         := FALSE; 
+    idData.acodeToObjHeader      := NIL;
+    idData.ofsOfObjHeader        := 0; 
+    idData.ofsOfObject           := 0; 
+    idData.ofsOfLEN0             := 0;
+    idData.ofsOfLastLEN          := 0;
+    idData.nofOpenIndexings      := 0; 
+    idData.nofUnindexedLens      := 0; 
+    idData.codeToOpenIndexedElem := NIL;
+    idData.staticSize            := 0; 
+
+    Cons.Selector(objOfs,acodeIn,acode);
+    SHOWCODE(CodeStackImplicitDesignations.Default,acode); 
+ };.
+
+/*END CodeHeapImplicitDesignations */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenIndexing ( type:TypeReprs , designations:Designations , tmpOfs:LONGINT , lenOfs:LONGINT , objOfs:LONGINT 
+                           , isStackObj:BOOLEAN , displDcode:DCode , REF idData:tImplicitDesignationData => ACode , Designations )
+LOCAL{ VAR exprDcode,dcode:DCode; acode:ACode; oidxcode:Cons.OpenIndexedElem; tailDesignations:Tree.tTree; }
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)
+,Indexing(_,_,_,_,next:Designations,_,expr:Exprs(_,exprType,value),_,_,_),.. => {acode},{tailDesignations} ?(len=OB.OPENARRAYLEN);
+ { TRACE(CodeOpenIndexing.OpenIndex); 
+    INC(idData.nofOpenIndexings);
+    idData.ofsOfLastLEN:=lenOfs; 
+    CodeRExpr(exprType,expr,CO.GetCoercion(exprType,OB.cLongintTypeRepr),exprDcode); 
+    Cons.OpenIndex(tmpOfs,lenOfs,displDcode,exprDcode,displDcode);
+    CodeOpenIndexing(elemType,next,tmpOfs,lenOfs+4,objOfs,isStackObj,displDcode,idData,acode,tailDesignations);
+    SHOWCODE(CodeOpenIndexing.OpenIndex,displDcode); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,elemType),.. => {acode},{tailDesignations} ? (len=OB.OPENARRAYLEN);
+ { TRACE(CodeOpenIndexing.Open);        
+    idData.ofsOfLastLEN:=lenOfs; 
+    INC(idData.nofUnindexedLens); 
+    Cons.OpenIndexOpenBase(tmpOfs,lenOfs,displDcode,displDcode);
+    CodeOpenIndexing(elemType,designations,tmpOfs,lenOfs+4,objOfs,isStackObj,displDcode,idData,acode,tailDesignations);
+    SHOWCODE(CodeOpenIndexing.Open,displDcode); 
+ };.
+ 
+ TypeRepr(_,statSize,..),.. => {acode},{tailDesignations} ?{TRACE(CodeOpenIndexing.Base);
+    Cons.ConjureRegister(dcode); 
+    Cons.OpenIndexBase(tmpOfs,statSize,displDcode,dcode,oidxcode);
+    idData.codeToOpenIndexedElem:=oidxcode; 
+    idData.staticSize:=statSize; 
+    Cons.OpenIndexApplication(objOfs,isStackObj,oidxcode,acode);
+    tailDesignations:=designations;
+    SHOWCODE(CodeOpenIndexing.Base,displDcode); 
+ };.
+
+/*END CodeOpenIndexing */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeIndirectCall ( procType:TypeReprs , argcodeIn:ArgCode , acodeIn:ACode => ACode )
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ ProcedureTypeRepr(_,_,_,_,_,_,_,paramSpace),.. => {acode}?{ TRACE(CodeIndirectCall); 
+    Cons.ContentOf(l,acodeIn,dcode); 
+    Cons.IndirectCall(dcode,argcodeIn,acode); 
+    SHOWCODE(CodeIndirectCall,acode); 
+ };.   
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeIndirectCall: failed'); };.
+
+/*END CodeIndirectCall */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeBoundCall ( procEntry:Entries , aRcvEntry:Entries , rcvType:TypeReprs , curLevel:tLevel
+                        , bprocLab:tLabel , argcodeIn:ArgCode , acodeIn:ACode => ACode )
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ BoundProcEntry(_,_,_,_,_,_
+               ,Signature(_,VarEntry(_,_,_,_,_,_,fRcvType,..))
+               ,ProcedureTypeRepr(_,_,_,_,_,_,_,paramSpace)
+               ,_,_,_,_,_
+               ,procNum,_)
+,VarEntry(_,_,_,_,_,_,aRcvType,..)
+,.. => {acode}?{ TRACE(CodeBoundCall); 
+    CodeBoundCall1(/* formalType  := */ fRcvType
+                  ,/* actualType  := */ T.ElemTypeOfArrayType(aRcvType)
+                  ,/* actualEntry := */ aRcvEntry
+                  ,/* curLevel    := */ curLevel
+                  ,/* bprocLab    := */ bprocLab
+                  ,/* procNum     := */ procNum
+                  ,/* paramSpace  := */ paramSpace
+                  ,/* argcodeIn   := */ argcodeIn
+                  ,/* acodeIn     := */ acodeIn
+                  ,/* ACode       =: */ acode); 
+    SHOWCODE(CodeBoundCall,acode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeBoundCall: failed'); };.
+
+/*END CodeBoundCall */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeBoundCall1 ( formalType  : TypeReprs 
+                         , actualType  : TypeReprs
+                         , actualEntry : Entries
+                         , curLevel    : tLevel
+                         , bprocLab    : tLabel
+                         , procNum     : LONGINT 
+                         , paramSpace  : LONGINT
+                         , argcodeIn   : ArgCode
+                         , acodeIn     : ACode
+                         => ACode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; }
+
+ PointerTypeRepr,PointerTypeRepr,.. => {acode}?{ TRACE(CodeBoundCall1.Ptr_Ptr); 
+    Cons.AddressOf(acodeIn,dcode); 
+    Cons.BoundCall_FPtr_APtr(bprocLab,LIM.OffsetOfProcTab-4*procNum,dcode,argcodeIn,acode); 
+    SHOWCODE(CodeBoundCall1.Ptr_Ptr,acode); 
+ };.
+
+ RecordTypeRepr,PointerTypeRepr,.. => {acode}?{ TRACE(CodeBoundCall1.Rec_Ptr); 
+    Cons.AddressOf(acodeIn,dcode); 
+    Cons.BoundCall_FRec_APtr(bprocLab,LIM.OffsetOfProcTab-4*procNum,dcode,argcodeIn,acode);
+    SHOWCODE(CodeBoundCall1.Rec_Ptr,acode); 
+ };.
+
+ RecordTypeRepr,RecordTypeRepr,.. => {acode}?{ TRACE(CodeBoundCall1.Rec_Rec); 
+    Cons.AddressOf(acodeIn,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+
+    CodeTagFieldOfRecVar(actualEntry,actualType,curLevel,dcode); 
+    Cons.BoundCall_FRec_ARec(bprocLab,LIM.OffsetOfProcTab-4*procNum,dcode,argcode,acode); 
+    SHOWCODE(CodeBoundCall1.Rec_Rec,acode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeBoundCall1: failed'); };.
+
+/*END CodeBoundCall1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeTagFieldOfRecVar ( Entries , type:TypeReprs , curLevel:tLevel => DCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ VarEntry(_,_,_,_,level,_,RecordTypeRepr,_,_,parMode,address,_,_,_),..
+ => {dcode} ?(parMode=OB.REFPAR);{ TRACE(CodeTagFieldOfRecVar.VarPar); 
+    IF level=curLevel THEN
+       Cons.LocalVariable(address-4,Idents.NoIdent,acode); 
+    ELSE
+       Cons.LocalVariable(-4*(1+level-OB.MODULELEVEL),Idents.NoIdent,acode); 
+       Cons.ContentOf(l,acode,dcode); 
+       Cons.PointerFrom(dcode,acode); 
+       Cons.Selector(address-4,acode,acode); 
+    END;
+    Cons.ContentOf(l,acode,dcode); 
+    SHOWCODE(CodeTagFieldOfRecVar.VarPar,dcode); 
+ };.
+
+ _,RecordTypeRepr,_ => {dcode} ?{ TRACE(CodeTagFieldOfRecVar.ConstType); 
+    Cons.GlobalVariable(LAB.AppS(T.LabelOfTypeRepr(type),'$D'),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    SHOWCODE(CodeTagFieldOfRecVar.ConstType,dcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeTagFieldOfRecVar: failed'); };.
+
+/*END CodeTagFieldOfRecVar */

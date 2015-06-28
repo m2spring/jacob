@@ -1,0 +1,242 @@
+IMPLEMENTATION MODULE ASMOP;
+VAR oper:tOper;
+BEGIN (* ASMOP *)
+ FOR oper:=MIN(tOper) TO MAX(tOper) DO 
+  InvDirTab[oper]:=oper; InvBranchTab[oper]:=oper; IsRotateOper[oper]:=FALSE; OperStrTab[oper]:='oper?'; 
+ END; (* FOR *)
+ 
+(*$*)
+ InvDirTab[rcl ] := rcr ; IsRotateOper[rcl] := TRUE; 
+ InvDirTab[rcr ] := rcl ; IsRotateOper[rcr] := TRUE; 
+ InvDirTab[rol ] := ror ; IsRotateOper[rol] := TRUE; 
+ InvDirTab[ror ] := rol ; IsRotateOper[ror] := TRUE; 
+ InvDirTab[sal ] := sar ; 
+ InvDirTab[sar ] := sal ; 
+ InvDirTab[shl ] := shr ; 
+ InvDirTab[shr ] := shl ; 
+ InvDirTab[shld] := shrd; 
+ InvDirTab[shrd] := shld; 
+
+(*$*)
+ InvBranchTab[ja ] := jna ; InvBranchTab[jna ] := ja ;
+ InvBranchTab[jae] := jnae; InvBranchTab[jnae] := jae;
+ InvBranchTab[jb ] := jnb ; InvBranchTab[jnb ] := jb ;
+ InvBranchTab[jbe] := jnbe; InvBranchTab[jnbe] := jbe;
+ InvBranchTab[jc ] := jnc ; InvBranchTab[jnc ] := jc ;
+ InvBranchTab[je ] := jne ; InvBranchTab[jne ] := je ;
+ InvBranchTab[jg ] := jng ; InvBranchTab[jng ] := jg ;
+ InvBranchTab[jge] := jnge; InvBranchTab[jnge] := jge;
+ InvBranchTab[jl ] := jnl ; InvBranchTab[jnl ] := jl ;
+ InvBranchTab[jle] := jnle; InvBranchTab[jnle] := jle;
+ InvBranchTab[jo ] := jno ; InvBranchTab[jno ] := jo ;
+ InvBranchTab[jp ] := jnp ; InvBranchTab[jnp ] := jp ;
+ InvBranchTab[js ] := jns ; InvBranchTab[jns ] := js ;
+ InvBranchTab[jz ] := jnz ; InvBranchTab[jnz ] := jz ;
+ 
+(*$*)
+ OperStrTab[asciz  ] := '.asciz' ; 
+ OperStrTab[byte   ] := '.byte'  ; 
+ OperStrTab[long   ] := '.long'  ; 
+ OperStrTab[comm   ] := '.comm'  ; 
+ OperStrTab[align  ] := '.align' ; 
+ OperStrTab[data   ] := '.data'  ; 
+ OperStrTab[text   ] := '.text'  ; 
+ OperStrTab[globl  ] := '.globl' ; 
+ OperStrTab[nop    ] := 'nop'    ;
+ OperStrTab[add    ] := 'add'    ;
+ OperStrTab[and    ] := 'and'    ;
+ OperStrTab[bound  ] := 'bound'  ;
+ OperStrTab[bt     ] := 'bt'     ;
+ OperStrTab[btr    ] := 'btr'    ;
+ OperStrTab[bts    ] := 'bts'    ;
+ OperStrTab[call   ] := 'call'   ;
+ OperStrTab[cbw    ] := 'cbw'    ;
+ OperStrTab[cdq    ] := 'cdq'    ;
+ OperStrTab[cld    ] := 'cld'    ;
+ OperStrTab[cwd    ] := 'cwd'    ;
+ OperStrTab[cwde   ] := 'cwde'   ;
+ OperStrTab[cmp    ] := 'cmp'    ;
+ OperStrTab[cmpsb  ] := 'cmpsb'  ;
+ OperStrTab[dec    ] := 'dec'    ;
+ OperStrTab[enter  ] := 'enter'  ;
+ OperStrTab[imul   ] := 'imul'   ;
+ OperStrTab[idiv   ] := 'idiv'   ;
+ OperStrTab[inc    ] := 'inc'    ;
+ OperStrTab[jmp    ] := 'jmp'    ;
+ OperStrTab[jcxz   ] := 'jcxz'   ;
+ OperStrTab[jecxz  ] := 'jecxz'  ;
+ OperStrTab[ja     ] := 'ja'     ;
+ OperStrTab[jae    ] := 'jae'    ;
+ OperStrTab[jb     ] := 'jb'     ;
+ OperStrTab[jbe    ] := 'jbe'    ;
+ OperStrTab[jc     ] := 'jc'     ;
+ OperStrTab[je     ] := 'je'     ;
+ OperStrTab[jg     ] := 'jg'     ;
+ OperStrTab[jge    ] := 'jge'    ;
+ OperStrTab[jl     ] := 'jl'     ;
+ OperStrTab[jle    ] := 'jle'    ;
+ OperStrTab[jo     ] := 'jo'     ;
+ OperStrTab[jp     ] := 'jp'     ;
+ OperStrTab[js     ] := 'js'     ;
+ OperStrTab[jz     ] := 'jz'     ;
+ OperStrTab[jna    ] := 'jna'    ;
+ OperStrTab[jnae   ] := 'jnae'   ;
+ OperStrTab[jnb    ] := 'jnb'    ;
+ OperStrTab[jnbe   ] := 'jnbe'   ;
+ OperStrTab[jnc    ] := 'jnc'    ;
+ OperStrTab[jne    ] := 'jne'    ;
+ OperStrTab[jng    ] := 'jng'    ;
+ OperStrTab[jnge   ] := 'jnge'   ;
+ OperStrTab[jnl    ] := 'jnl'    ;
+ OperStrTab[jnle   ] := 'jnle'   ;
+ OperStrTab[jno    ] := 'jno'    ;
+ OperStrTab[jnp    ] := 'jnp'    ;
+ OperStrTab[jns    ] := 'jns'    ;
+ OperStrTab[jnz    ] := 'jnz'    ;
+ OperStrTab[seta   ] := 'seta'   ;
+ OperStrTab[setae  ] := 'setae'  ;
+ OperStrTab[setb   ] := 'setb'   ;
+ OperStrTab[setbe  ] := 'setbe'  ;
+ OperStrTab[setc   ] := 'setc'   ;
+ OperStrTab[sete   ] := 'sete'   ;
+ OperStrTab[setg   ] := 'setg'   ;
+ OperStrTab[setge  ] := 'setge'  ;
+ OperStrTab[setl   ] := 'setl'   ;
+ OperStrTab[setle  ] := 'setle'  ;
+ OperStrTab[seto   ] := 'seto'   ;
+ OperStrTab[setp   ] := 'setp'   ;
+ OperStrTab[sets   ] := 'sets'   ;
+ OperStrTab[setz   ] := 'setz'   ;
+ OperStrTab[setna  ] := 'setna'  ;
+ OperStrTab[setnae ] := 'setnae' ; 
+ OperStrTab[setnb  ] := 'setnb'  ;
+ OperStrTab[setnbe ] := 'setnbe' ; 
+ OperStrTab[setnc  ] := 'setnc'  ;
+ OperStrTab[setne  ] := 'setne'  ;
+ OperStrTab[setng  ] := 'setng'  ;
+ OperStrTab[setnge ] := 'setnge' ; 
+ OperStrTab[setnl  ] := 'setnl'  ;
+ OperStrTab[setnle ] := 'setnle' ; 
+ OperStrTab[setno  ] := 'setno'  ;
+ OperStrTab[setnp  ] := 'setnp'  ;
+ OperStrTab[setns  ] := 'setns'  ;
+ OperStrTab[setnz  ] := 'setnz'  ;
+ OperStrTab[lea    ] := 'lea'    ; 
+ OperStrTab[leave  ] := 'leave'  ; 
+ OperStrTab[lods   ] := 'lods'   ; 
+ OperStrTab[loop   ] := 'loop'   ; 
+ OperStrTab[loopnz ] := 'loopnz' ; 
+ OperStrTab[mov    ] := 'mov'    ; 
+ OperStrTab[movs   ] := 'movs'   ; 
+ OperStrTab[movsbw ] := 'movsbw' ; 
+ OperStrTab[movsbl ] := 'movsbl' ; 
+ OperStrTab[movswl ] := 'movswl' ; 
+ OperStrTab[movzbl ] := 'movzbl' ; 
+ OperStrTab[movzbw ] := 'movzbw' ; 
+ OperStrTab[movzwl ] := 'movzwl' ; 
+ OperStrTab[neg    ] := 'neg'    ; 
+ OperStrTab[not    ] := 'not'    ; 
+ OperStrTab[or     ] := 'or'     ; 
+ OperStrTab[popl   ] := 'popl'   ; 
+ OperStrTab[pushl  ] := 'pushl'  ; 
+ OperStrTab[popf   ] := 'popf'   ; 
+ OperStrTab[pushf  ] := 'pushf'  ; 
+ OperStrTab[ret    ] := 'ret'    ; 
+ OperStrTab[repz   ] := 'repz'   ; 
+ OperStrTab[sahf   ] := 'sahf'   ; 
+ OperStrTab[stos   ] := 'stos'   ; 
+ OperStrTab[sub    ] := 'sub'    ; 
+ OperStrTab[test   ] := 'test'   ; 
+ OperStrTab[xor    ] := 'xor'    ; 
+ OperStrTab[xchg   ] := 'xchg'   ; 
+
+ OperStrTab[rcl    ] := 'rcl'    ; 
+ OperStrTab[rcr    ] := 'rcr'    ; 
+ OperStrTab[rol    ] := 'rol'    ; 
+ OperStrTab[ror    ] := 'ror'    ; 
+ OperStrTab[sal    ] := 'sal'    ; 
+ OperStrTab[sar    ] := 'sar'    ; 
+ OperStrTab[shl    ] := 'shl'    ; 
+ OperStrTab[shr    ] := 'shr'    ; 
+ OperStrTab[shld   ] := 'shld'   ; 
+ OperStrTab[shrd   ] := 'shrd'   ; 
+                   
+ OperStrTab[fstsw  ] := 'fstsw'  ; 
+ OperStrTab[fdecstp] := 'fdecstp'; 
+ OperStrTab[fincstp] := 'fincstp'; 
+ OperStrTab[fxch   ] := 'fxch'   ; 
+ OperStrTab[fld    ] := 'fld'    ; 
+ OperStrTab[fild   ] := 'fild'   ; 
+ OperStrTab[fst    ] := 'fst'    ; OperStrTab[fstp  ] := 'fstp'   ; 
+ OperStrTab[fist   ] := 'fist'   ; OperStrTab[fistp ] := 'fistp'  ; 
+ OperStrTab[fadd   ] := 'fadd'   ; OperStrTab[faddp ] := 'faddp'  ; 
+ OperStrTab[fmul   ] := 'fmul'   ; OperStrTab[fmulp ] := 'fmulp'  ; 
+ OperStrTab[fdiv   ] := 'fdiv'   ; OperStrTab[fdivp ] := 'fdivp'  ; 
+ OperStrTab[fdivr  ] := 'fdivr'  ; OperStrTab[fdivrp] := 'fdivrp' ; 
+ OperStrTab[fsub   ] := 'fsub'   ; OperStrTab[fsubp ] := 'fsubp'  ; 
+ OperStrTab[fsubr  ] := 'fsubr'  ; OperStrTab[fsubrp] := 'fsubrp' ; 
+ OperStrTab[fiadd  ] := 'fiadd'  ; 
+ OperStrTab[fimul  ] := 'fimul'  ; 
+ OperStrTab[ficomp ] := 'ficomp' ; 
+ OperStrTab[fisub  ] := 'fisub'  ; 
+ OperStrTab[fisubr ] := 'fisubr' ; 
+ OperStrTab[fidiv  ] := 'fidiv'  ; 
+ OperStrTab[fidivr ] := 'fidivr' ; 
+ OperStrTab[fcomp  ] := 'fcomp'  ; 
+ OperStrTab[fcompp ] := 'fcompp' ; 
+ OperStrTab[fabs   ] := 'fabs'   ; 
+ OperStrTab[fchs   ] := 'fchs'   ; 
+ 
+ FOR oper:=MIN(FOPRange) TO MAX(FOPRange) DO
+  PopFloatTab   [oper] := oper; 
+  UnpopFloatTab [oper] := oper; 
+  RevFloatTab   [oper] := oper; 
+  IntFloatTab   [oper] := oper; 
+  FloatChangeTab[oper] := 0; 
+  FloatDyOpTab  [oper] := FALSE; 
+ END; (* FOR *)
+
+(*$*)
+ PopFloatTab[fst  ] := fstp  ; UnpopFloatTab[fstp  ] := fst  ; 
+ PopFloatTab[fist ] := fistp ; UnpopFloatTab[fistp ] := fist ; 
+ PopFloatTab[fadd ] := faddp ; UnpopFloatTab[faddp ] := fadd ; 
+ PopFloatTab[fmul ] := fmulp ; UnpopFloatTab[fmulp ] := fmul ; 
+ PopFloatTab[fdiv ] := fdivp ; UnpopFloatTab[fdivp ] := fdiv ; 
+ PopFloatTab[fdivr] := fdivrp; UnpopFloatTab[fdivrp] := fdivr; 
+ PopFloatTab[fsub ] := fsubp ; UnpopFloatTab[fsubp ] := fsub ; 
+ PopFloatTab[fsubr] := fsubrp; UnpopFloatTab[fsubrp] := fsubr; 
+ PopFloatTab[fcomp] := fcompp; UnpopFloatTab[fcompp] := fcomp; 
+ 
+(*$*)
+ RevFloatTab[fdiv  ] := fdivr ; RevFloatTab[fdivp ] := fdivrp; 
+ RevFloatTab[fdivr ] := fdiv  ; RevFloatTab[fdivrp] := fdivp ; 
+ RevFloatTab[fsub  ] := fsubr ; RevFloatTab[fsubp ] := fsubrp; 
+ RevFloatTab[fsubr ] := fsub  ; RevFloatTab[fsubrp] := fsubp ; 
+ RevFloatTab[fisub ] := fisubr; 
+ RevFloatTab[fisubr] := fisub ; 
+ RevFloatTab[fidiv ] := fidivr; 
+ RevFloatTab[fidivr] := fidiv ; 
+
+(*$*)
+ IntFloatTab[fadd ] := fiadd ; 
+ IntFloatTab[fmul ] := fimul ; 
+ IntFloatTab[fcomp] := ficomp; 
+ IntFloatTab[fsub ] := fisub ; 
+ IntFloatTab[fsubr] := fisubr; 
+ IntFloatTab[fdiv ] := fidiv ; 
+ IntFloatTab[fdivr] := fidivr; 
+
+(*$*)
+ FloatChangeTab[fld   ] :=  1;
+ FloatChangeTab[fild  ] :=  1; 
+ FloatChangeTab[fstp  ] := -1;
+ FloatChangeTab[fistp ] := -1;
+ FloatChangeTab[faddp ] := -1; FloatDyOpTab[faddp ] := TRUE; 
+ FloatChangeTab[fmulp ] := -1; FloatDyOpTab[fmulp ] := TRUE; 
+ FloatChangeTab[fdivp ] := -1; FloatDyOpTab[fdivp ] := TRUE; 
+ FloatChangeTab[fdivrp] := -1; FloatDyOpTab[fdivrp] := TRUE; 
+ FloatChangeTab[fsubp ] := -1; FloatDyOpTab[fsubp ] := TRUE; 
+ FloatChangeTab[fsubrp] := -1; FloatDyOpTab[fsubrp] := TRUE; 
+ FloatChangeTab[fcomp ] := -1; FloatDyOpTab[fcomp ] := TRUE; 
+ FloatChangeTab[fcompp] := -2; FloatDyOpTab[fcompp] := TRUE; 
+END ASMOP.

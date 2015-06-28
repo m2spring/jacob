@@ -1,0 +1,25 @@
+Compiling etpr001t
+'PROCEDURE' proc1
+-------------------------------------------------------------------------------
+a   REFPARAM  INTEGER
+b   VALPARAM  CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' proc2
+-------------------------------------------------------------------------------
+p   VALPARAM  tProc1
+l   REFPARAM  BOOLEAN
+-------------------------------------------------------------------------------
+
+'MODULE' etpr001t
+-------------------------------------------------------------------------------
+tResultType   TYPE      SHORTINT
+tProc1        TYPE      (VAR x:INTEGER; y:CHAR) : SHORTINT
+tProc2        TYPE      (x:tProc1; VAR y:BOOLEAN)
+p1            VAR       tProc1
+p2            VAR       tProc2
+b             VAR       BOOLEAN
+proc1         PROCEDURE (VAR a:INTEGER; b:CHAR) : SHORTINT
+proc2         PROCEDURE (p:tProc1; VAR l:BOOLEAN)
+-------------------------------------------------------------------------------
+

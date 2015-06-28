@@ -1,0 +1,4 @@
+MODULE m22;
+IMPORT s;
+BEGIN (* m22 *)
+END m22.

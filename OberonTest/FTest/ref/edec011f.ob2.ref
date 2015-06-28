@@ -1,0 +1,11 @@
+Compiling edec011f
+'MODULE' edec011f
+-------------------------------------------------------------------------------
+T   TYPE      ARRAY 2 OF POINTER TO ?
+v   VAR       POINTER TO ?
+M   TYPE      RECORD
+              END
+-------------------------------------------------------------------------------
+
+edec011f.ob2: 8,33: Identifier not declared
+edec011f.ob2: 12,22: Identifier not declared

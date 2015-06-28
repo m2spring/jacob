@@ -1,0 +1,56 @@
+MODULE tstmocka;
+ 
+IMPORT
+   O, InOut, Tree, SYSTEM, Storage;
+ 
+PROCEDURE COPY(VAR Dst : ARRAY OF SYSTEM.BYTE; VAR Src : ARRAY OF SYSTEM.BYTE);
+VAR
+   i : CARDINAL;
+BEGIN (* COPY *)
+ i:=HIGH(Dst);
+ IF HIGH(Src)<i
+    THEN i:=HIGH(Src);
+ END; (* IF *)
+ 
+ INC(i);
+ WHILE i>0 DO
+  DEC(i);
+  Dst[i]:=Src[i];
+ END; (* WHILE *)
+END COPY;
+ 
+PROCEDURE DEBUGMARK(c : CHAR);
+BEGIN (* DEBUGMARK *)
+ InOut.Write(c);
+ InOut.WriteLn;
+END DEBUGMARK;
+ 
+VAR
+   v : Tree.yLongrealConst;
+   t : Tree.tTree;
+BEGIN
+                              DEBUGMARK('A');
+ v.Longreal:=0.0;
+                              DEBUGMARK('B');
+ 
+ t := Tree.yyPoolFreePtr;
+O.Addr(t); O.Ln;
+                              DEBUGMARK('C');
+ IF SYSTEM.ADDRESS (t) >= Tree.yyPoolMaxPtr
+    THEN
+                              DEBUGMARK('D');
+         t := Tree.yyAlloc ();
+                              DEBUGMARK('E');
+ END;
+                              DEBUGMARK('F');
+ 
+ INC (Tree.yyPoolFreePtr,  Tree.yyNodeSize [Tree.LongrealConst]);
+(*
+ Storage.ALLOCATE(t,SYSTEM.TSIZE(Tree.yLongrealConst));
+*)
+                              DEBUGMARK('G');
+ COPY(t^.LongrealConst.Longreal,v.Longreal);
+                              DEBUGMARK('H');
+ t^.LongrealConst.Longreal:=v.Longreal;
+                              DEBUGMARK('I');
+END tstmocka.

@@ -1,0 +1,230 @@
+/********************************************************************************************************************************/
+/*** SI.pum / Signature related functions & Predicates                                                                        ***/
+/********************************************************************************************************************************/
+TRAFO SI TREE OB PUBLIC
+
+ /*** Primitive functions ***/
+
+ IsExistingSignature                                        /* Tests whether a signature is not empty                          */
+ IsEmptySignature                                           /* Tests whether a signature is empty                              */
+
+ /*** Selector functions ***/
+
+ SignatureOfProcType                                        /* returns the signature of a procedure type                        */
+ ModeOfSignatureParam                                       /* returns the mode of the first parameter of a signature           */
+ GetModesOfSignatureParam
+ TypeOfSignatureParam                                       /* returns the type of the first parameter of a signature           */
+ NextSignature                                              /* returns the argument signature truncated off the first parameter */
+
+ /*** Context condition related predicates ***/
+
+ AreMatchingSignatures
+ IsCompatibleParam
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT  Tree      ,
+                POS       ;
+
+        TYPE    tParMode  = OB.tParMode;
+                tAddress  = OB.tAddress;
+                tPosition = POS.tPosition; }
+
+GLOBAL{ IMPORT  OT        ,
+                T         ,
+                V         ; }
+
+/********************************************************************************************************************************/
+PREDICATE IsExistingSignature ( SignatureRepr )
+ ErrorSignature   ?.
+ GenericSignature ?.
+ Signature        ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsEmptySignature ( SignatureRepr )
+ ErrorSignature   ?.
+ GenericSignature ?.
+ mtSignature      ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION SignatureOfProcType ( TypeReprs ) SignatureRepr
+
+ ProcedureTypeRepr(_,_,_,_,_,signature,..) RETURN signature            ?.
+ _                                         RETURN {OB.cErrorSignature} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ModeOfSignatureParam ( signature : SignatureRepr ) tParMode
+
+ Signature(_,VarEntry
+             (/* prevEntry     =: */ _
+             ,/* moduleIdent   =: */ _
+             ,/* ident         =: */ _
+             ,/* exportMode    =: */ _
+             ,/* level         =: */ _
+             ,/* declStatus    =: */ _
+             ,/* typeRepr      =: */ _
+             ,/* isParam       =: */ _
+             ,/* isReceiverPar =: */ _
+             ,/* parMode       =: */ ParMode
+             ,/* address       =: */ ..))    RETURN ParMode     ?.
+ _                                           RETURN {OB.VALPAR} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE GetModesOfSignatureParam ( SignatureRepr => tParMode , tParMode , tAddress )
+
+ Signature(_,VarEntry
+             (/* prevEntry     =: */ _
+             ,/* moduleIdent   =: */ _
+             ,/* ident         =: */ _
+             ,/* exportMode    =: */ _
+             ,/* level         =: */ _
+             ,/* declStatus    =: */ _
+             ,/* typeRepr      =: */ _
+             ,/* isParam       =: */ _
+             ,/* isReceiverPar =: */ _
+             ,/* parMode       =: */ ParMode
+             ,/* address       =: */ Address
+             ,/* refMode       =: */ RefMode
+             ,/* isWithed      =: */ ..)) => ParMode     , RefMode     , Address ?.
+ _                                        => {OB.VALPAR} , {OB.VALPAR} , 0       ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION TypeOfSignatureParam ( signature : SignatureRepr ) TypeReprs
+
+ Signature(_,VarEntry
+             (/* prevEntry     =: */ _
+             ,/* moduleIdent   =: */ _
+             ,/* ident         =: */ _
+             ,/* exportMode    =: */ _
+             ,/* level         =: */ _
+             ,/* declStatus    =: */ _
+             ,/* typeRepr      =: */ type
+             ,/* isParam       =: */ ..)) RETURN type                ?.
+ _                                        RETURN {OB.cErrorTypeRepr} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION NextSignature ( signature : SignatureRepr ) SignatureRepr
+
+ Signature(next,..) RETURN next                 ?.
+ _                  RETURN {OB.cErrorSignature} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE AreMatchingSignatures ( Sa:SignatureRepr , Sb:SignatureRepr)                                  /* !MatchingFormalParms */
+
+ /* Sa =: */ ErrorSignature
+,/* Sb =: */ _                                      ?.
+
+ /* Sa =: */ _
+,/* Sb =: */ ErrorSignature                         ?.
+
+ /* Sa =: */ mtSignature
+,/* Sb =: */ mtSignature                            ?.
+
+ /* Sa =: */ Signature
+             (/* next     =: */ next1:SignatureRepr
+             ,/* VarEntry =: */ VarEntry
+                                (/* prevEntry     =: */ _
+                                ,/* moduleIdent   =: */ _
+                                ,/* ident         =: */ _
+                                ,/* exportMode    =: */ _
+                                ,/* level         =: */ _
+                                ,/* declStatus    =: */ _
+                                ,/* typeRepr      =: */ type1:TypeReprs
+                                ,/* isParam       =: */ _
+                                ,/* isReceiverPar =: */ _
+                                ,/* parMode       =: */ parMode1
+                                ,/* address       =: */ ..)
+             )
+,/* Sb =: */ Signature
+             (/* next     =: */ next2:SignatureRepr
+             ,/* VarEntry =: */ VarEntry
+                                (/* prevEntry     =: */ _
+                                ,/* moduleIdent   =: */ _
+                                ,/* ident         =: */ _
+                                ,/* exportMode    =: */ _
+                                ,/* level         =: */ _
+                                ,/* declStatus    =: */ _
+                                ,/* typeRepr      =: */ type2:TypeReprs
+                                ,/* isParam       =: */ _
+                                ,/* isReceiverPar =: */ _
+                                ,/* parMode       =: */ parMode2
+                                ,/* address       =: */ ..)    
+             )                                      ? {RETURN T.AreEqualTypes(type1,type2)
+                                                            & (parMode1=parMode2)
+                                                            & AreMatchingSignatures(next1,next2);
+                                                      };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsCompatibleParam                                                                                 /* !CompatibleParam */
+                            ( ParMode : tParMode                            /* Kind of the formal parameter (value or variable) */
+                            , Tf      : TypeReprs                           /* Type of the formal parameter                     */
+                            , Ta      : TypeReprs                           /* Type of the actual parameter                     */
+                            , Va      : ValueReprs)                         /* Constant value of the actual parameter           */
+
+ /* ParMode =: */ _
+,/* Tf      =: */ _
+,/* Ta      =: */ ErrorTypeRepr
+,/* Va      =: */ _                                         ?.
+
+ /* ParMode =: */ _
+,/* Tf      =: */ ErrorTypeRepr
+,/* Ta      =: */ _
+,/* Va      =: */ _                                         ? .
+
+ /* ParMode =: */ OB.REFPAR                                                                             /* !OpenByteArrayVarPar */
+,/* Tf      =: */ ArrayTypeRepr
+                  (/* entry          =: */ _
+                  ,/* size           =: */ _
+                  ,/* typeBlocklists =: */ _
+                  ,/* isInTDescList  =: */ _
+                  ,/* label          =: */ _
+                  ,/* len            =: */ {OB.OPENARRAYLEN}
+                  ,/* elemTypeRepr   =: */ ByteTypeRepr)
+,/* Ta      =: */ ..                                        ?.
+
+ /* ParMode =: */ {OB.REFPAR}                                                                                    /* !ByteVarPar */
+,/* Tf      =: */ ByteTypeRepr
+,/* Ta      =: */ CharTypeRepr
+,/* Va      =: */ _                                         ?.
+
+ /* ParMode =: */ {OB.REFPAR}                                                                                    /* !ByteVarPar */
+,/* Tf      =: */ ByteTypeRepr
+,/* Ta      =: */ CharStringTypeRepr
+,/* Va      =: */ _                                         ?.
+
+ /* ParMode =: */ {OB.REFPAR}                                                                                    /* !ByteVarPar */
+,/* Tf      =: */ ByteTypeRepr
+,/* Ta      =: */ ShortintTypeRepr
+,/* Va      =: */ _                                         ?.
+
+ /* ParMode =: */ {OB.REFPAR}                                                                                     /* !PtrVarPar */
+,/* Tf      =: */ PtrTypeRepr
+,/* Ta      =: */ PointerTypeRepr
+,/* Va      =: */ _                                         ?.
+
+ /* ParMode =: */ _
+,/* Tf      =: */ ArrayTypeRepr
+                  (/* entry          =: */ _
+                  ,/* size           =: */ _
+                  ,/* typeBlocklists =: */ _
+                  ,/* isInTDescList  =: */ _
+                  ,/* label          =: */ _
+                  ,/* len            =: */ {OB.OPENARRAYLEN}
+                  ,/* elemTypeRepr   =: */ _)
+,/* Ta      =: */ ..                                        ? { RETURN T.IsArrayCompatible(Tf,Ta) };.
+
+ /* ParMode =: */ {OB.VALPAR}
+,/* Tf      =: */ ..                                        ? { RETURN T.IsAssignmentCompatible(Tf,Ta,Va) };.
+
+ /* ParMode =: */ {OB.REFPAR}
+,/* Tf      =: */ RecordTypeRepr
+,/* Ta      =: */ RecordTypeRepr
+,/* Va      =: */ _                                         ? { RETURN T.IsExtensionOf(Ta,Tf) };.
+
+ /* ParMode =: */ {OB.REFPAR}
+,/* Tf      =: */ ..                                        ? { RETURN T.AreSameTypes(Tf,Ta) };.
+
+/********************************************************************************************************************************/
+/*** END SI.pum                                                                                                               ***/
+/********************************************************************************************************************************/
+
+

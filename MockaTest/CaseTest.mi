@@ -1,0 +1,10 @@
+MODULE CaseTest;
+VAR i:LONGINT; 
+BEGIN (* CaseTest *)
+ CASE i OF
+ |0,10,20: i:=1; 
+ |100,101,110,120: i:=2; 
+ |1000,1001,1010,1020: i:=2; 
+ |2047: i:=3; 
+ END; (* CASE *)
+END CaseTest.

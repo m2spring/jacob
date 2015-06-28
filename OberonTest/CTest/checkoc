@@ -1,0 +1,37 @@
+#!/bin/sh
+
+echo Checking Back-End...
+
+PATH=.:$PATH
+export PATH
+
+dir=`pwd`
+rm $dir/alldiffs 2>/dev/null
+
+for i in `find . -type d`
+do
+  if test -f $i/command
+    then (
+           cd $i
+           echo "Processing `basename $i`..."
+           sh ./command
+           $dir/ref_compare
+         )
+  fi
+done
+
+for i in `find . -type d`
+do
+  if test -f $i/differences
+    then cat $i/differences >>$dir/alldiffs
+  fi
+done
+
+echo 
+
+if [ -f $dir/alldiffs ]
+   then echo -e Fehler im Back-End"\a"
+        echo "Fehlerdatei: $dir/alldiffs"
+   else echo oc ist in Ordnung!
+fi
+

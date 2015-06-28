@@ -1,0 +1,9 @@
+Compiling etpo003t
+'MODULE' etpo003t
+-------------------------------------------------------------------------------
+t1Ptr   TYPE      POINTER TO ARRAY 2 OF CHAR
+t2Ptr   TYPE      POINTER TO ARRAY OF ARRAY OF ARRAY OF INTEGER
+p1      VAR       t1Ptr
+p2      VAR       t2Ptr
+-------------------------------------------------------------------------------
+

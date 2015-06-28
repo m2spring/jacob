@@ -1,0 +1,24 @@
+#!/bin/sh
+
+if [ "$1" != "of" -a "$1" != "oc" -a "$1" != "all" ] 
+   then echo "Usage: check [ of | oc | all ]"
+        echo "       of : Check Front-End only"
+        echo "       oc : Check Back-End only"
+        echo "      all : Check both"
+        exit
+fi
+
+dir=`dirname $0`
+
+#declare -x OC=$dir/bin/oc
+
+if [ "$1" = "of" -o "$1" = "all" ]
+   then cd $dir/FTest
+        ./checkof
+fi
+
+if [ "$1" = "oc" -o "$1" = "all" ]
+   then cd $dir/CTest
+        ./checkoc
+fi
+

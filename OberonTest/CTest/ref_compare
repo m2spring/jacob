@@ -1,0 +1,24 @@
+#
+dir=`pwd`
+for i in *.ob2
+  do
+    if [ -f $dir/ref/$i.ref ]
+       then echo -n "Checking $i...   "
+            if cmp -s $dir/out/$i.out $dir/ref/$i.ref
+               then rm $dir/out/$i.out
+                    echo -ne "\r"
+               else echo DIFFERENT!!!
+                    echo "*********************** $i ***********************" >>$dir/differences
+                    cp $i $dir/out/
+                    diff $dir/ref/$i.ref $dir/out/$i.out >>$dir/differences
+            fi
+       else name=`basename $i .ob2_errors`
+            if [ $name.ob2_errors != $i ]
+              then echo "*********************** $i ***********************" >>$dir/differences
+                   echo $i hat keine Referenz-Datei >>$dir/differences
+            fi
+    fi
+  done
+
+echo -ne "\r                                            \r"
+

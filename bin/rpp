@@ -1,0 +1,1 @@
+exec /usr/cctb/lib/rpp/rpp /usr/cctb/lib/rpp/Scanner.Tab $*

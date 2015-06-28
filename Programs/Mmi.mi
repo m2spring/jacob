@@ -1,0 +1,12 @@
+MODULE Mmi;
+IMPORT SYSTEM;
+VAR p:RECORD
+       CASE :CARDINAL OF
+       |0: pt:SYSTEM.ADDRESS;
+       |1: pr:PROCEDURE;
+       END; (* CASE *)
+      END;
+BEGIN (* Mmi *)
+ p.pt:=NIL; 
+ p.pr:=NIL; 
+END Mmi.

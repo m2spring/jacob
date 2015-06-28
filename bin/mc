@@ -1,0 +1,22 @@
+#!/bin/sh
+
+MOCKADIR=${MOCKADIR-/usr/mocka}
+export MOCKADIR
+
+COMPILER=${MCOMP-$MOCKADIR/sys/Mc}
+#LINK=${MCLINK-$MOCKADIR/sys/link2}
+LINK=bin/link2
+EDIT=${MCEDIT-$MOCKADIR/sys/edit}
+LIST=${MCLIST-$MOCKADIR/sys/merge}
+#ASM=${MCASM-$MOCKADIR/sys/asm2}
+ASM=bin/asm2
+SYSLIB=${MCSYSLIB-$MOCKADIR/lib}
+
+$COMPILER               \
+  -link $LINK           \
+  -edit $EDIT           \
+  -list $LIST           \
+  -asm  $ASM            \
+  -syslib $SYSLIB       \
+  -d /usr/cctb/reuse/src        \
+  -noblip -noindex -norange -noS -nog -nogc -info -elf $*

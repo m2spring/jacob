@@ -1,0 +1,707 @@
+/********************************************************************************************************************************/
+/*** oberon.ast / Abstract syntax tree specification                                                                          ***/
+/********************************************************************************************************************************/
+MODULE SyntaxTree TREE
+
+IMPORT{ IMPORT ERR            ,
+               Idents         ,
+               LAB            ,
+               OB             ,
+               OT             ,
+               POS            ,
+               Strings        ; }
+
+EXPORT{ TYPE   tIdent         = Idents.tIdent  ;                            (* These types are re-declared due to the fact that *)
+               tParMode       = OB.tParMode    ;                            (* qualidents are illegal in an ast specification.  *)
+               tExportMode    = OB.tExportMode ;
+               oCHAR          = OT.oCHAR       ;
+               oSTRING        = OT.oSTRING     ;
+               oLONGINT       = OT.oLONGINT    ;
+               oREAL          = OT.oREAL       ;
+               oLONGREAL      = OT.oLONGREAL   ;
+               oSET           = OT.oSET        ;
+               tPosition      = POS.tPosition  ;
+
+        VAR    cmtDesignation : tTree          ;
+
+        PROCEDURE NewTree;    
+        PROCEDURE OldTree; }
+        
+GLOBAL{ FROM   Storage IMPORT ALLOCATE, DEALLOCATE;
+        IMPORT ERR            ,
+               OB             ,
+               OT             ,
+               POS            ; 
+               
+        TYPE   tTreeSave     = POINTER TO tTreeSaveDesc;
+               tTreeSaveDesc = RECORD
+                                BlockList   ,
+                                PoolFreePtr ,
+                                PoolMaxPtr  : SYSTEM.ADDRESS;
+                                HeapUsed    : LONGCARD; 
+                                prev        : tTreeSave;
+                               END;
+        VAR    SavedTree     : tTreeSave;
+
+        PROCEDURE NewTree;    
+        VAR ts:tTreeSave;
+        BEGIN (* NewTree *)
+         NEW(ts); 
+         ts^.BlockList   := yyBlockList; 
+         ts^.PoolFreePtr := yyPoolFreePtr; 
+         ts^.PoolMaxPtr  := yyPoolMaxPtr; 
+         ts^.HeapUsed    := HeapUsed; 
+         ts^.prev        := SavedTree; 
+         SavedTree       := ts; 
+
+         yyBlockList     := NIL; 
+         yyPoolFreePtr   := NIL;
+         yyPoolMaxPtr    := NIL;
+         HeapUsed        := 0;
+        END NewTree;
+
+        PROCEDURE OldTree;
+        VAR ts:tTreeSave;
+        BEGIN (* OldTree *)
+         ReleaseTreeModule;
+         
+         IF SavedTree=NIL THEN RETURN; END;
+         
+         ts            := SavedTree; 
+         yyBlockList   := ts^.BlockList; 
+         yyPoolFreePtr := ts^.PoolFreePtr; 
+         yyPoolMaxPtr  := ts^.PoolMaxPtr; 
+         HeapUsed      := ts^.HeapUsed; 
+         SavedTree     := ts^.prev; 
+         DISPOSE(ts); 
+        END OldTree; }
+
+BEGIN{  SavedTree:=NIL; cmtDesignation:=mmtDesignation (); }
+
+/********************************************************************************************************************************/
+PROPERTY INPUT RULE
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Module                                    = [ Name             : tIdent        ]
+                                            [ Pos              : tPosition     ]
+                                            [ IsForeign        : BOOLEAN       ]
+                                            [ Library          : oSTRING       ]
+                                              Imports
+                                              DeclSection
+                                              Stmts
+                                            [ Name2            : tIdent        ]
+                                            [ Pos2             : tPosition     ]
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Imports                                   =
+<
+   mtImport                               =
+                                          .
+   Import                                 =   Next             : Imports
+                                            [ ServerId         : tIdent        ]
+                                            [ ServerPos        : tPosition     ]
+                                            [ RefId            : tIdent        ]
+                                            [ RefPos           : tPosition     ]
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+DeclSection                               =   DeclUnits
+                                              Procs
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+DeclUnits                                 =
+<
+   mtDeclUnit                             =
+                                          .
+   DeclUnit                               =   Next             : DeclUnits
+                                              Decls
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Decls                                     =
+<
+   mtDecl                                 =
+                                          .
+   Decl                                   =   Next             : Decls
+   <
+      ConstDecl                           =   IdentDef
+                                              ConstExpr
+                                          .
+      TypeDecl                            =   IdentDef
+                                              Type
+                                          .
+      VarDecl                             =   IdentLists
+                                              Type
+                                          .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Procs                                     =
+<
+   mtProc                                 =
+                                          .
+   Proc                                   =   Next             : Procs
+   <
+      ProcDecl                            =   IdentDef
+                                              FormalPars
+                                              DeclSection
+                                              Stmts
+                                            [ EndPos           : tPosition     ]
+                                            [ Ident            : tIdent        ]
+                                            [ IdPos            : tPosition     ]
+                                          .
+      ForwardDecl                         =   IdentDef
+                                              FormalPars
+                                          .
+      BoundProcDecl                       =   Receiver
+                                              IdentDef
+                                              FormalPars
+                                              DeclSection
+                                              Stmts
+                                            [ EndPos           : tPosition     ]
+                                            [ Ident            : tIdent        ]
+                                            [ IdPos            : tPosition     ]
+                                          .
+      BoundForwardDecl                    =   Receiver
+                                              IdentDef
+                                              FormalPars
+                                          .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FormalPars                                =   FPSections
+                                              Type
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FPSections                                =
+<
+   mtFPSection                            =
+                                          .
+   GenericFPSection                       =
+                                          .
+   FPSection                              =   Next             : FPSections
+                                            [ ParMode          : tParMode      ]
+                                              ParIds
+                                              Type
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ParIds                                    =
+<
+   mtParId                                =
+                                          .
+   ParId                                  =   Next             : ParIds
+                                            [ Ident            : tIdent        ]
+                                            [ Pos              : tPosition     ]
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Receiver                                  = [ ParMode          : tParMode      ]
+                                            [ Name             : tIdent        ]
+                                            [ TypeIdent        : tIdent        ]
+                                            [ TypePos          : tPosition     ]
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Type                                      = [ Position         : tPosition     ]
+<
+   mtType                                 =
+                                          .
+   NamedType                              =   Qualidents
+                                          .
+   ArrayType                              =   ArrayExprLists
+                                              Type
+                                          .
+   OpenArrayType                          = [ OfPosition       : tPosition     ]
+                                              Type
+                                          .
+   RecordType                             =   FieldLists
+                                          .
+   ExtendedType                           =   Qualidents
+                                              FieldLists
+                                          .
+   PointerType                            =
+   <
+      PointerToIdType                     = [ Ident            : tIdent        ]
+                                            [ IdentPos         : tPosition     ]
+                                          .
+      PointerToQualIdType                 =   Qualidents
+                                          .
+      PointerToStructType                 =   Type
+                                          .
+   >.
+   ProcedureType                          =   FormalPars
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ArrayExprLists                            =
+<
+   mtArrayExprList                        =
+                                          .
+   ArrayExprList                          =   Next             : ArrayExprLists
+                                              ConstExpr
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FieldLists                                =
+<
+   mtFieldList                            =
+                                          .
+   FieldList                              =   Next             : FieldLists
+                                              IdentLists
+                                              Type
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IdentLists                                =
+<
+   mtIdentList                            =
+                                          .
+   IdentList                              =   Next             : IdentLists
+                                              IdentDef
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Qualidents                                = [ Position         : tPosition     ]
+<
+   mtQualident                            =
+                                          .
+   ErrorQualident                         =
+                                          .
+   UnqualifiedIdent                       = [ Ident            : tIdent        ]
+                                          .
+   QualifiedIdent                         = [ ServerId         : tIdent        ]
+                                            [ Ident            : tIdent        ]
+                                            [ IdentPos         : tPosition     ]
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IdentDef                                  = [ Ident            : tIdent        ]
+                                            [ Pos              : tPosition     ]
+                                            [ ExportMode       : tExportMode   ]
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Stmts                                     =
+<
+   mtStmt                                 =
+                                          .
+   NoStmts                                =
+                                          .
+   Stmt                                   =   Next             : Stmts
+   <
+      AssignStmt                          =   Designator
+                                              Exprs
+                                          .
+      CallStmt                            =   Designator
+                                          .
+      IfStmt                              =   Exprs
+                                              Then             : Stmts
+                                              Else             : Stmts
+                                          .
+      CaseStmt                            =   Exprs
+                                              Cases
+                                              Else             : Stmts
+                                          .
+      WhileStmt                           =   Exprs
+                                              Stmts
+                                          .
+      RepeatStmt                          =   Stmts
+                                              Exprs
+                                          .
+      ForStmt                             = [ Ident            : tIdent        ]
+                                            [ Pos              : tPosition     ]
+                                              From             : Exprs
+                                              To               : Exprs
+                                              By               : ConstExpr
+                                              Stmts
+                                          .
+      LoopStmt                            =   Stmts
+                                          .
+      WithStmt                            =   GuardedStmts
+                                              Else             : Stmts
+                                          .
+      ExitStmt                            = [ Position         : tPosition     ]
+                                          .
+      ReturnStmt                          = [ Position         : tPosition     ]
+                                              Exprs
+                                          .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Cases                                     =
+<
+   mtCase                                 =
+                                          .
+   Case                                   =   Next             : Cases
+                                              CaseLabels
+                                              Stmts
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+CaseLabels                                =
+<
+   mtCaseLabel                            =
+                                          .
+   CaseLabel                              =   Next             : CaseLabels
+                                              ConstExpr1       : ConstExpr
+                                              ConstExpr2       : ConstExpr
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+GuardedStmts                              =
+<
+   mtGuardedStmt                          =
+                                          .
+   GuardedStmt                            =   Next             : GuardedStmts
+                                              Guard
+                                              Stmts
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Guard                                     =   Variable         : Qualidents
+                                            [ OpPos            : tPosition     ]
+                                              TypeId           : Qualidents
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ConstExpr                                 = [ Position         : tPosition     ]
+                                              Expr             : Exprs
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Exprs                                     = [ Position         : tPosition     ]
+<
+   mtExpr                                 =
+                                          .
+   MonExpr                                =   Exprs
+   <
+       NegateExpr                         = .
+       IdentityExpr                       = .
+       NotExpr                            = .
+   >.
+   DyExpr                                 =   DyOperator
+                                              Expr1            : Exprs
+                                              Expr2            : Exprs
+                                          .
+   IsExpr                                 =   Designator
+                                            [ OpPos            : tPosition     ]
+                                              TypeId           : Qualidents
+                                          .
+   SetExpr                                =   Elements
+                                          .
+   DesignExpr                             =   Designator
+                                          .
+   SetConst                               = [ Set              : oSET          ]
+                                          .
+   IntConst                               = [ Int              : oLONGINT      ]
+                                          .
+   RealConst                              = [ Real             : oREAL         ]
+                                          .
+   LongrealConst                          = [ Longreal         : oLONGREAL     ]
+                                          .
+   CharConst                              = [ Char             : oCHAR         ]
+                                          .
+   StringConst                            = [ String           : oSTRING       ]
+                                          .
+   NilConst                               =
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Elements                                  =
+<
+   mtElement                              =
+                                          .
+   Element                                =   Next             : Elements
+                                              Expr1            : Exprs
+                                              Expr2            : Exprs
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+DyOperator                                = [ Position         : tPosition     ]
+                                            [ Operator         : SHORTCARD     ]
+<
+   RelationOper                           =
+   <
+      EqualOper                           = .
+      UnequalOper                         = .
+
+      OrderRelationOper                   =
+      <  LessOper                         = .
+         LessEqualOper                    = .
+         GreaterOper                      = .
+         GreaterEqualOper                 = .
+      >.
+   >.
+
+   InOper                                 = .
+
+   NumSetOper                             =                                                        /* Numeric and set operators */
+   <  PlusOper                            = .
+      MinusOper                           = .
+      MultOper                            = .
+      RDivOper                            = .
+
+      IntOper                             =
+      <  DivOper                          = .
+         ModOper                          = .
+      >.
+   >.
+
+   BoolOper                               =
+   <  OrOper                              = .
+      AndOper                             = .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Designator                                = [ Ident            : tIdent        ]
+                                            [ Position         : tPosition     ]
+                                              Designors
+.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Designors                                 =
+<
+   mtDesignor                             =
+                                          .
+   Designor                               =   Nextor           : Designors
+   <
+      Selector                            = [ OpPos            : tPosition     ]
+                                            [ Ident            : tIdent        ]
+                                            [ IdPos            : tPosition     ]
+                                          .
+      Indexor                             = [ Op1Pos           : tPosition     ]
+                                            [ Op2Pos           : tPosition     ]
+                                              ExprList         : ExprLists
+                                          .
+      Dereferencor                        = [ OpPos            : tPosition     ]
+                                          .
+      Argumentor                          = [ Op1Pos           : tPosition     ]
+                                            [ Op2Pos           : tPosition     ]
+                                              ExprList         : ExprLists
+                                          .
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Designations                              =
+<
+   mtDesignation                          =
+                                          .
+   Designation                            =   Nextor           : Designors
+                                            [ Position         : tPosition     ]
+   <
+      Importing                           = [ Ident            : tIdent        ]
+                                            [ IdPos            : tPosition     ]
+                                          .
+      Selecting                           = [ Ident            : tIdent        ]
+                                            [ IdPos            : tPosition     ]
+                                          .
+      Indexing                            = [ Op2Pos           : tPosition     ]
+                                              Expr             : Exprs
+                                          .
+      Dereferencing                       =
+                                          .
+      Supering                            =
+                                          .
+      Argumenting                         = [ Op2Pos           : tPosition     ]
+                                              ExprList         : ExprLists
+                                          .
+      Guarding                            = [ IsImplicit       : BOOLEAN       ]
+                                              Qualidents
+                                          .
+
+/*** Pre- & SYSTEM-declared argumentings ***/
+
+      PredeclArgumenting                  = [ Op2Pos           : tPosition     ]
+      <
+         PredeclArgumenting1              =   Expr             : Exprs                             /* Predecls with 1 parameter */
+                                              ExprLists
+         <
+            AbsArgumenting                = .
+            CapArgumenting                = .
+            ChrArgumenting                = .
+            EntierArgumenting             = .
+            LongArgumenting               = .
+            OddArgumenting                = .
+            OrdArgumenting                = .
+            ShortArgumenting              = .
+            HaltArgumenting               = .
+            SysAdrArgumenting             = .
+            SysCcArgumenting              = .
+         >.
+
+         PredeclArgumenting2Opt           =   Expr1            : Exprs             /* Predecls with a second optional parameter */
+                                              Expr2            : Exprs
+                                              ExprLists
+         <
+            LenArgumenting                = .
+            AssertArgumenting             = .
+            DecIncArgumenting             =
+            <
+               DecArgumenting             = .
+               IncArgumenting             = .
+            >.
+
+            PredeclArgumenting2           =                                                       /* Predecls with 2 parameters */
+            <
+               AshArgumenting             = .
+               CopyArgumenting            = .
+               ExclInclArgumenting        =
+               <
+                  ExclArgumenting         = .
+                  InclArgumenting         = .
+               >.
+               SysBitArgumenting          = .
+               SysLshRotArgumenting       =
+               <
+                  SysLshArgumenting       = .
+                  SysRotArgumenting       = .
+               >.
+               SysGetPutArgumenting       =
+               <
+                  SysGetArgumenting       = .
+                  SysPutArgumenting       = .
+               >.
+               SysGetregPutregArgumenting =
+               <
+                  SysGetregArgumenting    = .
+                  SysPutregArgumenting    = .
+               >.
+               SysNewArgumenting          = .
+            >.
+         >.
+
+         PredeclArgumenting3              =   Expr1            : Exprs                            /* Predecls with 3 parameters */
+                                              Expr2            : Exprs
+                                              Expr3            : Exprs
+                                              ExprLists
+         <
+            SysMoveArgumenting            = .
+         >.
+
+         TypeArgumenting                  =   Qualidents                                      /* Predecls with 1 type parameter */
+                                              ExprLists
+         <
+            MaxMinArgumenting             =
+            <
+               MaxArgumenting             = .
+               MinArgumenting             = .
+            >.
+            SizeArgumenting               = .
+            SysValArgumenting             =   Expr             : Exprs
+                                          .
+         >.
+
+         NewArgumenting                   =   Expr             : Exprs
+                                              NewExprLists
+                                          .
+         SysAsmArgumenting                =   SysAsmExprLists
+                                          .
+      >.
+   >.
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ExprLists                                 =
+<
+   mtExprList                             =
+                                          .
+   ExprList                               =   Next             : ExprLists
+                                              Expr             : Exprs
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NewExprLists                              =                                                                 /* ExprList for NEW */
+<
+   mtNewExprList                          =
+                                          .
+   NewExprList                            =   Next             : NewExprLists
+                                              Expr             : Exprs
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+SysAsmExprLists                           =                                                          /* ExprList for SYSTEM.ASM */
+<
+   mtSysAsmExprList                       =
+                                          .
+   SysAsmExprList                         =   Next             : SysAsmExprLists
+                                              Expr             : Exprs
+                                          .
+>.
+/*------------------------------------------------------------------------------------------------------------------------------*/
+END SyntaxTree
+
+/********************************************************************************************************************************/
+MODULE ExtendedSyntaxTree
+
+RULE
+
+Designator                                =   Designations
+.
+Designation                               =   Nextion          : Designations
+.
+END ExtendedSyntaxTree
+
+/********************************************************************************************************************************/
+MODULE CoderInformation 
+
+PROPERTY OUTPUT RULE
+
+Module                                    = [ GlobalSpace      : tSize                 ]
+                                            [ TempSpace        : tSize                 ]
+                                            [ Globals          : tOB                   ]
+                                            [ TDescList        : tOB                   ]                                                                                      
+                                            [ ModuleEntry      : tOB                   ].
+ConstDecl                                 = [ Entry            : tOB                   ].                                                                                      
+ProcDecl                                  = [ Entry            : tOB                   ]
+                                            [ LocalSpace       : tSize                 ]
+					    [ TempSpace        : tSize                 ]
+                                            [ Locals           : tOB                   ].                                                                                      
+BoundProcDecl                             = [ Entry            : tOB                   ]
+                                            [ LocalSpace       : tSize                 ]
+					    [ TempSpace        : tSize                 ]
+                                            [ Locals           : tOB                   ].                                                                                      
+AssignStmt                                = [ Coerce           : tCoercion             ].                                                                                      
+CaseStmt                                  = [ LabelLimits      : tOB                   ].
+ForStmt                                   = [ CurLevel         : tLevel                ]
+                                            [ ControlVarEntry  : tOB                   ]
+                                            [ TempAddr         : tAddress              ]
+                                            [ FromCoerce       : tCoercion             ]
+                                            [ ToCoerce         : tCoercion             ].
+LoopStmt                                  = [ LoopEndLabel     : tLabel                ].
+ExitStmt                                  = [ LoopEndLabel     : tLabel                ].
+GuardedStmt                               = [ CurLevel         : tLevel                ].
+Guard                                     = [ VarEntry         : tOB                   ]
+                                            [ TypeTypeRepr     : tOB                   ].
+ReturnStmt                                = [ Coerce           : tCoercion             ].                                                                                      
+DyOperator                                = [ Coerce1          : tCoercion             ]
+                                            [ Coerce2          : tCoercion             ].
+Exprs                                     = [ TypeReprOut      : tOB       SYNTHESIZED ]
+                                            [ ValueReprOut     : tOB       SYNTHESIZED ].
+IsExpr                                    = [ TypeTypeRepr     : tOB                   ].
+SetExpr                                   = [ ConstValueRepr   : tOB                   ].
+DesignExpr                                = [ Entry            : tOB                   ].
+Designator                                = [ TypeReprOut      : tOB       SYNTHESIZED ]
+                                            [ Entry            : tOB                   ]
+                                            [ LevelIn          : tLevel    INHERITED   ]
+					    [ SignatureRepr    : tOB                   ]
+                                            [ ExprList         : tTree                 ].
+Designations                              = [ Entry            : tOB                   ]
+                                            [ LevelIn          : tLevel    INHERITED   ].                                                                                      
+Indexing                                  = [ Len              : oLONGINT              ]
+                                            [ ElemTypeRepr     : tOB                   ]
+                                            [ TempAddr         : tAddress              ].                                                                                      
+Dereferencing                             = [ BaseTypeRepr     : tOB                   ].
+Supering                                  = [ RcvEntry         : tOB                   ].
+Argumenting                               = [ ProcTypeRepr     : tOB                   ]
+                                            [ RcvEntry         : tOB                   ].
+Guarding                                  = [ StaticTypeRepr   : tOB                   ]
+                                            [ TestTypeRepr     : tOB                   ].
+PredeclArgumenting2Opt                    = [ Coerce1          : tCoercion             ]
+                                            [ Coerce2          : tCoercion             ].                                                                                      
+PredeclArgumenting3                       = [ Coerce3          : tCoercion             ].                                                                                      
+SysValArgumenting                         = [ TypeTypeRepr     : tOB                   ]
+                                            [ TempAddr         : tAddress              ].
+ExprList                                  = [ Coerce           : tCoercion             ].                                                                                      
+NewExprList                               = [ Coerce           : tCoercion             ].
+
+END CoderInformation
+
+/********************************************************************************************************************************/
+/*** END oberon.ast                                                                                                           ***/
+/********************************************************************************************************************************/
+

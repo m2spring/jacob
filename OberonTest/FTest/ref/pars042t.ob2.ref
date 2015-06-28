@@ -1,0 +1,26 @@
+MODULE pars042t;
+CONST
+   a1  = laber\(5\);
+CONST
+   a2  = +(hurga*3);
+CONST
+   a3  = -2.00000E0;
+CONST
+   a4  = (-((3.4000000000000D-2/'A')/234))+('z' DIV 'hallohallo');
+CONST
+   a5  = ((NIL+(({}) MOD {3,1,7,2}))+{1,2..5,3,1..1,9})=((((-((~(~(~NIL))) & (-2)))+('A' & 3)) OR hurga)-'string');
+CONST
+   a6  = (((~laber)-2)-NIL)#((((-(1.0000000000000D3*'A'))-hurga\(la\.ber\^\.hu\))-(~bla))+{1});
+CONST
+   a7  = ((NIL OR (1/'hurga')) OR (({}) DIV {3..2,5,2..2,0}))<((((-2) OR (3X MOD 9))+({})) OR la\.ber\.hu);
+CONST
+   a8  = ((1 OR 2)-3)<=((((-4) OR (5 & 6)) OR 7)-8);
+CONST
+   a9  = ((NIL-{2})+0.00000E0)>((((-('bla' & 'A'))-la\[3,2,1\])-(~bla)) OR (~'hurga'));
+CONST
+   a10 = ((1+('A' MOD 65535)) OR NIL)>=((((-({}))+5)+(2 DIV 8))+9);
+CONST
+   a11 = (((~3)-((la\^/bae)*7))-NIL) IN ((((-3)+((~true)*2)) OR 4711)+(~NIL));
+
+END pars042t.
+

@@ -1,0 +1,72 @@
+MODULE pars035t;
+
+BEGIN (* pars035t *)
+   CASE a OF
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   ELSE laber;
+   END; (* CASE *)
+   CASE a OF
+   |3:
+        bla;
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   |3:
+        bla;
+   |5:
+        laber;
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   |3,4:
+        bla;
+   |5..6,la..ber:
+        hurga;
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   |3:
+        bla;
+   |5:
+        laber;
+   |1,2..3,4..5,6,7,8,9..10:
+        laber;
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   |3:
+        bla;
+   |5:
+        laber;
+   |1,2..3,4..5,6,7,8,9..10:
+        laber;
+   ELSE hurga;
+   END; (* CASE *)
+   CASE a OF
+   |3:
+        bla;
+   |5..6:
+        CASE EineExpr OF
+        |3:
+             firststatement;
+        |4..5,6,7..8:
+             secondstatement;
+        ELSE _CASEFAULT;
+        END; (* CASE *)
+   |9..1:
+        laststatement;
+   ELSE _CASEFAULT;
+   END; (* CASE *)
+   CASE a OF
+   ELSE CASE b OF
+        ELSE CASE c OF
+             ELSE CASE d OF
+                  ELSE laber;
+                  END; (* CASE *)
+             END; (* CASE *)
+        END; (* CASE *)
+   END; (* CASE *)
+END pars035t.
+

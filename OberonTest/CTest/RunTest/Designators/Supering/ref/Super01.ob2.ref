@@ -1,0 +1,17 @@
+T0-bound P
+------
+T1-bound P
+T0-bound P
+------
+T1-bound P
+T0-bound P
+
+Call via Pointer:
+
+T0-bound P
+------
+T1-bound P
+T0-bound P
+------
+T1-bound P
+T0-bound P

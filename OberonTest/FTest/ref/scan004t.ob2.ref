@@ -1,0 +1,14 @@
+File scan004t.ob2
+0003,001: <integer>  1
+0004,001: <integer>  1
+0005,001: <integer>  127
+0006,001: <integer>  128
+0007,001: <integer>  32767
+0008,001: <integer>  32768
+0009,001: <integer>  1000000
+0010,001: <integer>  255
+0011,001: <integer>  1
+0012,001: <integer>  32767
+0013,001: <integer>  32768
+0014,001: <eof>      
+

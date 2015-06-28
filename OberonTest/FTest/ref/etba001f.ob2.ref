@@ -1,0 +1,14 @@
+Compiling etba001f
+'MODULE' etba001f
+-------------------------------------------------------------------------------
+vshortint   VAR       SHORTINT
+vint        VAR       INTEGER
+vlongint    VAR       LONGINT
+vreal       VAR       REAL
+vlongreal   VAR       LONGREAL
+-------------------------------------------------------------------------------
+
+etba001f.ob2: 22,15: Expression not assignment compatible
+etba001f.ob2: 26,15: Expression not assignment compatible
+etba001f.ob2: 30,15: Expression not assignment compatible
+etba001f.ob2: 34,15: Expression not assignment compatible

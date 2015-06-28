@@ -1,0 +1,692 @@
+-------------------------------------------------------------------------------
+<Root> =
+         #---------------------------------------------
+         # TDesc of root proc
+         .text
+   _$I$N:
+         .asciz      "_$I"
+
+         .align      2
+         .long       _$I$N     # -12: name
+         .long       0         # - 8: size
+         .long       _NILPROC  # - 4: skipper
+   _$I$D:
+         ret                   # + 0: walker
+
+         #---------------------------------------------
+         # root proc
+         .globl      _$I
+         .align      2,0x90
+   _$I:
+         pushl       %ebp
+         pushl       $_$I$D    # TDesc of root proc
+
+         #---------------------------------------------
+         # Init the TDescs of all modules
+FOR i:=1 TO nofModules DO
+         movl        $<module[i].name>$D,<module[i].name>$G
+END
+
+         #---------------------------------------------
+         # Link the globals of all modules
+         movl        %ebp,4+<module[1].name>$G
+FOR i:=2 TO nofModules DO
+         movl        $4+<module[i-1].name>$G,4+<module[i].name>$G
+END
+         movl        $4+<module[nofModules].name>$G,%ebp
+
+         #---------------------------------------------
+         # Call the module init procs
+FOR i:=1 TO nofModules DO
+         call        <module[i].name>$I
+END
+
+         #---------------------------------------------
+         addl        $4,%esp
+         popl        %ebp
+         ret
+.
+-------------------------------------------------------------------------------
+<Module> =
+         <Header>
+         <Globals>
+         {<Proc>}
+         <InitProc>
+.
+-------------------------------------------------------------------------------
+<Header> =
+         .comm       <modulename>$G,<8+globalspace>
+         <GlobalTDesc<decls>>
+.
+-------------------------------------------------------------------------------
+<Globals> =
+         .text
+         # huge constants
+         { <StringConst> | <LongrealConst> }
+
+         # type descriptors
+         { <TDesc<...><...>> }
+.
+-------------------------------------------------------------------------------
+<StringConst> =
+   [ IsExported(StringConst)?
+         .globl      <label>
+   ]
+   <label>:
+         .asciz      "<string>"
+.
+-------------------------------------------------------------------------------
+<LongrealConst> =
+         .align      2
+   [ IsExported(LongrealConst)?
+         .globl      <label>
+   ]
+   <label>:
+         .long       <LO(<longreal>)>,<HI(<longreal>)>
+.
+-------------------------------------------------------------------------------
+<InitProc> =
+         .text
+   <name>$N:
+         .asciz      "<modulename>$I"
+
+         .align      2,0x90
+         .long       <modulename>$I$N        # -12: name
+         .long       0                       # - 8: size
+         .long       _NILPROC                # - 4: skipper
+   <modulename>$I$D:
+         movl        (%ebx),%ebx
+         jmp         -4(%ebx)
+
+         .align      2,0x90
+         .globl      <modulename>$I
+   <modulename>$I:
+         pushl       %ebp
+         movl        %esp,%ebp
+         pushl       $<modulename>$I$D              # TDesc of module init proc
+
+         <InitializeGlobalPtrVars>
+         <InitializeGlobalProcVars>
+
+         <Stmts>
+
+         leave
+         ret
+.
+-------------------------------------------------------------------------------
+<Proc> =
+         <ProcTDesc<qualifiedProcName><decls>>
+
+   [ IsExported(Proc)?
+         .globl      <procLabel>
+   ]
+         .align      2,0x90
+   <procLabel>:
+         <ProcProlog>
+         <CopyRefdValParams>
+         <InitializeLocalPtrVars>
+         <InitializeLocalProcVars>
+
+         <Stmts>
+
+         leave
+         ret
+.
+-------------------------------------------------------------------------------
+<ProcProlog> =
+  (Level=1)?
+         pushl       %ebp
+         movl        %esp,%ebp
+         pushl       $<qualifiedProcName>$D          # TDesc of proc
+         pushl       %ebp                            # disp-next
+  [ (localSpace>0)?
+         subl        $<localSpace>,%esp
+  ]
+| (Level=2)?
+         pushl       %ebp
+         pushl       $<qualifiedProcName>$D          # TDesc of proc
+         pushl       -8(%ebp)                        # disp-1
+         movl        %esp,%ebp
+         addl        $8,%ebp
+         pushl       %ebp                            # disp-next
+  [ (localSpace>0)?
+         subl        $<localSpace>,%esp
+  ]
+| (Level=3)?
+         pushl       %ebp
+         pushl       $<qualifiedProcName>$D          # TDesc of proc
+         pushl       -8(%ebp)                        # disp-1
+         pushl       -12(%ebp)                       # disp-2
+         movl        %esp,%ebp
+         addl        $12,%ebp
+         pushl       %ebp                            # disp-next
+  [ (localSpace>0)?
+         subl        $<localSpace>,%esp
+  ]
+| (Level>3)?
+         enter       $<localSpace>,$<Level+1>
+         movl        $<qualifiedProcName>$D,-4(%ebp) # TDesc of proc
+.
+-------------------------------------------------------------------------------
+<CopyRefdValParams> =
+FOR i:=1 TO nofRefdValParams DO
+  (SIZE(type[i]) IN {5..8})?
+         subl        $8,%esp
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         movsl
+         movsl
+| (SIZE(type[i]) IN {9..12})?
+         subl        $12,%esp
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         movsl
+         movsl
+         movsl
+| (SIZE(type[i])>12)? LET size=ALIGN4(SIZE(type[i]))
+         movl        $<size/4>,%ecx
+         subl        $<size>,%esp
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & SIZE(E)=1)?
+         movl        <4+ofs[i]>(%ebp),%ecx                        # ecx := nofElems
+         addl        $3,%ecx
+         andl        $0xfffffffc,%ecx                             # ecx := align4(nofElems)
+         subl        %ecx,%esp
+         shrl        $2,%ecx                                      # ecx := align4(nofElems)/4
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & SIZE(E)=2)?
+         movl        <4+ofs[i]>(%ebp),%ecx                        # ecx := nofElems
+         leal        3(,%ecx,2)                                   # ecx := 3+2*nofElems
+         andl        $0xfffffffc,%ecx                             # ecx := align4(2*nofElems)
+         subl        %ecx,%esp
+         shrl        $2,%ecx                                      # ecx := align4(2*nofElems)/4
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & SIZE(E)=3)?
+         movl        <4+ofs[i]>(%ebp),%ecx                        # ecx := nofElems
+         leal        3(%ecx,%ecx,2),%ecx                          # ecx := 3+3*nofElems
+         andl        $0xfffffffc,%ecx                             # ecx := align4(3*nofElems)
+         subl        %ecx,%esp
+         shrl        $2,%ecx                                      # ecx := align4(3*nofElems)/4
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & SIZE(E)=4)?
+         movl        <4+ofs[i]>(%ebp),%ecx                        # ecx := nofElems
+         movl        %ecx,%eax                                    # eax := nofElems
+         shll        $2,%eax                                      # eax := 4*nofElems
+         subl        %eax,%esp
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & SIZE(E)=2^j & (j>2))?
+         movl        <4+ofs[i]>(%ebp),%ecx                        # ecx := nofElems
+         shll        $<j>,%ecx                                    # ecx := SIZE(E)*nofElems
+         addl        $3,%ecx
+         andl        $0xfffffffc,%ecx                             # ecx := align4(SIZE(E)*nofElems)
+         subl        %ecx,%esp
+         shrl        $2,%ecx                                      # ecx := align4(SIZE(E)*nofElems)/4
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+| (type[i]=ARRAY OF E & ~(SIZE(E) IN {...}))?
+         imull       $<SIZE(E)>,<4+ofs[i]>(%ebp),%ecx             # ecx := SIZE(E)*nofElems
+         addl        $3,%ecx
+         andl        $0xfffffffc,%ecx                             # ecx := align4(SIZE(E)*nofElems)
+         subl        %ecx,%esp
+         shrl        $2,%ecx                                      # ecx := align4(SIZE(E)*nofElems)/4
+         movl        %esp,%edi
+         movl        <ofs[i]>(%ebp),%esi
+         movl        %edi,<ofs[i]>(%ebp)
+         cld
+         repz
+         movsl
+END
+.
+-------------------------------------------------------------------------------
+<InitializeGlobalPtrVars> =
+  (nofPtrVars=0)?
+
+| (nofPtrVars=1)?
+         movl        $0,<ofsOfProcVar>+<modulename>$G
+| (nofPtrVars>1)?
+         xor         %eax,%eax
+FOR i:=1 TO nofPtrVarBlocks DO
+  (ptrVarBlock[i].nofPtrVars=1) ?
+         movl        %eax,<ptrVarBlock[i].ofs>+<modulename>$G
+| (ptrVarBlock[i].nofPtrVars=2) ?
+         movl        %eax,<  ptrVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<4+ptrVarBlock[i].ofs>+<modulename>$G
+| (ptrVarBlock[i].nofPtrVars=3) ?
+         movl        %eax,<  ptrVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<4+ptrVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<8+ptrVarBlock[i].ofs>+<modulename>$G
+| (ptrVarBlock[i].nofPtrVars>3) ?
+         movl        $<ptrVarBlock[i].nofPtrVars>,%ecx
+         leal        <ptrVarBlock[i].ofs>+<modulename>$G,%edi
+         cld
+         repz
+         stosl
+END
+.
+-------------------------------------------------------------------------------
+<InitializeGlobalProcVars> =
+  (nofProcVars=0)?
+
+| (nofProcVars=1)?
+         movl        $_NILPROC,<ofsOfProcVar>+<modulename>$G
+| (nofProcVars>1)?
+         leal        $NILPROC,%eax
+FOR i:=1 TO nofProcVarBlocks DO
+  (procVarBlock[i].nofProcVars=1) ?
+         movl        %eax,<procVarBlock[i].ofs>+<modulename>$G
+| (procVarBlock[i].nofProcVars=2) ?
+         movl        %eax,<  procVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<4+procVarBlock[i].ofs>+<modulename>$G
+| (procVarBlock[i].nofProcVars=3) ?
+         movl        %eax,<  procVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<4+procVarBlock[i].ofs>+<modulename>$G
+         movl        %eax,<8+procVarBlock[i].ofs>+<modulename>$G
+| (procVarBlock[i].nofProcVars>3) ?
+         movl        $<nofProcVars>,%ecx
+         leal        <procVarBlock[i].ofs>+<modulename>$G,%edi
+         cld
+         repz
+         stosl
+END
+.
+-------------------------------------------------------------------------------
+<InitializeLocalPtrVars> =
+  (nofPtrVars=0)?
+
+| (nofPtrVars=1)?
+         movl        $0,<ofsOfPtrVar>(%ebp)
+| (nofPtrVars>1)?
+         xorl        %eax,%eax
+FOR i:=1 TO nofPtrVarBlocks DO
+  (PtrVarBlock[i].nofPtrVars=1) ?
+         movl        %eax,<PtrVarBlock[i].ofs>(%ebp)
+| (PtrVarBlock[i].nofPtrVars=2) ?
+         movl        %eax,<  PtrVarBlock[i].ofs>(%ebp)
+         movl        %eax,<4+PtrVarBlock[i].ofs>(%ebp)
+| (PtrVarBlock[i].nofPtrVars=3) ?
+         movl        %eax,<  PtrVarBlock[i].ofs>(%ebp)
+         movl        %eax,<4+PtrVarBlock[i].ofs>(%ebp)
+         movl        %eax,<8+PtrVarBlock[i].ofs>(%ebp)
+| (PtrVarBlock[i].nofPtrVars>3) ?
+         movl        $<nofPtrVars>,%ecx
+         leal        <PtrVarBlock[i].ofs>(%ebp),%edi
+         cld
+         repz
+         stosl
+END
+.
+-------------------------------------------------------------------------------
+<InitializeLocalPtrVars> =
+  (nofProcVars=0)?
+
+| (nofProcVars=1)?
+         movl        $_NILPROC,<ofsOfProcVar>(%ebp)
+| (nofProcVars>1)?
+         leal        $NILPROC,%eax
+FOR i:=1 TO nofProcVarBlocks DO
+  (procVarBlock[i].nofProcVars=1) ?
+         movl        %eax,<procVarBlock[i].ofs>(%ebp)
+| (procVarBlock[i].nofProcVars=2) ?
+         movl        %eax,<  procVarBlock[i].ofs>(%ebp)
+         movl        %eax,<4+procVarBlock[i].ofs>(%ebp)
+| (procVarBlock[i].nofProcVars=3) ?
+         movl        %eax,<  procVarBlock[i].ofs>(%ebp)
+         movl        %eax,<4+procVarBlock[i].ofs>(%ebp)
+         movl        %eax,<8+procVarBlock[i].ofs>(%ebp)
+| (procVarBlock[i].nofProcVars>3) ?
+         movl        $<nofProcVars>,%ecx
+         leal        <procVarBlock[i].ofs>(%ebp),%edi
+         cld
+         repz
+         stosl
+END
+.
+-------------------------------------------------------------------------------
+<GlobalTDesc<decls>> =
+         .text
+   <modulename>$N:
+         .asciz      "<modulename>"
+
+         .align      2,0x90
+         .long       <modulename>$N          # -12: name
+         .long       0                       # - 8: size
+         .long       _NILPROC                # - 4: skipper
+         .globl      <modulename>$D
+   <modulename>$D:
+         <GlobalWalker<decls>>               # + 0: walker
+.
+-------------------------------------------------------------------------------
+<TDesc<name><type>> =
+         .text
+   <name>$N:
+         .asciz      "<name>$D"
+
+         .align      2,0x90
+   <name>$S:
+         <Skipper<type>>
+
+         .align      2,0x90
+         <ProcTab<type>>                     # -48: proc1
+         <BaseTypes<type>>                   # -16: type8
+         .long       <name>$N                # -12: name
+         .long       <SIZE(type)>            # - 8: size
+         .long       <name>$S                # - 4: skipper
+   <name>$D:
+         <Walker<type>>
+.
+-------------------------------------------------------------------------------
+<Skipper<type>> =
+  (SIZE(type)=constant)?
+         addl        $<ALIGN8(4+SIZE(type))>,%ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=0
+         addl        $<ALIGN8(4+ARRAYOFS(type))>,%ebx             # ebx += ALIGN8(SIZE(tag) + arrayOfs)
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=1
+         movl        (%ebx),%eax                                  # eax := LEN
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax),%ebx         # ebx += (NextAlign + SIZE(tag) + arrayOfs) + LEN
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E) IN {2,4}
+         movl        (%ebx),%eax                                  # eax := nofElems
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax,SIZE(E)),%ebx # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*elemSize
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=3
+         movl        (%ebx),%eax                                  # eax := nofElems
+         leal        (%eax,%eax,2),%eax                           # eax += nofElems*3
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax),%eax         # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*3
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=5
+         movl        (%ebx),%eax                                  # eax := nofElems
+         leal        (%eax,%eax,4),%eax                           # eax += nofElems*5
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax),%eax         # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*5
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=6
+         movl        (%ebx),%eax                                  # eax := nofElems
+         leal        (%eax,%eax,2),%eax                           # eax += nofElems*3
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax,2),%eax       # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*3*2
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=7
+         movl        (%ebx),%eax                                  # eax := nofElems
+         shll        $3,%eax                                      # eax += nofElems*8
+         subl        (%ebx),%eax                                  # eax := nofElems*8-nofElems
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax),%eax         # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*7
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=8
+         movl        (%ebx),%eax                                  # eax := nofElems
+         leal        <ALIGN8(4+ARRAYOFS(type))>(%ebx,%eax,8),%ebx # ebx += ALIGN8(SIZE(tag) + arrayOfs) + nofElems*8
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E & SIZE(E)=2^i
+         movl        (%ebx),%eax                                  # eax := nofElems
+         shll        $<i>,%eax                                    # eax := nofElems*elemSize
+         leal        <ALIGN8(4+ARRAYOFS(type))>(%ebx,%eax),%ebx   # ebx += ALIGN8(SIZE(tag) + arrayOfs) + nofElems*elemSize
+         jmp         %esi
+| (type=ARRAY OF {ARRAY OF} E
+         imull       $<SIZE(E)>,(%ebx),%eax                       # eax := elemSize*nofElems
+         leal        <7+4+ARRAYOFS(type)>(%ebx,%eax),%ebx         # ebx += (NextAlign + SIZE(tag) + arrayOfs) + nofElems*elemSize
+         andl        $0xfffffff8,%ebx                             # align8 ebx
+         jmp         %esi
+.
+-------------------------------------------------------------------------------
+<ProcTDesc<name><decls>> =
+         .text
+   <name>$N:
+         .asciz      "<name>"
+
+         .align      2,0x90
+         .long       <name>$N                # -12: name
+         .long       0                       # - 8: size
+         .long       _NILPROC                # - 4: skipper
+   <name>$D:
+         <ProcWalker<name><decls>>
+.
+-------------------------------------------------------------------------------
+<ProcWalker<name><decls>> =
+FOR i:=1 TO nofVars(decls) DO
+END
+FOR i:=1 TO nofPars(decls) DO
+END
+.
+-------------------------------------------------------------------------------
+! %ebx points to block which structure is described by the actual blocklist
+
+SingleMarker:
+         movl        <ofs>(%ebx),%eax
+         testl       %eax,%eax
+         jz          next
+         orl         $1,-4(%eax)
+next:        
+=> incrOut := 0
+                
+
+LoopedMarker:
+         pushl       %ecx                        # only if loopDepth>0
+         movl        $<count>,%ecx
+         addl        $<ofs-incrOutPrev>,%ebx
+again:
+         movl        (%ebx),%eax
+         testl       %eax,%eax
+         jz          next
+         orl         $1,-4(%eax)
+next:    
+         addl        $<incr>,%ebx
+         loop        again    
+         pop         %ecx                        # only if loopDepth>0
+=> incrOut := 0
+         
+
+LoopedSubMarker:         
+         pushl       %ecx
+         movl        $<count>,%ecx
+again:
+         movl        <ofs>(%ebx,%ecx,4)),%eax
+         testl       %eax,%eax
+         jz          next
+         orl         $1,-4(%eax)
+next:    
+         loop        again    
+         pop         %ecx
+         
+
+SingleWalker:
+         movl        <ofs>(%ebx),%eax
+         
+
+<PLSi_SingleWalker<type>At<ofs>> =
+
+  (type = POINTER TO NamedType)?
+         movl        <ofs>(%ebx),%eax           # new := (act+ofs)^;
+         orl         %eax,%eax
+         jz          next                       # IF (new#NIL)
+         btsl        $1,-4(%eax)
+         jc          next                       # &  ~ODD(new^) THEN INC(new^);
+         movl        %ebx,%edi                  #       last      := act;
+         movl        %eax,%ebx                  #       act       := new;
+         leal        $cont,%esi                 #       retaddr   := $cont;
+         jmp         -4(%ebx)                   #       JMP((act-4)^);
+   cont: movl        %edi,%ebx                  #       act       := last;
+   next:                                        # END
+
+| (type = POINTER TO basetype:UnnamedType & ~HasPointers(basetype))?
+         movl        <ofs>(%ebx),%eax           # new := (act+ofs)^;
+         orl         %eax,%eax
+         jz          next                       # IF (new#NIL)
+         btsl        $1,-4(%eax)                # &  ~ODD(new^) THEN INC(new^);
+   next:                                        # END
+
+| (type = POINTER TO basetype:UnnamedType & HasPointers(basetype))?
+         movl        <ofs>(%ebx),%eax           # new := (act+ofs)^;
+         orl         %eax,%eax
+         jz          next                       # IF (new#NIL)
+         btsl        $1,-4(%eax)
+         jc          next                       # &  ~ODD(new^) THEN INC(new^);
+         movl        %ebx,%edi                  #       last      := act;
+         movl        %eax,%ebx                  #       act       := new;
+         <InlineWalker<basetype>>
+         movl        %edi,%ebx                  #       act       := last;
+   next:                                        # END
+.
+-------------------------------------------------------------------------------
+<StaticInlineWalker<type>> =
+FOR i:=1 TO nofPtrVars DO
+END
+.
+-------------------------------------------------------------------------------
+<Walker<name><type>> =
+         <InlineWalker<name><type>>
+         jmp         %esi                       # JMP(retaddr);
+.
+-------------------------------------------------------------------------------
+<InlineWalker<name><type>> =
+FOR i:=1 TO nofPtrVars DO
+END
+.
+-------------------------------------------------------------------------------
+FUNCTION ARRAYOFS(type):LONGINT
+   LET d=OPENDIM(type)
+   = (d=0)? 0
+   : (d=1)? 4
+   : (d>1)? 4+4*d.
+-------------------------------------------------------------------------------
+                  
+TYPE tBlock            = POINTER TO tBlockDesc;
+     tBlockDesc        = RECORD
+                          ofs, count, incr : LONGINT;
+                          next, sub        : tBlock;
+                         END;
+VAR  cNoBlocklist      ,
+     cPointerBlocklist : tBlock; (* := mBlock(0,1,4,NIL,NIL) *)
+
+PROCEDURE AreEqualBlocklists(a,b:tBlock):BOOLEAN;
+BEGIN
+ LOOP
+  IF (a=NIL) OR (b=NIL) THEN RETURN (a=b); END;
+
+  IF (a.ofs#b.ofs) OR (a.count#b.count) OR (a.incr#b.incr)
+  OR ~AreEqualBlocklists(a.sub,b.sub)
+     THEN RETURN FALSE;
+  END;
+  
+  a:=a.next; b:=b.next;
+ END;
+END AreEqualBlocklists;
+
+PROCEDURE Append(last:tBlock; b:tBlock):tBlock;
+BEGIN
+ IF (last.incr=b.incr) & (last.ofs+last.count*last.incr=b.ofs)
+ &  AreEqualBlocklists(last.sub,b.sub) 
+    THEN INC(last.count,b.count);
+    ELSE last.next:=b; last:=b;
+ END;
+ RETURN last;
+END;
+
+PROCEDURE BlocklistOfType(type):tBlock;
+VAR e:tBlock;
+BEGIN
+ IF type.blocklist#NIL THEN RETURN type.blocklist; END;
+ 
+ CASE type OF
+ |POINTER                : type.blocklist:=cPointerBlocklist;
+ |ARRAY <n> OF <elemtype>: e:=BlocklistOfType(elemtype);
+                           IF e=cNoBlocklist THEN
+                              type.blocklist:=cNoBlocklist;
+                           ELSIF (e.count*e.incr=SIZE(elemtype)) THEN
+                              type.blocklist:=mBlock
+                                              (e.ofs
+                                              ,n*e.count
+                                              ,e.incr
+                                              ,e.sub
+                                              ,NIL);
+                           ELSIF (e.count=1) & (e.next=NIL) THEN
+                              type.blocklist:=mBlock
+                                              (e.ofs
+                                              ,n
+                                              ,SIZE(elemtype)
+                                              ,e.sub
+                                              ,NIL);
+                           ELSE
+                              type.blocklist:=mBlock
+                                              (0
+                                              ,n
+                                              ,SIZE(elemtype)
+                                              ,e
+                                              ,NIL);
+                           END;   
+ |RECORD <fields> END    : BlocklistOfDecls(last,<fields>);
+ ELSE                      type.blocklist:=cNoBlocklist;
+ END;
+
+ RETURN type.blocklist; 
+END BlocklistOfType;
+
+PROCEDURE BlocklistOfDecls(last:tBlock; decls):tBlock;
+VAR i:INTEGER; 
+BEGIN                     
+ FOR i:=1 TO COUNT(decls) DO
+  IF IsVarDecl(decls[i]) THEN
+     CASE TYPE(decls[i]) OF
+     |POINTER            : Append(last,mBlock(OFS(decls[i],1,4,NIL,NIL));
+     |ARRAY <n> OF <type>: 
+     |RECORD <fields> END: AppendDecls(last,<fields>);
+     END;
+  END;
+ END;
+ RETURN last;
+END BlocklistOfDecls;
+
+
+
+
+
+blockarray := [ (0,0,0,NIL) ];
+
+FOR i:=1 TO nofVars DO
+   IF TYPE(Var[i])=POINTER THEN
+   
+   
+BlOfT: T --> Bl
+
+BlOfT(t:T)Bl =
+
+   t=POINTER             (0,1,4,-,-)
+
+   t=ARRAY n OF te       

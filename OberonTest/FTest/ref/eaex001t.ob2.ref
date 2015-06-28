@@ -1,0 +1,79 @@
+Compiling eaex001t
+'PROCEDURE' P1
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P2
+-------------------------------------------------------------------------------
+c31   CONST     BOOLEAN = TRUE
+c32   CONST     BOOLEAN = TRUE
+c33   CONST     BOOLEAN = FALSE
+c34   CONST     BOOLEAN = FALSE
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P3
+-------------------------------------------------------------------------------
+c39   CONST     BOOLEAN = FALSE
+c40   CONST     BOOLEAN = FALSE
+c41   CONST     BOOLEAN = FALSE
+-------------------------------------------------------------------------------
+
+'MODULE' eaex001t
+-------------------------------------------------------------------------------
+csi         CONST     SHORTINT = 1
+ci          CONST     INTEGER = 500
+cli         CONST     LONGINT = MAX(LONGINT)
+cr          CONST     REAL = 4.00000E0
+clr         CONST     LONGREAL = 2.0000000000000D0
+cs          CONST     SET = {1}
+cb          CONST     BOOLEAN = TRUE
+cc          CONST     <Char> = 'A'
+T0          TYPE      RECORD
+                      END
+                      (-->T1)
+
+T1          TYPE      RECORD(T0)
+                      END
+TPROC       TYPE      ()
+T0POINTER   TYPE      POINTER TO T0
+T1POINTER   TYPE      POINTER TO T1
+b           VAR       BOOLEAN
+arr         VAR       ARRAY 5 OF CHAR
+rec0        VAR       T0
+rec1        VAR       T1
+proc        VAR       TPROC
+ptr0        VAR       T0POINTER
+ptr1        VAR       T1POINTER
+c1          CONST     SHORTINT = 2
+c2          CONST     INTEGER = 501
+c3          CONST     LONGINT = -2147483147
+c4          CONST     REAL = 8.58993E9
+c5          CONST     LONGREAL = -1.9999997615814D0
+c6          CONST     REAL = 1.00000E0
+c7          CONST     REAL = 2.32831E-7
+c8          CONST     REAL = 1.86265E-9
+c9          CONST     LONGREAL = 5.0000002980232D-1
+c10         CONST     SET = {1..3}
+c11         CONST     SET = {}
+c12         CONST     SET = {}
+c13         CONST     SET = {2..3}
+c14         CONST     SHORTINT = 1
+c15         CONST     SHORTINT = 0
+c16         CONST     LONGINT = MAX(LONGINT)
+c17         CONST     SHORTINT = 0
+c18         CONST     BOOLEAN = TRUE
+c19         CONST     BOOLEAN = FALSE
+c20         CONST     BOOLEAN = FALSE
+c21         CONST     BOOLEAN = TRUE
+c22         CONST     BOOLEAN = FALSE
+c23         CONST     BOOLEAN = TRUE
+c24         CONST     BOOLEAN = FALSE
+c25         CONST     BOOLEAN = FALSE
+c26         CONST     BOOLEAN = FALSE
+c27         CONST     BOOLEAN = FALSE
+c28         CONST     BOOLEAN = FALSE
+P1          PROCEDURE ()
+P2          PROCEDURE ()
+P3          PROCEDURE ()
+-------------------------------------------------------------------------------
+

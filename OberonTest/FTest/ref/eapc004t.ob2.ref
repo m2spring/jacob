@@ -1,0 +1,20 @@
+Compiling eapc004t
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+p   REFPARAM  SYSTEM$PTR
+-------------------------------------------------------------------------------
+
+'MODULE' eapc004t
+-------------------------------------------------------------------------------
+SYS           SERVER    SYSTEM
+trecord       TYPE      RECORD
+                         f   VAR       SHORTINT
+                        END
+tarray        TYPE      ARRAY 10 OF CHAR
+trecpointer   TYPE      POINTER TO trecord
+tarrpointer   TYPE      POINTER TO tarray
+prec          VAR       trecpointer
+parr          VAR       tarrpointer
+P             PROCEDURE (VAR p:SYSTEM$PTR)
+-------------------------------------------------------------------------------
+

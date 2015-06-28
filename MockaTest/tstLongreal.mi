@@ -1,0 +1,21 @@
+MODULE tstLongreal;
+CONST lr = MAX(LONGREAL)/10.0; 
+
+PROCEDURE bla(v:LONGREAL);
+BEGIN (* bla *)
+END bla;
+
+PROCEDURE laber(c:CHAR);
+VAR x:CHAR; i:SHORTINT; y,z:CHAR; 
+BEGIN (* laber *)
+ x:=c; 
+ y:=c; 
+ z:=c; 
+ i:=ORD(c); 
+END laber;
+
+VAR ch:CHAR; 
+BEGIN (* tstLongreal *) 
+ bla(lr); 
+ laber(ch); 
+END tstLongreal.

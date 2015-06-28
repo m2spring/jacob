@@ -1,0 +1,4 @@
+Optimierungsmoeglichkeiten:
+
+- Bei der Kopierung von groszen Wertparametern:
+  Anstatt imull besser shift+add, falls Elementgroesze entsprechend ist.

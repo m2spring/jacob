@@ -1,0 +1,15 @@
+Compiling eeop007t
+Compiling eeop005f
+'MODULE' eeop005f
+-------------------------------------------------------------------------------
+S   SERVER    eeop007t
+i   VAR       INTEGER
+s   VAR       SET
+c   VAR       CHAR
+-------------------------------------------------------------------------------
+
+eeop005f.ob2: 15,2: Object is read-only
+eeop005f.ob2: 19,2: Object is read-only
+eeop005f.ob2: 23,2: Object is read-only
+eeop005f.ob2: 23,6: Record field not exported
+eeop005f.ob2: 27,6: Record field not exported

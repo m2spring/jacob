@@ -1,0 +1,17 @@
+MODULE pro;
+IMPORT InOut, SysLib;
+
+PROCEDURE WrTime;
+VAR t:INTEGER; 
+BEGIN (* WrTime *)
+ SysLib.time(t);
+ InOut.WriteInt(t,0); InOut.WriteLn;
+END WrTime;
+
+VAR i:CARDINAL; 
+BEGIN (* pro *)   
+ WrTime;
+ FOR i:=0 TO 1000H DO
+ END; (* FOR *)
+ WrTime;
+END pro.

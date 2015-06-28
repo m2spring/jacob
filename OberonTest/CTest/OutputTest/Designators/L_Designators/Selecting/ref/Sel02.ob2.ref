@@ -1,0 +1,90 @@
+Compiling Sel02 (Sel02.ob2) 
+Linking Sel02
+	.comm	Sel02$G,36
+#      8 r: Sel02.tRec1
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Sel02$N:
+	.asciz	"Sel02"
+	.align	2,144
+	.long	Sel02$N
+	.long	0
+	.long	_NILPROC
+	.globl	Sel02$D
+Sel02$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# TDesc for Sel02.tRec1
+L0$N:
+	.asciz	"Sel02.tRec1"
+	.align	2,144
+L0$S:
+	addl	$32,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	L0$D	# -44 type0
+	.long	0	# -40 type1
+	.long	0	# -36 type2
+	.long	0	# -32 type3
+	.long	0	# -28 type4
+	.long	0	# -24 type5
+	.long	0	# -20 type6
+	.long	0	# -16 type7
+
+	.long	L0$N	# -12 name
+	.long	28	# -8  size/odim
+	.long	L0$S	# -4  skipper
+
+L0$D:
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Sel02$I$N:
+	.asciz	"Sel02$I"
+	.align	2,144
+	.long	Sel02$I$N
+	.long	0
+	.long	_NILPROC
+Sel02$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Sel02$I
+Sel02$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Sel02$I$D
+	subl	$L1,%esp
+
+	# r.s1:={};
+	movl	$0,8+Sel02$G	# r 
+
+	# r.r1.s2:={};
+	movl	$0,12+Sel02$G	# r 
+
+	# r.r1.r2.s3:={};
+	movl	$0,16+Sel02$G	# r 
+
+	# r.r1.r2.r3.s4:={};
+	movl	$0,20+Sel02$G	# r 
+
+	# r.r1.r2.r3.r4.s5:={};
+	movl	$0,24+Sel02$G	# r 
+
+	# r.r1.r2.r3.r4.r5.s6:={};
+	movl	$0,28+Sel02$G	# r 
+
+	# r.r1.r2.r3.r4.r5.r6.s7:={};
+	movl	$0,32+Sel02$G	# r 
+
+	leave
+	ret
+L1=	0
+

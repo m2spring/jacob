@@ -1,0 +1,5 @@
+MODULE main;
+IMPORT InOut;
+BEGIN (* main *)
+ InOut.WriteString("I'm main!"); InOut.WriteLn;
+END main.

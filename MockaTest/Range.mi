@@ -1,0 +1,22 @@
+MODULE Range;
+IMPORT InOut;
+VAR retype:RECORD
+            CASE :CARDINAL OF
+	    |0: lr:LONGREAL;
+	    |1: lo,hi:CARDINAL; 
+            END; (* CASE *)
+           END;
+    i:CARDINAL; r:REAL;
+BEGIN (* Range *)
+ IF retype=retype
+    THEN 
+    ELSE 
+ END; (* IF *)
+ i:=CARDINAL(r); 
+(*<<<<<<<<<<<<<<<
+ retype.lo:=MAX(CARDINAL); 
+ retype.hi:=MAX(CARDINAL); 
+ i:=(retype.lo+retype.hi) MOD 1024; 
+ InOut.WriteCard(i,0); InOut.WriteLn;
+>>>>>>>>>>>>>>>*)
+END Range.

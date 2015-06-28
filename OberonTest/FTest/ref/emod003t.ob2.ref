@@ -1,0 +1,11 @@
+Compiling emod004f
+Compiling emod003t
+'MODULE' emod003t
+-------------------------------------------------------------------------------
+emod004f   SERVER    emod004f
+a        * CONST     SHORTINT = 3
+-------------------------------------------------------------------------------
+
+emod004f.ob2: 6,8: Cyclic imports not allowed
+emod004f.ob2: 10,8: Expression not constant
+emod004f.ob2: 10,17: Identifier not declared in qualified module

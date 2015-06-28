@@ -1,0 +1,12 @@
+Compiling econ001t
+'MODULE' econ001t
+-------------------------------------------------------------------------------
+A         TYPE      ARRAY 3 OF ARRAY 4 OF CHAR
+N         CONST     SHORTINT = 100
+LIMIT     CONST     INTEGER = 199
+FULLSET   CONST     SET = {0..31}
+ASIZE     CONST     SHORTINT = 12
+BIGINT    CONST     LONGINT = MAX(LONGINT)
+BOOL      CONST     BOOLEAN = TRUE
+-------------------------------------------------------------------------------
+

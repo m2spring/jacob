@@ -1,0 +1,13 @@
+Compiling eeao001t
+'MODULE' eeao001t
+-------------------------------------------------------------------------------
+a   VAR       SHORTINT
+d   VAR       SHORTINT
+b   VAR       INTEGER
+c   VAR       REAL
+e   VAR       REAL
+g   VAR       REAL
+f   VAR       LONGREAL
+h   VAR       LONGREAL
+-------------------------------------------------------------------------------
+

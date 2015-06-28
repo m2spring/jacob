@@ -1,0 +1,9 @@
+Compiling emod003t
+Compiling emod004f
+'MODULE' emod004f
+-------------------------------------------------------------------------------
+emod003t   SERVER    emod003t
+c          CONST     SHORTINT = 3
+-------------------------------------------------------------------------------
+
+emod003t.ob2: 6,8: Cyclic imports not allowed

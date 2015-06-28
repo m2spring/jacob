@@ -1,0 +1,14 @@
+MODULE rec;
+PROCEDURE Bla; BEGIN END Bla;
+VAR r, s: RECORD b:BOOLEAN; END;
+r1,r2:REAL;
+l1,l2:LONGREAL;
+BEGIN
+Bla;
+ r:=s;
+Bla;
+r1:=r2;
+Bla;
+l1:=l2;
+Bla;
+END rec.

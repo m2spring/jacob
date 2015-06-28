@@ -1,0 +1,9 @@
+#!/bin/sh
+HOME=/home/mspring/prj/Jacob0
+
+$HOME/Jacob \
+   -tab  $HOME \
+   -link $HOME/bin/oc.linker \
+   -asm  $HOME/bin/oc.assembler \
+   $* \
+   -I$HOME/lib

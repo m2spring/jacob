@@ -1,0 +1,610 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.ProcCalls                                                                                                       ***/
+/********************************************************************************************************************************/
+PROCEDURE CodeProcedureCall ( designator:Designator )
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ Designator(_,_,_,Importing(_,_,_,_,a:PredeclArgumenting,_,_),_,_,_,_,_);
+ Designator(_,_,_,                  a:PredeclArgumenting     ,_,_,_,_,_)?{ TRACE(CodeProcedureCall.Predecls); 
+    CodePredeclProcs(a); 
+ };.
+
+ ..?{ TRACE(CodeProcedureCall.UserProc); 
+    CodeLDesignator(designator,acode);
+    Cons.NoFuncResult(acode); 
+ };.
+ 
+/*END CodeProcedureCall */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeFunctionReturn ( srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , coercion:Coercion )
+LOCAL{ VAR dcode:DCode; }
+
+ RealTypeRepr,..;
+ LongrealTypeRepr,..?{
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.FloatFuncReturn(dcode); 
+ };.
+
+ .. ?{
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.FuncReturn(dcode); 
+ };.
+
+/*END CodeFunctionReturn */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeArguments ( SignatureRepr , ExprLists , isForeign:BOOLEAN , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR argcode:ArgCode; }
+
+ Signature(nextSig:SignatureRepr,VarEntry(_,_,_,_,_,_,dstType:TypeReprs,_,_,parMode,_,refMode,_,_))
+,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} ?{ TRACE(CodeArguments); 
+    CodeArguments(nextSig,nextExp,isForeign,argcodeIn,argcode); 
+
+    IF isForeign THEN 
+       IF parMode=OB.REFPAR THEN 
+          CodeForeignVarParam(expr,argcode,argcode); 
+       ELSE 
+          CodeForeignValParam(dstType,srcType,srcVal,expr,coerce,argcode,argcode); 
+       END;
+    ELSE 
+       IF parMode=OB.REFPAR THEN 
+          CodeVarParam(dstType,srcType,srcVal,expr,argcode,argcode); 
+       ELSIF refMode=OB.REFPAR THEN   
+          CodeRefdValParam(dstType,srcType,srcVal,expr,argcode,argcode); 
+       ELSE 
+          CodeValParam(dstType,srcType,srcVal,expr,coerce,argcode,argcode); 
+       END;
+    END;
+ };.
+ 
+ sig:GenericSignature
+,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} ?{ TRACE(CodeArguments.Generic); 
+    CodeArguments(sig,nextExp,isForeign,argcodeIn,argcode); 
+
+    CodeGenericParam(srcType,srcVal,expr,argcode,argcode); 
+ };.
+ 
+ _,mtExprList,.. => argcodeIn ?.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeArguments: failed'); };.
+
+/*END CodeArguments */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeVarParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR argcode:ArgCode; }
+
+ _,_,_,DesignExpr(_,_,_
+                 ,Designator(_,_,_
+                            ,Importing(_,_,_,_
+                                      ,SysValArgumenting(_,_,_,_,_,_,_,_,e:Exprs,eType,_),_,_
+                                      ),_,_,_,_,_
+                            )
+                 ,_)
+ ,_ => {argcode} ?{ TRACE(CodeVarParam.SYSTEM.VAL); 
+    CodeVarParam1(dstType,eType,OB.cmtValue,e,argcodeIn,argcode); 
+ };.
+
+ .. => {argcode} ?{ TRACE(CodeVarParam.Default); 
+    CodeVarParam1(dstType,srcType,srcVal,expr,argcodeIn,argcode); 
+ };.
+
+/*END CodeVarParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeVarParam1 ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; }
+
+ RecordTypeRepr,_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ?{ TRACE(CodeVarParam1.Record); 
+    CodeRecordVarParam(entry,srcType,d,argcodeIn,argcode);
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ? (len=OB.OPENARRAYLEN);
+ { TRACE(CodeVarParam1.OpenArray); 
+    CodeOpenArrayParam(entry,dstType,srcType,srcVal,d,argcodeIn,argcode); 
+ };.
+
+ _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeVarParam1.Default); 
+    CodeLDesignator(d,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeVarParam1: failed'); };.
+
+/*END CodeVarParam1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenArrayParam ( actEntry:Entries , frmType:TypeReprs , actType:TypeReprs , actVal:ValueReprs 
+                             , designator:Designator , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; implcode:ImplCode; idData:tImplicitDesignationData;
+           useActNofElems:BOOLEAN; lastLenOfs:LONGINT; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ /* actEntry   =: */ VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_)
+,/* frmType    =: */ ArrayTypeRepr(_,_,_,_,_,len,ByteTypeRepr)
+,/* actType    =: */ TypeRepr(_,size,_,_,_)
+,/* actVal     =: */ _
+,/* designator =: */ _
+,_ => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeOpenArrayParam.ArrayOfByte); 
+    CodeOpenArrayOfByteParam(actType,T.ElemTypeOfArrayType(varType),actEntry,designator,argcodeIn,argcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ /* actEntry   =: */ VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_) /* == Designator:EntryOut */
+,/* frmType    =: */ _
+,/* actType    =: */ ArrayTypeRepr(_,_,_,_,_,len,_)
+,/* actVal     =: */ _
+,/* designator =: */ Designator,_ => {argcode} ?;{ TRACE(CodeOpenArrayParam.Array); 
+
+    useActNofElems:=FALSE; 
+    
+    CodeImplicitLDesignator(designator,idData,acode); 
+    IF len#OB.OPENARRAYLEN THEN 
+       Cons.ConjureRegister(dcode); 
+       Cons.ImplicitArg((* implOfs    := *) 0
+                       ,(* objOfs     := *) 0
+                       ,(* isStackObj := *) FALSE
+                       ,(* Address    := *) acode
+                       ,(* newReg     := *) dcode
+                       ,(* Implicits  =: *) implcode); 
+    ELSE 
+       lastLenOfs:=idData.ofsOfLEN0+4*(ADR.OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr(varType)-1); 
+   
+       IF idData.codeToOpenIndexedElem#NIL THEN 
+          Cons.ConjureRegister(dcode); 
+          Cons.ImplicitOpenIndexedArg((* implOfs         := *) lastLenOfs
+                                     ,(* objOfs          := *) idData.ofsOfObject
+                                     ,(* isStackObj      := *) idData.isStackObject
+                                     ,(* OpenIndexedElem := *) idData.codeToOpenIndexedElem
+                                     ,(* newReg          := *) dcode
+                                     ,(* Implicits       =: *) implcode); 
+       ELSE 
+          useActNofElems:=TRUE; 
+          Cons.ConjureRegister(dcode); 
+          Cons.ImplicitArg((* implOfs        := *) lastLenOfs
+                          ,(* objOfs         := *) idData.ofsOfObject
+                          ,(* isStackObj     := *) idData.isStackObject
+                          ,(* Address        := *) idData.acodeToObjHeader
+                          ,(* newReg         := *) dcode
+                          ,(* Implicits      =: *) implcode); 
+       END;
+    END;
+    
+    CodeImplicitConstLens(frmType,actType,implcode); 
+
+    Cons.ImplNewNofElems(useActNofElems,implcode,implcode); 
+    Cons.ImplObjReference(implcode,implcode); 
+    Cons.Param_Implicit(argcodeIn,implcode,argcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ ..=> NIL ?{ ERR.Fatal('CODE.CodeOpenArrayParam: failed'); };.
+
+/*END CodeOpenArrayParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeImplicitConstLens ( frmType:TypeReprs , actType:TypeReprs , REF implcode:ImplCode )
+
+ ArrayTypeRepr(_,_,_,_,_,frmLen,frmElem),ArrayTypeRepr(_,_,_,_,_,actLen,actElem),_ ? (frmLen=OB.OPENARRAYLEN);
+ { TRACE(CodeImplicitConstLens); 
+    CodeImplicitConstLens(frmElem,actElem,implcode); 
+    
+    IF actLen=OB.OPENARRAYLEN THEN 
+       Cons.ImplOpenLen(implcode,implcode); 
+    ELSE
+       Cons.ImplConstLen(actLen,implcode,implcode); 
+    END;
+ };.
+
+ .. ?.
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenArrayOfByteParam ( actType:TypeReprs , flattenedVarType:TypeReprs , actEntry:Entries , designator:Designator 
+                                   , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:tImplicitDesignationData; sz:LONGINT; }
+
+/*
+ * Think of:
+ * PROCEDURE Callee(VAR a:ARRAY OF SYSTEM.BYTE);
+ */
+
+ /* PROCEDURE Caller(VAR r:tRecord); BEGIN Callee(r); ... */
+ RecordTypeRepr,_,VarEntry(_,_,_,_,_,_,RecordTypeRepr,_,_,parMode,_,_,_,_),..
+ => {argcode} ? (parMode=OB.REFPAR); { TRACE(CodeOpenArrayOfByteParam.RecordVarPar); 
+    CodeImplicitLDesignator(designator,idData,objAcode); 
+
+    Cons.Selector(idData.ofsOfObjHeader,idData.acodeToObjHeader,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.PointerFrom(dcode,acode); 
+    Cons.Selector(-8,acode,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+    
+    Cons.AddressOf(objAcode,dcode); 
+    Cons.Param(argcode,dcode,argcode); 
+ };.
+ 
+ /* VAR p: ARRAY c OF POINTER TO tRecord; BEGIN Callee(p [i] ^); ... */
+ /*       {          }                                  {   }        */
+ RecordTypeRepr,PointerTypeRepr,.. => {argcode} ?{ TRACE(CodeOpenArrayOfByteParam.PointerToRecord); 
+    CodeLDesignator(designator,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param_RecordSizeAndAddr(argcodeIn,dcode,argcode); 
+ };.
+ 
+ /* PROCEDURE Caller( VAR a:ARRAY OF ARRAY OF T); BEGIN Callee(a [i] ); ... */
+ /*                  [   ]          {        }                  {   }       */
+ ArrayTypeRepr(_,_,_,_,_,len,_),_,VarEntry(_,_,_,_,_,_,varType,isParam,..),..
+ => {argcode} ? (isParam & (len=OB.OPENARRAYLEN)); { TRACE(CodeOpenArrayOfByteParam.OpenArrayVarPar); 
+    CodeImplicitLDesignator(designator,idData,objAcode); 
+    IF actType=varType THEN (* the complete array gets passed... *)
+   
+       Cons.Selector(4+idData.ofsOfObjHeader,idData.acodeToObjHeader,acode); 
+       Cons.ContentOf(l,acode,dcode); 
+   
+       sz:=T.ElemSizeOfOpenArrayType(actType); 
+       IF sz#1 THEN 
+          Cons.LongintConst(sz,sizeDcode); 
+          Cons.SymDyOper(imul,sizeDcode,dcode,dcode); 
+       END;
+       Cons.Param(argcodeIn,dcode,argcode); 
+       
+       Cons.AddressOf(objAcode,dcode); 
+       Cons.Param(argcode,dcode,argcode); 
+    ELSE 
+       Cons.Param_PartialOArrSizeAndAddr(idData.nofUnindexedLens
+                                        ,idData.ofsOfLastLEN
+                                        ,idData.staticSize
+                                        ,idData.ofsOfObject
+                                        ,(*isStackObj:=*)TRUE
+                                        ,argcodeIn
+                                        ,idData.codeToOpenIndexedElem
+                                        ,argcode); 
+    END;
+ };.
+ 
+ /* VAR p: ARRAY c OF POINTER TO ARRAY OF ARRAY OF T; BEGIN Callee(p [i] ^); ... */
+ /*       {          }                   {        }                 {   }        */
+ ArrayTypeRepr(_,_,_,_,_,len,_),PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,varType)),..
+ => {argcode} ? (len=OB.OPENARRAYLEN); { TRACE(CodeOpenArrayOfByteParam.CompleteOpenArrayPointer); 
+    CodeImplicitLDesignator(designator,idData,objAcode); 
+    IF actType=varType THEN (* the complete array gets passed... *)
+       Cons.AddressOf(idData.acodeToObjHeader,dcode); 
+       Cons.Param_OArrSizeAndAddr(ADR.ArrayOfs(actType),T.ElemSizeOfOpenArrayType(actType),argcodeIn,dcode,argcode); 
+    ELSE 
+       Cons.Param_PartialOArrSizeAndAddr(idData.nofUnindexedLens
+                                        ,idData.ofsOfLastLEN
+                                        ,idData.staticSize
+                                        ,idData.ofsOfObject
+                                        ,(*isStackObj:=*)FALSE
+                                        ,argcodeIn
+                                        ,idData.codeToOpenIndexedElem
+                                        ,argcode); 
+    END;
+ };.
+ 
+ TypeRepr(_,size,_,_,_),.. => {argcode} ?{ TRACE(CodeOpenArrayOfByteParam.Default); 
+    Cons.LongintConst(size,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+    
+    CodeLDesignator(designator,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcode,dcode,argcode); 
+ };.
+
+/*END CodeOpenArrayOfByteParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeRecordVarParam ( Entries , srcType:TypeReprs , designator:Designator , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; idData:tImplicitDesignationData; implcode:ImplCode; }
+
+ VarEntry(_,_,_,_,_,_,type:TypeReprs,_,_,parMode,_,_,_,_),.. => {argcode} 
+ ? ((parMode=OB.REFPAR) OR T.IsPtrToRecOrArrOfPtrToRec(type)); { TRACE(CodeRecordVarParam.Ref); 
+    CodeImplicitLDesignator(designator,idData,acode); 
+
+    Cons.ConjureRegister(dcode); 
+    Cons.ImplicitArg
+    ((* implOfs        := *) idData.ofsOfObjHeader
+    ,(* objOfs         := *) idData.ofsOfObject
+    ,(* isStackObj     := *) idData.isStackObject
+    ,(* Address        := *) idData.acodeToObjHeader
+    ,(* newReg         := *) dcode
+    ,(* Implicits      =: *) implcode); 
+    Cons.ImplObjReference(implcode,implcode); 
+    Cons.ImplTypedesc(implcode,implcode); 
+    Cons.Param_Implicit(argcodeIn,implcode,argcode); 
+ };.
+
+ .. => {argcode} ?{ TRACE(CodeRecordVarParam.ConstType); 
+    CodeLDesignator(designator,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+    
+    Cons.GlobalVariable(LAB.AppS(T.LabelOfTypeRepr(srcType),'$D'),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcode,dcode,argcode); 
+ };.
+
+/*END CodeRecordVarParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeRefdValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs 
+                           , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING; }
+
+ ArrayTypeRepr(_,_,_,_,_,len,CharTypeRepr),_,ValueRepr,.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeRefdValParam.String); 
+    CodeOpenArrayStringParam(srcType,srcVal,argcodeIn,argcode); 
+ };.
+
+ ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ? (len=OB.OPENARRAYLEN);
+ { TRACE(CodeRefdValParam.OpenArray); 
+    CodeOpenArrayParam(entry,dstType,srcType,srcVal,d,argcodeIn,argcode); 
+ };.
+
+ _,CharTypeRepr      ,CharValue(v),.. ;
+ _,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeRefdValParam.Char); 
+    ar[0]:=OT.CHARofoCHAR(v); ar[1]:=0C; 
+    Strings.ArrayToString(ar,st); 
+    OT.STR2oSTRING(st,os); 
+    
+    Cons.GlobalVariable(CV.String(os),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ _,StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeRefdValParam.String); 
+    Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeRefdValParam.Default); 
+    CodeLDesignator(d,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeRefdValParam: failed'); };.
+ 
+/*END CodeRefdValParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenArrayStringParam ( srcType:TypeReprs , srcVal:ValueReprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; str:OT.oSTRING; }
+
+ CharStringTypeRepr,CharValue(v),_ => {argcode} ?{ TRACE(CodeOpenArrayStringParam.Char); 
+    OT.oCHAR2oSTRING(v,str); 
+
+    Cons.LongintConst(1+ORD(v#0),dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+
+    Cons.GlobalVariable(CV.String(str),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode);
+    Cons.Param(argcode,dcode,argcode);
+ };.
+
+ StringTypeRepr,StringValue(v),_ => {argcode} ?{ TRACE(CodeOpenArrayStringParam.String); 
+    Cons.LongintConst(1+OT.LengthOfoSTRING(v),dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+
+    Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode);
+    Cons.Param(argcode,dcode,argcode);
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeOpenArrayStringParam: failed'); };.
+
+/*END CodeOpenArrayStringParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , coercion:Coercion 
+                       , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:LONGINT; }
+
+ RealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Real_Real); 
+    Cons.RealConst(v,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+
+ LongrealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Longreal_Real); 
+    OT.oREAL2oLONGREAL(v,lr); OT.SplitoLONGREAL(lr,lo,hi); 
+    Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
+    Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
+ };.
+
+ LongrealTypeRepr,LongrealTypeRepr,LongrealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Longreal_Longreal); 
+    OT.SplitoLONGREAL(v,lo,hi); 
+    Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
+    Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
+ };.
+
+ CharTypeRepr,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Char_Char); 
+    Cons.CharConst(v,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+
+ _,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeValParam.String_Char); 
+    Cons.IntegerConst(v MOD 256,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+
+ _,StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeValParam.String_String); 
+    CASE OT.LengthOfoSTRING(v) OF
+    |0:   Cons.CharConst(0,dcode);
+    |1:   OT.SplitoSTRING(v,li); Cons.IntegerConst(li,dcode); 
+    |2,3: OT.SplitoSTRING(v,li); Cons.LongintConst(li,dcode); 
+    END;
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+
+ FloatTypeRepr(_,size,..),.. => {argcode} ?{ TRACE(CodeValParam.Floats); 
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.FloatParam(ASM.FloatSizeTab[size],argcodeIn,dcode,argcode);
+ };.
+ 
+ _,ByteTypeRepr     ,.. ;
+ _,PtrTypeRepr      ,.. ;
+ _,BooleanTypeRepr  ,.. ;
+ _,CharTypeRepr     ,.. ;
+ _,SetTypeRepr      ,.. ;
+ _,ShortintTypeRepr ,.. ;
+ _,IntegerTypeRepr  ,.. ;
+ _,LongintTypeRepr  ,.. ;
+ _,NilTypeRepr      ,.. ;
+ _,PointerTypeRepr  ,.. ;
+ _,ProcedureTypeRepr,.. => {argcode} ?{ TRACE(CodeValParam.StandardType); 
+    CodeRExpr(srcType,expr,coercion,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+ 
+ TypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ? (size<=4);{ TRACE(CodeValParam.SmallStructuredType); 
+    CodeLDesignator(d,acode); 
+    CASE size OF
+    |0:  Cons.ContentOf(b,acode,dcode); Cons.Param0(argcodeIn,dcode,argcode); 
+    |3:  Cons.ContentOf(l,acode,dcode); Cons.Param(argcodeIn,dcode,argcode); 
+    ELSE Cons.ContentOf(ASM.SizeTab[size],acode,dcode); Cons.Param(argcodeIn,dcode,argcode); 
+    END;
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeValParam: failed'); };.
+
+/*END CodeValParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeForeignVarParam ( expr:Exprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR argcode:ArgCode; }
+
+ DesignExpr(_,_,_
+           ,Designator(_,_,_
+                      ,Importing(_,_,_,_
+                                ,SysValArgumenting(_,_,_,_,_,_,_,_,e:Exprs,_,_),_,_
+                                ),_,_,_,_,_
+                      )
+           ,_)
+ ,_ => {argcode} ?{ TRACE(CodeForeignVarParam.SYSTEM.VAL); 
+    CodeForeignVarParam1(e,argcodeIn,argcode); 
+ };.
+
+ .. => {argcode} ?{ TRACE(CodeForeignVarParam.Default); 
+    CodeForeignVarParam1(expr,argcodeIn,argcode); 
+ };.
+
+/*END CodeForeignVarParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeForeignVarParam1 ( expr:Exprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; }
+
+ DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeForeignVarParam1.Default); 
+    CodeLDesignator(d,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeForeignVarParam1: failed'); };.
+
+/*END CodeForeignVarParam1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeForeignValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , coercion:Coercion 
+                              , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR acode:ACode; argcode:ArgCode; }
+
+ ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.FormalOpenArray); 
+    CodeGenericParam(srcType,srcVal,expr,argcodeIn,argcode); 
+ };.
+
+ _,ArrayTypeRepr(_,size,_,_,_,len,_),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ? (len#OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualFixedArray); 
+    CodeLDesignator(d,acode); 
+    Cons.ParamStructured(size,argcodeIn,acode,argcode); 
+ };.
+
+ _,ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualOpenArray); 
+    ERR.Fatal('CODE.CodeForeignValParam.ActualOpenArray: Not yet implemented');
+ };.
+
+ RecordTypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeForeignValParam.RecordType); 
+    CodeLDesignator(d,acode); 
+    Cons.ParamStructured(size,argcodeIn,acode,argcode); 
+ };.
+
+ .. => {argcode}?{ TRACE(CodeForeignValParam.Default); 
+    CodeValParam(dstType,srcType,srcVal,expr,coercion,argcodeIn,argcode); 
+ };.
+
+/*END CodeForeignValParam */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeGenericParam ( srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , argcodeIn:ArgCode => ArgCode )
+LOCAL{ VAR ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING; 
+           acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:LONGINT; }
+
+ CharTypeRepr      ,CharValue(v),.. ;
+ CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.CharConst); 
+    ar[0]:=OT.CHARofoCHAR(v); ar[1]:=0C; 
+    Strings.ArrayToString(ar,st); 
+    OT.STR2oSTRING(st,os); 
+    
+    Cons.GlobalVariable(CV.String(os),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.StringConst); 
+    Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.RealConst); 
+    Cons.RealConst(v,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+
+ LongrealTypeRepr,LongrealValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.LongrealConst); 
+    OT.SplitoLONGREAL(v,lo,hi); 
+    Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
+    Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
+ };.
+
+ FloatTypeRepr(_,size,..),.. => {argcode} ?{ TRACE(CodeGenericParam.Floats); 
+    CodeRExpr(srcType,expr,OB.cmtCoercion,dcode); 
+    Cons.FloatParam(ASM.FloatSizeTab[size],argcodeIn,dcode,argcode);
+ };.
+ 
+ ByteTypeRepr     ,.. ;
+ PtrTypeRepr      ,.. ;
+ BooleanTypeRepr  ,.. ;
+ CharTypeRepr     ,.. ;
+ SetTypeRepr      ,.. ;
+ ShortintTypeRepr ,.. ;
+ IntegerTypeRepr  ,.. ;
+ LongintTypeRepr  ,.. ;
+ NilTypeRepr      ,.. ;
+ PointerTypeRepr  ,.. ;
+ ProcedureTypeRepr,.. => {argcode} ?{ TRACE(CodeGenericParam.StandardType); 
+    CodeRExpr(srcType,expr,OB.cmtCoercion,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode);
+ };.
+ 
+ RecordTypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeGenericParam.RecordType); 
+    CodeLDesignator(d,acode); 
+    Cons.ParamStructured(size,argcodeIn,acode,argcode); 
+ };.
+
+ TypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeGenericParam.StructuredType); 
+    CodeLDesignator(d,acode); 
+    Cons.AddressOf(acode,dcode); 
+    Cons.Param(argcodeIn,dcode,argcode); 
+ };.
+
+ .. => NIL ?{ ERR.Fatal('CODE.CodeGenericParam: failed'); };.
+
+/*END CodeGenericParam */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.ProcCalls                                                                                                   ***/
+/********************************************************************************************************************************/
+

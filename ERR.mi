@@ -1,0 +1,171 @@
+IMPLEMENTATION MODULE ERR;
+
+IMPORT ARG,BasicIO,ErrLists,Errors,FIL,IO,O,Parser,POS,Sets,STR,StringMem,Strings,SYSTEM;
+VAR    Messages       : ARRAY [1..MaxMsg] OF StringMem.tStringRef;
+       MessagesLoaded : BOOLEAN;
+       ActPos         : POS.tPosition;
+       ActStr         : ARRAY [0..200] OF CHAR;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE NewMsg(pos : POS.tPosition);
+BEGIN (* NewMsg *)
+ ActPos:=pos; ActStr[0]:=0C;
+
+ IF ARG.OptionEagerErrorMsgs THEN 
+    O.Str(FIL.ActP^.SourceDir^); 
+    O.Str(FIL.ActP^.Filename^); 
+    O.Str(': ');
+    O.Num(pos.Line,4);
+    O.Str(',');
+    O.Num(pos.Column,3);
+    O.Str(': ');
+ END; (* IF *)
+END NewMsg;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WrStr(s : ARRAY OF CHAR);
+BEGIN (* WrStr *)
+ STR.Append(ActStr,s);
+
+ IF ARG.OptionEagerErrorMsgs THEN O.Str(s); END; (* IF *)
+END WrStr;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE MsgDone;
+BEGIN (* MsgDone *)
+ ErrLists.App(FIL.ActP^.ErrorList,ActPos,ActStr);
+
+ IF ARG.OptionEagerErrorMsgs THEN O.Ln; END; (* IF *)
+END MsgDone;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WrIdent(Ident : SHORTCARD);
+VAR a:ARRAY [0..50] OF CHAR;
+BEGIN (* WrIdent *)
+ Parser.TokenName(Ident,a); WrStr(a);
+END WrIdent;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE MsgI(ErrorCode  ,
+               ErrorClass : CARDINAL;
+               pos        : POS.tPosition;
+               InfoClass  : CARDINAL;
+               Info       : SYSTEM.ADDRESS);
+VAR ar:ARRAY [0..Strings.cMaxStrLength+2] OF CHAR; stP:POINTER TO Strings.tString;
+BEGIN (* MsgI *)
+ IF ErrorCode#Errors.ExpectedTokens THEN RETURN; END;
+
+ NewMsg(pos);
+ WrStr('Expected: ');
+
+ CASE InfoClass OF
+ |Errors.Ident : WrStr('Errors.Ident???');
+ |Errors.String: stP := Info; Strings.StringToArray(stP^,ar); WrStr(ar); 
+ ELSE
+ END; (* CASE *)
+
+ MsgDone;
+END MsgI;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE MsgPos(msg : tErrorMsg; VAR pos : POS.tPosition);
+VAR s,t:Strings.tString; a:ARRAY [0..100] OF CHAR;
+BEGIN (* MsgPos *)
+ IF msg=NoErrorMsg THEN RETURN; END;
+
+ IF ~MessagesLoaded THEN LoadErrorMessages; END;
+
+ IF (1<=msg) & (msg<=MaxMsg)
+    THEN StringMem.GetString(Messages[msg],s);
+    ELSE Strings.AssignEmpty(s);
+ END; (* IF *)
+
+ IF Strings.Length(s)=0
+    THEN Strings.ArrayToString('Error #',s);
+         Strings.IntToString(msg,t);
+         Strings.Concatenate(s,t);
+ END; (* IF *)
+
+ Strings.StringToArray(s,a);
+ NewMsg(pos);
+ WrStr(a);
+ MsgDone;
+END MsgPos;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Msg(Err : tError);
+BEGIN (* Msg *)
+ MsgPos(Err.msg,Err.pos);
+END Msg;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE Fatal(msg : ARRAY OF CHAR); 
+BEGIN (* Fatal *)
+ O.Str('Fatal error: '); O.Str(msg); O.Ln;
+ HALT;
+END Fatal;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE ReadLine(f : IO.tFile; VAR a : ARRAY OF CHAR);
+VAR i:CARDINAL; c:CHAR;
+BEGIN (* ReadLine *)
+ i:=0;
+ LOOP
+  IF IO.EndOfFile(f) THEN EXIT; END;
+  c:=IO.ReadC(f);
+  IF c=CHR(10) THEN EXIT; END;
+  IF i<HIGH(a) THEN a[i]:=c; INC(i); END;
+ END; (* LOOP *)
+ a[i]:=0C;
+END ReadLine;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE LoadErrorMessages;
+VAR s:Strings.tString; f:IO.tFile; i,p:CARDINAL; a:ARRAY [0..200] OF CHAR; na:ARRAY [0..10] OF CHAR; 
+BEGIN (* LoadErrorMessages *)
+ Strings.AssignEmpty(s);
+ FOR i:=1 TO MaxMsg DO
+  Messages[i]:=StringMem.PutString(s);
+ END; (* FOR *)
+
+ IF ~BasicIO.Accessible(ErrTabName,FALSE) THEN RETURN; END;
+ f:=IO.ReadOpen(ErrTabName);
+ WHILE ~IO.EndOfFile(f) DO
+  ReadLine(f,a);
+
+  p:=STR.Pos(a,';');
+  IF p#MAX(CARDINAL) THEN a[p]:=0C; END;
+  STR.DoKillLeadTrailSpaces(a);
+
+  p:=STR.Pos(a,'"');
+  IF p#MAX(CARDINAL) THEN 
+     STR.Slice(na,a,0,p); i:=STR.CardVal(na);
+     STR.Delete(a,0,p+1);
+     p:=STR.Pos(a,'"');
+     IF p#MAX(CARDINAL) THEN a[p]:=0C; END;
+     IF (1<=i) & (i<=MaxMsg) THEN 
+        Strings.ArrayToString(a,s);
+        Messages[i]:=StringMem.PutString(s);
+     END; (* IF *)
+  END; (* IF *)
+ END; (* WHILE *)
+ IO.ReadClose(f);
+
+ MessagesLoaded:=TRUE;
+END LoadErrorMessages;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+BEGIN (* ERR *)
+ ErrTabName     := "Errors.Tab";
+ MessagesLoaded := FALSE;
+END ERR.

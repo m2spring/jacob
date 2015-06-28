@@ -1,0 +1,46 @@
+DEFINITION SYSTEM;
+
+CONST 
+
+(*
+ * register codings for GETREG/PUTREG
+ *)
+
+   eax=0; ebx=1; ecx=2; edx=3; esi=4; edi=5; ebp=6; esp=7; eflags=8;
+   st0=9; st1=10; st2=11; st3=12; st4=13; st5=14; st6=15; st7=16; 
+      
+(*
+ * condition code codings for CC
+ *)
+
+   cf = 00001H; (* Carry Flag             *)
+   pf = 00004H; (* Parity Flag            *)
+   af = 00010H; (* Auxiliary carry Flag   *)
+   zf = 00040H; (* Zero Flag              *)
+   sf = 00080H; (* Sign Flag              *)
+   tf = 00100H; (* Trap Flag              *)
+   if = 00200H; (* Interrupt enable Flag  *)
+   df = 00400H; (* Direction Flag         *)
+   of = 00800H; (* Overflow Flag          *)
+   nt = 04000H; (* Nested Task flag       *)
+   rf = 10000H; (* Resume Flag            *)
+   vm = 20000H; (* Virtual 8086 Mode flag *)
+   ac = 40000H; (* Alignment Check flag   *)
+
+TYPE BYTE; PTR;
+
+PROCEDURE ADR(VAR v: ARRAY OF BYTE): LONGINT;
+PROCEDURE BIT(a, n: LONGINT): BOOLEAN; 
+PROCEDURE CC(n: SHORTINT): BOOLEAN; 
+PROCEDURE LSH(x: {SHORTINT,INTEGER,LONGINT,CHAR,BYTE}; n: LONGINT): TYPE(x); (* n>=0 --> shift left *)
+PROCEDURE ROT(x: {SHORTINT,INTEGER,LONGINT,CHAR,BYTE}; n: LONGINT): TYPE(x); (* n>=0 --> rotate left *)
+PROCEDURE VAL(T:TYPE; VAR x: ARRAY OF BYTE): TYPE(T);
+
+PROCEDURE GET(a: LONGINT; VAR v: {BOOLEAN,CHAR,SHORTINT,INTEGER,LONGINT,REAL,LONGREAL,SET,PTR,PROCEDURE});
+PROCEDURE PUT(a: LONGINT; x: {BOOLEAN,CHAR,SHORTINT,INTEGER,LONGINT,REAL,LONGREAL,SET,PTR,PROCEDURE});
+PROCEDURE GETREG(n: SHORTINT; VAR v: {BOOLEAN,CHAR,SHORTINT,INTEGER,LONGINT,REAL,LONGREAL,SET,PTR,PROCEDURE});
+PROCEDURE PUTREG(n: SHORTINT; x: {BOOLEAN,CHAR,SHORTINT,INTEGER,LONGINT,REAL,LONGREAL,SET,PTR,PROCEDURE});
+PROCEDURE MOVE(a0, a1, n: LONGINT);
+PROCEDURE NEW(VAR v:PTR; n: LONGINT);
+
+END SYSTEM.

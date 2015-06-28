@@ -1,0 +1,40 @@
+Compiling eeop003f
+'BOUND' P
+-------------------------------------------------------------------------------
+r   RECEIVER  T1
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PROC
+-------------------------------------------------------------------------------
+x   REFPARAM  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eeop003f
+-------------------------------------------------------------------------------
+T0     TYPE      RECORD
+                  f   VAR       CHAR
+                 END
+                 (-->T1)
+
+T1     TYPE      RECORD(T0)
+                  f   VAR       CHAR
+                  i   VAR       INTEGER
+                  P   BOUND     VAR r:T1()
+                 END
+                 (-->T2)
+
+T2     TYPE      RECORD(T1)
+                  f   VAR       CHAR
+                  i   VAR       INTEGER
+                  r   VAR       REAL
+                  P   INHERITED VAR r:T1()
+                 END
+r0     VAR       T0
+r1     VAR       T1
+PROC   PROCEDURE (VAR x:T0)
+-------------------------------------------------------------------------------
+
+eeop003f.ob2: 26,5: There is no redefined procedure to call
+eeop003f.ob2: 34,4: Record field not found
+eeop003f.ob2: 42,5: Record field not found
+eeop003f.ob2: 46,5: Record field not found

@@ -1,0 +1,20 @@
+Compiling espr001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+i   VALPARAM  INTEGER
+s   VALPARAM  SET
+c   VALPARAM  CHAR
+r   VALPARAM  REAL
+-------------------------------------------------------------------------------
+
+'MODULE' espr001f
+-------------------------------------------------------------------------------
+P   PROCEDURE (i:INTEGER; s:SET; c:CHAR; r:REAL)
+-------------------------------------------------------------------------------
+
+espr001f.ob2: 16,4: Actual parameter not compatible with formal
+espr001f.ob2: 16,8: Actual parameter not compatible with formal
+espr001f.ob2: 16,12: Actual parameter not compatible with formal
+espr001f.ob2: 20,3: Too few actual parameters
+espr001f.ob2: 24,12: Too few actual parameters
+espr001f.ob2: 28,17: Too many actual parameters

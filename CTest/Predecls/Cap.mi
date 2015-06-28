@@ -1,0 +1,5 @@
+MODULE Cap;
+VAR c,d:CHAR; 
+BEGIN (* Cap *)
+ c:=CAP(d); 
+END Cap.

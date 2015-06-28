@@ -1,0 +1,18 @@
+Compiling evar001t
+'MODULE' evar001t
+-------------------------------------------------------------------------------
+i   VAR       INTEGER
+j   VAR       INTEGER
+k   VAR       INTEGER
+x   VAR       REAL
+y   VAR       REAL
+p   VAR       BOOLEAN
+q   VAR       BOOLEAN
+s   VAR       SET
+a   VAR       ARRAY 100 OF REAL
+w   VAR       ARRAY 16 OF RECORD
+                           name    VAR       ARRAY 32 OF CHAR
+                           count   VAR       INTEGER
+                          END
+-------------------------------------------------------------------------------
+

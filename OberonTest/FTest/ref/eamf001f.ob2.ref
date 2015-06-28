@@ -1,0 +1,45 @@
+Compiling eamf001f
+'PROCEDURE' P1
+-------------------------------------------------------------------------------
+x   VALPARAM  INTEGER
+y   VALPARAM  SET
+z   VALPARAM  CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P2
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P3
+-------------------------------------------------------------------------------
+x   VALPARAM  INTEGER
+y   VALPARAM  LONGREAL
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P4
+-------------------------------------------------------------------------------
+x   VALPARAM  SET
+y   REFPARAM  INTEGER
+z   VALPARAM  REAL
+-------------------------------------------------------------------------------
+
+'MODULE' eamf001f
+-------------------------------------------------------------------------------
+TPROC1   TYPE      (A:INTEGER; B:SET)
+TPROC2   TYPE      () : INTEGER
+TPROC3   TYPE      (A:SHORTINT; B:REAL)
+TPROC4   TYPE      (VAR X:SET; Y:INTEGER; VAR Z:REAL)
+proc1    VAR       TPROC1
+proc2    VAR       TPROC2
+proc3    VAR       TPROC3
+proc4    VAR       TPROC4
+P1       PROCEDURE (x:INTEGER; y:SET; z:CHAR)
+P2       PROCEDURE ()
+P3       PROCEDURE (x:INTEGER; y:LONGREAL)
+P4       PROCEDURE (x:SET; VAR y:INTEGER; z:REAL)
+-------------------------------------------------------------------------------
+
+eamf001f.ob2: 40,9: Expression not assignment compatible
+eamf001f.ob2: 45,9: Expression not assignment compatible
+eamf001f.ob2: 51,9: Expression not assignment compatible
+eamf001f.ob2: 57,9: Expression not assignment compatible

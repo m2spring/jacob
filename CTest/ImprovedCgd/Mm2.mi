@@ -1,0 +1,6 @@
+MODULE Mm2;
+VAR a,b:LONGINT; 
+BEGIN (* Mm2 *)  
+ a:=b DIV 2; 
+ a:=b DIV 3; 
+END Mm2.

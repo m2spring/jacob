@@ -1,0 +1,17 @@
+Compiling eapc003f
+'MODULE' eapc003f
+-------------------------------------------------------------------------------
+SYS   SERVER    SYSTEM
+P     VAR       SYSTEM$PTR
+c     VAR       CHAR
+si    VAR       SHORTINT
+i     VAR       INTEGER
+r     VAR       REAL
+lr    VAR       LONGREAL
+-------------------------------------------------------------------------------
+
+eapc003f.ob2: 17,5: Expression not assignment compatible
+eapc003f.ob2: 21,5: Expression not assignment compatible
+eapc003f.ob2: 25,5: Expression not assignment compatible
+eapc003f.ob2: 29,5: Expression not assignment compatible
+eapc003f.ob2: 33,5: Expression not assignment compatible

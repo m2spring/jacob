@@ -1,0 +1,10 @@
+(* DeclSeq *)
+
+MODULE pars013t;
+VAR
+CONST
+TYPE
+VAR
+VAR
+TYPE
+END pars013t.

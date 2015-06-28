@@ -1,0 +1,85 @@
+Compiling M2 (M2.ob2) 
+CodeModule
+CodeProc
+Code.CallStmt
+CodeProcedureCall.Predecls
+CodePredeclProcs.COPY
+CodeStringCopy.Default
+A
+CodeStringCopyVariableOperand.Open
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeDesignations.Indexing
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeRDesignator1.StandardTypedVar => 944636
+CodeRDesignator => 944636
+CodeRExpr.DesignExpr => 944460
+CodeDesignations.Selecting
+CodeDesignations.Indexing
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeRDesignator1.StandardTypedVar => 943404
+CodeRDesignator => 943404
+CodeRExpr.DesignExpr => 943228
+CodeDesignations.Selecting
+CodeDesignations.Dereferencing
+CodeHeapOpenDesignations.OpenIndex
+CodeOpenIndexing.OpenIndex
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeRDesignator1.StandardTypedVar => 941644
+CodeRDesignator => 941644
+CodeRExpr.DesignExpr => 941468
+CodeOpenIndexing.Default
+CodeOpenIndexingBase.OpenArray
+CodeOpenIndexingBase.Default
+CodeOpenIndexingBase.Default => 940588
+CodeOpenIndexingBase.OpenArray => 940412
+CodeOpenIndexing.Default => 940412
+CodeOpenIndexing.OpenIndex => 940236
+CodeStackImplicitDesignations.OpenIndex => 1052448
+CodeDesignations.Dereferencing => 1052448
+CodeDesignations.Selecting => 1052448
+CodeDesignations.Indexing => 1052448
+CodeDesignations.Selecting => 1052448
+CodeDesignations.Indexing => 1052448
+B
+CodeStringCopyVariableOperand.Open
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeDesignations.Dereferencing
+CodeHeapOpenDesignations.OpenIndex
+CodeOpenIndexing.OpenIndex
+CodeRExpr.DesignExpr
+CodeRDesignator
+CodeRDesignator1.StandardTypedVar
+CodeLDesignator
+CodeOpenLDesignator
+CodeLDesignator1.Var
+CodeRDesignator1.StandardTypedVar => 1050864
+CodeRDesignator => 1050864
+CodeRExpr.DesignExpr => 1050864
+CodeOpenIndexing.Default
+CodeOpenIndexingBase.OpenArray
+CodeOpenIndexingBase.Default
+CodeOpenIndexingBase.Default => 1049984
+CodeOpenIndexingBase.OpenArray => 1049808
+CodeOpenIndexing.Default => 1049808
+CodeOpenIndexing.OpenIndex => 1049632
+CodeStackImplicitDesignations.OpenIndex => 1048928
+CodeDesignations.Dereferencing => 1048928
+C
+D

@@ -1,0 +1,23 @@
+Compiling esfo001f
+'MODULE' esfo001f
+-------------------------------------------------------------------------------
+l   TYPE      SET
+m   VAR       SET
+r   VAR       REAL
+i   VAR       INTEGER
+s   VAR       SHORTINT
+-------------------------------------------------------------------------------
+
+esfo001f.ob2: 15,6: Variable expected
+esfo001f.ob2: 15,6: Integer type expected
+esfo001f.ob2: 15,19: Expression not compatible with control variable
+esfo001f.ob2: 21,6: Integer type expected
+esfo001f.ob2: 25,27: Expression not compatible with control variable
+esfo001f.ob2: 29,27: BY expression must be non-zero
+esfo001f.ob2: 33,11: Expression not assignment compatible
+esfo001f.ob2: 33,19: Expression not compatible with control variable
+esfo001f.ob2: 33,27: Expression not compatible with control variable
+esfo001f.ob2: 41,11: Expression not assignment compatible
+esfo001f.ob2: 41,19: Expression not compatible with control variable
+esfo001f.ob2: 47,27: Expression not constant
+esfo001f.ob2: 47,27: Expression not compatible with control variable

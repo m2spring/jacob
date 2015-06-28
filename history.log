@@ -1,0 +1,1157 @@
+Do 19.01.1995
+
+* Sourcen kopiert
+* Aenderung im Einzelnen:
+
+  *.pum   : "EXPORTS"           --> "PUBLIC"
+  Makefile: "puma -dinm TT.pum" --> "puma -dinmp TT.pum"
+            "puma -din E.pum"   --> "puma -dinp E.pum"
+            "puma -din SI.pum"  --> "puma -dinp SI.pum"
+            "puma -din T.pum"   --> "puma -dinp T.pum"
+            "puma -din V.pum"   --> "puma -dinp V.pum"
+            "puma -din PR.pum"  --> "puma -dinp PR.pum"
+            "puma -din CO.pum"  --> "puma -dinp CO.pum"
+            "puma -din TD.pum"  --> "puma -dinpk TD.pum"
+            "puma -din OD.pum"  --> "puma -dinp OD.pum"
+            "mc -list mc_make_lister" --> "mc"
+            
+Fr 20.01.1995
+
+* POS.md: Datentyp tPosition nun Positions.tPosition
+* Errors.m?: An neue Werkzeugversion angeglichen
+* ERR.mi: Wegen Errors.m? geaendert
+* Source.m?: Neu generiert
+* OD.pum: EXIT in Targetcode eliminiert
+* DRV.mi: "Parser.Parse()" --> "Parser.Parser()"
+* of.mi: Kommandozeilenparameter nun ueber Mocka-Modul Arguments, da
+         Reuse-Modul SysCalls nicht mehr vorhanden
+         
+Fr 03.02.1995
+
+* Makefile: - Ein cat-Aufruf mit allen Sourcen, statt mehrfach-Pipe
+            - Target 'kill' --> Target 'totalclean'
+            - Target 'clean' --> loescht nun auch *.bak
+
+Mo 06.02.1995
+
+* Da bei der Ausgabe von (LONG-)REAL-Zahlen bei voller Mantissenangabe
+  Unterschiede bei der Rundung auftreten, erfolgt die Ausgabe nun mit
+  einer um zwei Stellen verringerten Genauigkeit.
+  O.md,O.mi: 
+  PROCEDURE Real        ( v : REAL    ; Precision : CARDINAL; Length : INTEGER );
+  PROCEDURE LngReal     ( v : LONGREAL; Precision : CARDINAL; Length : INTEGER );
+  PROCEDURE oLngReal    ( v : OT.oLONGREAL; Precision : CARDINAL; Length : INTEGER );
+  -->
+  PROCEDURE Real        ( v : REAL    ; Precision, Length : INTEGER );
+  PROCEDURE LngReal     ( v : LONGREAL; Precision, Length : INTEGER );
+  PROCEDURE oLngReal    ( v : OT.oLONGREAL; Precision, Length : INTEGER );
+
+  DRV.mi, DumpTokens:
+  |Scanner.RealToken    : O.RealSci     (Scanner.Attribute.Real    );
+  |Scanner.LongrealToken: O.oLngRealSci (Scanner.Attribute.Longreal);
+  -->
+  |Scanner.RealToken    : O.Real        (Scanner.Attribute.Real    ,0,-5 );
+  |Scanner.LongrealToken: O.oLngReal    (Scanner.Attribute.Longreal,0,-13);
+  
+  UTI.mi, Real2Arr:
+  RealConv.Real2Str(v,0,-OT.FLT_DIG,s,done);
+  -->
+  RealConv.Real2Str(v,0,-OT.FLT_DIG-2,s,done);
+  
+  UTI.mi, Longreal2Arr:
+  RealConv.LongReal2Str(v,0,-OT.DBL_DIG,s,done);
+  -->
+  RealConv.LongReal2Str(v,0,-OT.DBL_DIG-2,s,done);
+  
+* V.pum: Fehler behoben in OrdValue
+  IntegerValue(v) RETURN {o} ?{ OT.CharOrd(vLongint,v); o:=OB.mIntegerValue(vLongint); };.
+  -->
+  CharValue(v)    RETURN {o} ?{ OT.CharOrd(vLongint,v); o:=OB.mIntegerValue(vLongint); };.
+  
+Di 07.02.1995
+
+* STR:
+  PROCEDURE Length(s : ARRAY OF CHAR) : CARDINAL;
+  -->
+  PROCEDURE Length(VAR s : ARRAY OF CHAR) : CARDINAL;
+
+  Und durch eigene Implementierung den Aufruf von Strings1.Length ersetzt
+  
+* STR: Um einen Datentyp tStr fuer dynamische Strings erweitert.
+
+* O: Um eine Prozedur STR erweitert, mit der dynamische Strings
+  zeichenweise ausgegeben werden koennen, ohne "Segmentation fault"  
+            
+* ARG: Neues Modul zur Behandlung der Kommandozeilenparameter
+
+Mi 08.02.1995
+
+* oc, C: Angelegt
+
+* DRV, FIL: Angepaszt
+
+Do 09.02.1995
+
+* OB.ast: Um Knotentyp SysAsmTypeRepr ergaenzt
+* PR.pum: SYSTEM-Tabelle wird um eine Prozedur ASM ergaenzt
+* oberon.ast: Um Knotentyp SysAsmArgumenting und SysAsmExprLists ergaenzt
+* TT.pum: Um Funktion ExtractExprSysAsm und deren Aufruf ergaenzt 
+          (fuer SYSTEM.ASM), Neue Funktion ExprListToSysAsmExprList
+* V.pum: Um Praedikat IsStringValue ergaenzt
+* oberon.pre: Um Auswertungsregeln fuer SysAsmArgumenting und SysAsmExprLists 
+              ergaenzt
+* oberon.eva: SysAsmExprLists bekommt die gleichen Attribute per DECLARE 
+              zugeordnet wie NewExprLists
+* OD.pum: Um Ausgabe fuer SYSTEM.ASM ergaenzt
+* TD.pum: Um Ausgabe fuer aktuelle Parameter von SYSTEM.ASM ergaenzt
+
+Fr 10.02.1995
+
+* oberon.eva: Die diversen Stellen zur Tabellenausgabe stuetzen sich nun
+  auf ARG.Option...
+* FIL.mi: Die Modification Time vom Object-File wird nun ermittelt
+* DRV.mi: Es wird nur gelinkt, wenn eine Source existiert, deren mTime
+  juenger als die mTime des Executables ist
+
+Di 14.02.1995
+
+* Einfuehrung von Foreign-Modulen:
+* oberon.rex: 
+  - ForeignToken in die Tokenliste mit aufgenommen
+  - TokenNum2TokenName um ForeignToken ergaenzt
+  - Liste der Konstantenmuster um FOREIGN ergaenzt
+* oberon.lal: 
+  - Regel "Module" um Alternative fuer FOREIGN ergaenzt
+  - Wert fuer Inputattribut vom Knotentyp "Module" wird nun richtig uebergeben
+* oberon.ast:
+  - Knotentyp "Module" um Attribut "IsForeign" ergaenzt  
+* TD.pum, PROCEDURE Dump, Rule "Module":
+  - Um Behandlung fuer Attribut IsForeign ergaenzt
+* FIL.m?:
+  - tElem um IsForeign ergaenzt
+* oberon.eva, Module:
+  - "\FIL.\ActP^.\IsForeign := IsForeign;"
+* DRV.mi: Codeerzeugung fuer Foreign-Module wird unterdrueckt  
+
+* Aenderung der Semantik:
+  Bei fehlendem BEGIN musz selbst bei einer Funktionsprozedur kein
+  RETURN vorhanden sein.
+* oberon.ast:
+  - "Stmts = < ... NoStmts = . ... >"
+* oberon.lal: 
+  - "BeginStmts: 'BEGIN' StatementSeq { $$.Tree := $2.Tree;
+               |                      { $$.Tree := Tree.mNoStmts(); }."
+                                                        ^^^^^^^^mmtStmt 
+* TT.pum: Neues Praedikat "IsNoStmts"
+* oberon.che, ProcDecl:
+  - "CHECK Stmts:ReturnExistsOut                                                                               /* !ReturnMustExist */
+        OR \TT.\IsNoStmts(Stmts)                       
+        ^^^^^^^^^^^^^^^^^^^^^^^
+        OR \T.\IsGenuineEmptyType(FormalPars:ResultTypeReprOut)
+     ==> \ERR.\MsgPos(\ERR.\MsgMissingReturn,EndPos);"
+* oberon.che, BoundProcDecl:
+  - Ueberhaupt ganz vergessen:
+    "CHECK Stmts:ReturnExistsOut                                                                               /* !ReturnMustExist */
+        OR \TT.\IsNoStmts(Stmts)
+        OR \T.\IsGenuineEmptyType(FormalPars:ResultTypeReprOut)
+     ==> \ERR.\MsgPos(\ERR.\MsgMissingReturn,EndPos);"
+* TD.pum:
+  - "PREDICATE IsEmpty ( Tree ) ... NoStmts ?. ..."
+
+Do 16.02.1995
+
+* Makefile: Tree.md: ... ast -mdif --> ast -mdiF
+
+* Modul Coder handgeschrieben, da als Puma-Modul die Pattern sehr lang
+  wuerden und es nicht mehr viel zu Pattern-matchen gibt. Auszerdem
+  gaebe es mit dem Tree.TS noch Schwierigkeiten.
+  
+* OB.ast: 
+  - Neuer Typ tLabel, Konstante NOLABEL
+  - ConstEntry erweitert um "[ label : tLabel ]"
+* oberon.eva:
+  - "DeclSection DeclUnits Decls Procs
+     = [ LabelPrefixIn : tLabel INHERITED ]."
+  - Module: "DeclSection:LabelPrefixIn := \UTI.\NewLabel(Name);"
+  - ConstDecl:
+  - ProcDecl: "DeclSection:LabelPrefixIn 
+               := \UTI.\ExtLabel(LabelPrefixIn,IdentDef:Ident);"
+* UTI.m?: Neu: NewPrefix, ExtPrefix
+* C.m?: Neu: EmitStringConst
+
+Mo 20.02.1995
+
+* FIL: tElem um NextLocLabel erweitert
+* UTI, C: Proz. NewLabel und ExtLabel von UTI nach C verschoben
+* C: Proz. EmitLongreal: LONGREALs werden als zwei LONGINTs emitiert
+* V.pum: 
+  - Neues Praedikat IsLongrealValue
+  - Praedikat IsStringValue trifft auch fuer ErrorValue
+* OB.ast: ProcedureEntry: Attribut "label":
+  - PR.pum, oberon.eva: angepaszt  
+  - E.pum: LabelOfEntry angepaszt
+
+Mo 06.03.1995
+
+* C.m?: Neu: EmitReg
+* CgUtil: Neues Modul mit Datentypen fuer das Back End
+
+Do 16.03.1995
+
+* Berechnung der Variablenadressen und -offsets im Evaluator:
+  - Neues Modul ADR
+  - oberon.eva: 
+    + DeclSection = [ VarAddrIn : tAddress THREAD ]
+    * 
+    + Module = { DeclSection:VarAddrIn := \ADR.\GlobalVarBase; }
+    + ProcDecl = { DeclSection:VarAddrIn := \ADR.\LocalVarBase(DeclSection:LevelIn); }
+    + IdentList = [ AddrOfVar : tAddress ]
+      {
+        AddrOfVar,Next:VarAddrIn      := { \ADR.\NextVarAddr
+                                           (/* level     := */ LevelIn
+                                           ,/* oldAddr   := */ VarAddrIn
+                                           ,/* typesize  := */ ItemSize
+                                           ,/* varAddr   =: */ AddrOfVar
+                                           ,/* newAddr   =: */ Next:VarAddrIn);
+                                         };
+        Next:Table2In                 := \E.\DefineVarEntry
+                                         (/* table              := */ Table2In
+                                         ,/* entry              := */ Next:Table1In
+                                         ,/* level              := */ LevelIn
+                                         ,/* ident              := */ IdentDef:Ident
+                                         ,/* type               := */ TypeReprIn
+                                         ,/* addr               := */ AddrOfVar);
+      }
+    * 
+  - OB.ast: + FIELDLEVEL
+
+Fr 17.03.1995
+
+* T.pum:
+  + OpenDimOfArrayType
+* OB.ast:
+  + Signature      = [refMode:tParMode].
+  + ProcedureEntry = [paramSpace:tSize].
+  + BoundProcEntry = [paramSpace:tSize].
+  
+Sa 18.03.1995
+
+* OB.ast:
+  + VarEntry = [refMode:tParMode].
+  - Signature =   next            : SignatureRepr  
+                [ ident           : tIdent        ]
+                  typeRepr        : TypeReprs      
+                [ parMode         : tParMode      ]
+                [ refMode         : tParMode      ].
+  -->                
+    Signature =   next            : SignatureRepr  
+                  VarEntry.
+* E.pum:
+  + FUNCTION SignatureOfProcEntry ( Entries ) TypeReprs
+* SI.pum:
+  + PROCEDURE GetModesOfSignatureParam ( SignatureRepr => tParMode , tParMode , tAddress )
+* T.pum:  
+  + FUNCTION ElemSizeOfOpenArrayType ( t:TypeReprs ) tSize
+  
+Mo 27.03.1995
+
+* oberon.che:
+  * IdentDef = { CHECK ... OR (LevelIn<=\OB.\MODULELEVEL) ... };
+                                      ^
+                                      +--- Damit auch Record-Felder mit
+                                           Exportmarkierungen versehen
+                                           werden koennen.
+Fr 31.03.1995
+
+* OB.ast:
+  + BoundProcEntry     = [ label : tLabel ].
+  + InheritedProcEntry = [ label : tLabel ].
+  
+Mo 03.04.1995
+
+* C.mi:
+  - Wurzelmodul:
+    - Fuer ein Hauptmodul M heiszt das Wurzelmodul nun _M
+    - Initproc heiszt _$I
+* Coder.pum
+  + Module: TDesc fuer Globals
+  + ProcDecl: Displays und Kopie fuer RefdValParam
+  + Erzeugt Kommentare im Assembler-File
+
+Mi 05.04.1995
+
+* Makefile:
+  + Bei "totalclean" --> Aufruf von subClean
+  * PR.md: ... ; puma -dinp PR.pum  -->  PR.md: ... ; puma -dinmp PR.pum
+* oc.linker:
+  - Setzt Executable auf 770
+* subClean:
+  - loescht rekursiv alle "*.s *.lst *.o *_errors *.bak @* *~"
+    und alle mit Rechten 770 (= ug+x) (Achtung!)
+* allmains:
+  - Ausgehend vom cwd werden in allen Unterverzeichnissen nach
+    Main.ob2 gesucht und diese compiliert.    
+* C.mi:
+  + TDesc of module init proc           
+* OB.ast:
+  + Blocklists
+  + TypeRepr = ptrBlocklist:Blocklists.
+* ERR.m?:
+  + PROCEDURE Fatal  
+* PR.pum: 
+  - Ziemlich verkleinert, durch Faktorisierung bei der Konstruktion
+  
+So 09.04.1995
+
+* T.pum: 
+  + FUNCTION PtrBlocklistOfType ( t:TypeReprs ) Blocklists
+  + FUNCTION CalcPtrBlocklist ( t:TypeReprs ) Blocklists
+  + FUNCTION BlocklistOfArrayType ( elemBl:Blocklists , len:tSize , elemSize:tSize ) Blocklists
+  + FUNCTION BlocklistOfRecordType ( fields:Entries ) Blocklists
+  + FUNCTION ConcatBlocklists ( b1:Blocklists , b2:Blocklists , base:tAddress ) Blocklists
+  + PREDICATE AreEqualBlocklists ( al:Blocklists , bl:Blocklists )
+    
+Mo 10.04.1995
+
+* T.pum:
+  + FUNCTION PtrBlocklistOfModuleGlobals ( decls:Entries ) Blocklists
+  + FUNCTION PtrBlocklistOfProcLocals ( decls:Entries ) Blocklists
+  + FUNCTION PtrBlOfProcLocals ( decls:Entries , b1:Blocklists ) Blocklists
+  
+Di 11.04.1995
+
+* Neues Modul L fuer Limits
+* UTI.m?:
+  + PROCEDURE MaxLI
+* oberon.ast:
+  - ExtendedSyntaxTree PROPERTY OUTPUT --> Die Warnings sind nun weg :-)  
+* oberon.eva:
+  - ExprLists = [PositionOut:tPosition SYNTHESIZED]. 
+    Attribute removed.
+* T.pum:
+  + FUNCTION HeightOfBlocklist ( Blocklists ) LONGINT
+* Die Initialisierung von globalen und lokalen Zeigervariablen mueszte jetzt
+  eigentlich funktionieren. Koennte man gut testen, indem man ein
+  Programm schreibt, dasz lauter Module generiert. Und zwar per Aufzaehlung
+  der Typen. Das Modul testet dann selber, ob seine Variablen schoen
+  initialisiert sind (bzw. die Prozedur).  
+
+Mi 12.04.1995
+
+* Puma-Blocklist-Funktionen aus T.pum nach BL.pum
+
+* ERR.md,Errors.Tab: Weitere Fehlermeldungen
+  + MsgProcNestedTooDeeply: "Procedure nested too deeply"
+  + MsgMaxExtLevelReached : "Type exceeds max. extension level"
+* oberon.eva:
+  + ExtendedType = ... [extLevel:tLevel]
+                   { ... extLevel:=1+\T.\ExtLevelOfType(BaseTypeRepr); ... }.
+* oberon.che:
+  + ExtendedType = { ... CHECK (extLevel <= \L.\MaxExtensionLevel)
+                         ==> \ERR.\MsgPos(\ERR.\MsgMaxExtLevelReached,Qualidents:Position); }.
+
+Do 13.04.1995
+
+Einschraenkung: Der Typ des ersten Parameters bei SYSTEM.NEW darf
+keinen Zeigertyp als Subtyp enthalten (vgl. Project Oberon, S.252).
+Vielleicht noch etwas mehr Test-Files???			
+* T.pum:
+  + PREDICATE HasPointerSubType ( TypeReprs )
+* oberon.pre:  
+  + SysNewArgumenting = { ...
+                          CHECK \T.\IsPointerType(Expr1:TypeReprOut)
+    ---->                     & ~\T.\HasPointerSubType
+                                 (\T.\BaseTypeOfPointerType(Expr1:TypeReprOut))
+                          ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr1:Position);
+			  ...
+			}.  	 
+
+Zur Erzeugung des <proc>$N bei einem TDesc einer Prozedur: Diese Handhabung
+ist noetig, da sonst der Prozedurpfadname so lang werden kann, dasz es
+Probleme mit den diversen String-Typen gibt. Dies Problem tritt bei den
+"normalen" Prozedur-Labels nicht auf, da nicht-exportierte Prozeduren
+ein Label der Form L<num> bekommen.
+Auszerdem haette man's sonst schwer mit den Namen anonymer Typen.
+* OB.ast:
+  + Knotentyp NamePaths ...
+  + ProcedureEntry = ... namePath .
+* oberon.eva:
+  + Module NamePaths
+* TT.pum:
+  + FUNCTION IdentOfFirstVariable ( IdentLists ) tIdent
+  + FUNCTION IdentOfFirstParameter ( ParIds ) tIdent  
+  
+Zur Erzeugung der Typdeskriptoren:
+* OB.ast:
+  + Knotentypen: TDescList, TDescElems
+  + TypeRepr = ... [isInTDescList:BOOLEAN].
+* oberon.ast.ExtendedSyntaxTree:
+  + Module = ... [TDescList:tOB].
+* oberon.eva:
+  + MODULE TypeDescriptors  
+* T.pum:
+  + PROCEDURE AppendTDesc ( TDescList , t:TypeReprs )
+  + PROCEDURE DefineTypeReprLabel ( Entries , label:tLabel )
+  + FUNCTION LabelOfTypeRepr ( TypeReprs ) tLabel
+* Jetzt codet er schon 
+  - Namen
+  - Skipper
+  - BaseTypes 
+  Morgen kommt die ProcTab dazu. Die Walker heben wir uns fuer spaeter auf.
+  
+Fr 14.04.1995
+
+* Makefile:
+  - Temporaeres Zwischen-Target oberon.aecp eingefuehrt: Somit geht die
+    Erzeugung vom Tree- und Eval-Modul schneller.
+    
+Problem entdeckt:
+sei MODULE M;
+    TYPE R=RECORD END;
+         P=POINTER TO R;
+    VAR  vR:R; vP:P;
+    PROCEDURE (    r:P)ProcP; BEGIN END ProcP;
+    PROCEDURE (VAR r:R)ProcR; BEGIN END ProcR;
+    BEGIN 
+     vR.ProcP; (* <-- Fehler! *)
+     vP.ProcR; (* <-- OK      *)
+    END M.                      
+Die Fehlerstelle wird als solche (noch) nicht erkannt. Es ist ein Fehler,
+da der Receiver-Parameter kein Zeiger ist.
+Tabelle: 
+   Receiver Parameter  |
+  Aktueller | Formaler | | Resultat
+  ----------+----------+---------
+   Record   | Record   |   OK
+   Record   | Pointer  |  FEHLER
+   Pointer  | Record   |   OK
+   Pointer  | Pointer  |   OK
+Behoben:
+* ERR.md:
+  + MsgReceiverParamNotPointer  = 78 ; 
+* Errors.Tab
+  + 78 "Receiver parameter must be a pointer" ; MsgReceiverParamNotPointer
+* oberon.che:
+  + Argumenting = [ isBoundProc : BOOLEAN ]
+                { isBoundProc := \E.\IsBoundProcEntry(EntryIn); 
+                  ...
+                  CHECK ~isBoundProc
+                     OR \T.\IsRecordType(\E.\ReceiverTypeOfBoundProc(EntryIn))
+                     OR \T.\IsPointerType(\E.\TypeOfEntry(PrevEntryIn))
+                  ==> \ERR.\MsgPos(\ERR.\MsgReceiverParamNotPointer,Position); }.
+  
+Zur Erzeugung der ProcTab eines TDesc:
+* T.pum,oberon.eva:
+  * Umbennung FUNCTION CloneRecord --> FUNCTION CloneRecordFields
+* OB.ast:
+  + CONST NOPROCNUM = -1;
+  + BoundProcEntry = ... redefinedProc:Entries [procNum:LONGINT].
+  + RecordTypeRepr = ... [nofBoundProcs:LONGINT].
+* T.pum:
+  + FUNCTION NumberOfBoundProcsOfType ( TypeReprs ) LONGINT
+  * FUNCTION CompleteRecordTypeRepr 
+    ... /* nofBoundProcs =: */ 0
+    ... n := NumberOfBoundProcsOfType(baseTypeRepr); ...
+  + PROCEDURE CalcProcNumsOfEntries ( table:Entries )
+  + PROCEDURE CalcProcNumsOfType ( type:TypeReprs )
+  + PROCEDURE CalcProcNumsOfFields ( fields:Entries , type:TypeReprs )
+  + FUNCTION ProcNumOfBoundProc ( entry:Entries ) LONGINT
+  + FUNCTION NewProcNum ( TypeReprs ) LONGINT
+  + FUNCTION CountCalcedProcNums ( Entries ) LONGINT
+Uff, geschafft: Jetzt berechnet er endlich die beschissenen ProcNums.
+Ganz schoen durch die Brust in's Auge... Und das alles blosz wegen
+den Preredefinitionen. Haetten wir mal besser nicht mit aufgenommen.
+Die eigentliche ProcTab ist nun kein Problem mehr.
+0:35: So jetzt gibt's also auch die ProcTab.
+Da gibt's dann auch noch ein biszchen zu testen...
+
+Sa 15.04.1995
+
+* Makefile:
+  Die bei mehreren Werkzeugen vorhandene 
+  Kommandozeilenoption "7 touch output files only if necessary"
+  bringt eine ganz schoene Zeitersparnis beim Kompilieren:
+  Die *.md Files werden nur veraendert, wenn das auch
+  tatsaechlich notwendig ist. Deshalb folgende Aenderung:
+  * ; ast -mdiF7 oberon.aecp
+  * ; ast -47 oberon.ast
+  * ; ag -A7 oberon.aecp
+  * ; ast -mdi=7 OB.ast
+  * ; ast -47 OB.ast
+  * ; puma -dinmp7 TT.pum
+  * ; puma -dinp7 E.pum
+  * ; puma -dinp7 SI.pum
+  * ; puma -dinp7 T.pum
+  * ; puma -dinp7 V.pum
+  * ; puma -dinmp7 PR.pum
+  * ; puma -dinp7 CO.pum
+  * ; puma -dinp7 ADR.pum
+  * ; puma -dinp7 BL.pum
+  * ; puma -dinp7 Coder.pum
+  * ; puma -dinpk7 TD.pum
+  * ; puma -dinp7 OD.pum
+  Das Problem ist jetzt nur, dasz make die relevanten Targets jedesmal
+  neu machen will, da sich ja die Dateizeit vom *.md nicht aendert :-(
+  Musz man mal grundsaetzlich ueber die Abhaengigkeiten im
+  Makefile nachdenken und das mal ueber *.mi's machen.
+  
+So 16.04.1995
+
+* Aufteilung: 
+  + Die Prozeduren Cmt* aus Coder.pum zur Erzeugung von
+    Kommentaren in den Assembler-Files in ein eigenes Puma-Modul
+    CMT.pum.
+  + Die Prozeduren zur Erzeugung des statischen Codes
+    (ProcProlog, RefdValParamsCopy, VarInitializing, 
+    GlobalTDesc, LocalTDesc, TDescList) in ein eigenes Modul
+    CODEf.pum (CODE Fix oder was auch immer).
+* Umbenennung: Coder.pum --> CODE.pum        
+
+Mo 17.04.1995
+
+Geaenderte Modularisierung:
+* oberon.ast:
+  MODULE SyntaxTree         Der "normale" abstrakte Syntaxbaum
+  MODULE ExtendedSyntaxTree Der durch die Evaluation modifizierte Baum
+  MODULE CoderInformation   Die Attribute, die fuer die Code-Erzeugung
+                            relevant sind.
+* Makefile:
+  - Tree.TS:     oberon.ast
+                 echo VIEW Tree SELECT SyntaxTree ExtendedSyntaxTree \
+                 | cat - oberon.ast | ast -47
+    erzeugt Tree.TS, in dem die Felder aus SyntaxTree und ExtendedSyntaxTree
+    sichtbar sind
+ - CoderTree.TS: oberon.ast
+                 echo VIEW CoderTree | cat - oberon.ast | ast -47
+   erzeugt CoderTree.TS, in dem alle Felder sichtbar sind
+* CODE.pum, CODEf.pum, CMT.pum und TD.pum:
+      "TRAFO <name> TREE OB, Tree PUBLIC"
+  --> "TRAFO <name> TREE OB, CoderTree PUBLIC"
+  (Abhaengigkeiten im Makefile entsprechend...)
+So koennen nun alle Attribute aus der Evaluation, die fuer die Code-Erzeugung
+relevant sind, einfach in das oberon.ast-Modul CoderInformation verlagert
+werden
+
+* oberon.eva:
+  Level-Information "LevelIn" wird durchgereicht bis Designator
+* E.pum:
+  + FUNCTION AddressOfVarEntry ( Entries ) tAddress
+
+* CODEpre.pum: Neues Modul zum Coden von Predeclareds  
+
+So 23.04.1995
+
+* ARG.m?, DRV.mi:
+  + Neues Kommandozeilen-Kommando "-nc" (No Code generation):
+    Der Coder wird ueberhaupt nicht aktiviert.
+    Ist vorallem fuer checkof
+  + Neue Kommandozeilenoption "-it" (Ignore Time stamps):
+    Beim Assemblieren und Linken werden die Datei-Zeiten ignoriert
+* FTest/ctest fuer die e*.ob2's angepaszt:
+      oc -S -Ds ...
+  --> oc -nc -Ds ...
+  Geht nun schneller und Coder-Fehler spielen hier keine Rolle.
+
+Zur besseren Unterscheidung von NIL und NILPROC:
+* OB.ast:
+  + Neue Knotentypen 
+    NilValue, NilPointerValue, NilProcedureValue
+  + Neue Knotentypkonstanten
+    cNilValue, cNilPointerValue, cNilProcedureValue
+* V.pum:
+  + PROCEDURE AdjustNilValue ( val:ValueReprs , TypeReprs => ValueReprs )
+  Aendert in Abhaengigkeit von TypeReprs einen NilValue auf den entsprechenden
+  Nil(Pointer|Procedure)Value.
+* oberon.eva:
+  *   NilConst={ ... ValueReprOut:=\OB.\cmtObject; }.
+  --> NilConst={ ... ValueReprOut:=\OB.\cNilValue; }.
+  + MODULE Nil                
+  Die relevanten NilValue's werden per Seiteneffekt durch V.AdjustNilValue
+  nachtraeglich umgebogen.
+Funktioniert soweit: Das Ganze kann mit "oc -dt -nc CTest/Nil.ob2" getestet 
+werden.
+  
+Mi 26.04.1995
+
+* oberon.rex:
+  *   Letter = { a-z A-Z   }. 
+  --> Letter = { a-z A-Z _ }.
+  *   /* Illegal characters */ #STD# { \0-\8 \11-\31 ! $ % \? @ \\ _ ` \128-\255 } :{
+  --> /* Illegal characters */ #STD# { \0-\8 \11-\31 ! $ % \? @ \\ ` \128-\255 } :{
+
+Do 27.04.1995
+
+* oberon.eva:
+  *   Exprs= ... { ... IsLValueOut:=TRUE ; IsWritableOut:=TRUE ; }.
+  --> Exprs= ... { ... IsLValueOut:=FALSE; IsWritableOut:=FALSE; }.
+  Damit ein Fehler fuer z.B. konstante aktuelle Parameter auf 
+  Var-Parameterposition gemeldet werden.
+  
+* OB.ast:
+  + Neuer Knotentyp ModuleEntry
+  *   DataEntry = [moduleIdent:tIdent]... .
+  --> DataEntry =  module:ModuleEntry ... .
+* oberon.eva:
+  *   DECLARE ... = [ModuleIdentIn: tIdent INHERITED ].
+  --> DECLARE ... = [ModuleIn:tOB INHERITED].
+* PR.pum:
+  Aufbau der Tabellen noch weiter faktorisiert.
+  
+Fr 28.04.1995
+
+* OB.ast:
+  Neuer abstrakter Knotentyp MemValueRepr.
+* V.pum:  
+  + FUNCTION LabelOfMemValue ( ValueReprs ) tLabel
+* OT.m?:  
+  + PROCEDURE SplitoLONGREAL(ol:oLONGREAL; VAR lo,hi:LONGINT); 
+  + PROCEDURE SplitoSTRING(os:oSTRING; VAR li:LONGINT); 
+  
+Mo 01.05.1995
+
+* FIL.m?:
+  + TYPE tElem ... ModuleEntry:OB.tOB;
+    
+Sa 06.05.1995
+
+* OB.ast:
+  - ProcedureEntry    = ... [paramSpace:tSize] ... .
+  - BoundProcEntry    = ... [paramSpace:tSize] ... .
+  + ProcedureTypeRepr = ... [paramSpace:tSize] ... .
+
+* Umbenennung: L.m? --> LIM.m?
+
+* E.pum:
+  + FUNCTION BoundProcEntryOfBoundProc ( Entries ) Entries
+  
+So 07.05.1995
+
+* oberon.ast,oberon.eva
+  Der ExprLists Unterbaum von Argumenting wird ueber ein synthesized Attribut
+  bis zu Designator hochgereicht, damit die Parameteruebergabe vor dem
+  eigentlichen Call gecodet werden kann.
+
+* T.pum:
+  + PREDICATE IsPointerOrArrayOfPointerType ( TypeReprs )
+* oberon.che:
+  *   Argumenting={ ...
+                    CHECK ~isBoundProc
+                       OR \T.\IsRecordType(\E.\ReceiverTypeOfBoundProc(EntryIn))
+                       OR \T.\IsPointerType(\E.\TypeOfEntry(PrevEntryIn))
+                    ==> \ERR.\MsgPos(\ERR.\MsgReceiverParamNotPointer,Position); }.
+  --> Argumenting={ ...
+                    CHECK ~isBoundProc
+                       OR \T.\IsRecordType(\E.\ReceiverTypeOfBoundProc(EntryIn))
+                       OR \T.\IsPointerOrArrayOfPointerType(\E.\TypeOfEntry(PrevEntryIn))
+                    ==> \ERR.\MsgPos(\ERR.\MsgReceiverParamNotPointer,Position); }.
+  
+Mo 08.05.1995
+
+* T.pum:
+  + FUNCTION OpenDimAndElemSizeOfArrayType ( t:TypeReprs => LONGINT , LONGINT ) BOOLEAN
+* V.pum:
+  + PREDICATE IsMemValue ( ValueReprs )
+  
+Do 11.05.1995
+
+Beg: Achtung! CHANGE funktioniert nur bei Rules, die auf Register gehen.
+
+Sa 13.05.1995
+
+* oberon.pre:
+  - SysLshRotArgumenting={...
+    Coerce2:=\CO.\GetCoercion(Expr2:TypeReprOut,\OB.\cLongintTypeRepr);
+    }.
+     
+Mo 15.05.1995
+
+* OB.ast:
+  * Neuer "Zwischen"-Knotentyp IntTypeRepr
+  
+Zur Berechnung des konstanten Anteils eines Mengenkonstruktors:
+* oberon.ast.CoderInformation:
+  + SetExpr = [ConstValueRepr:tOB].
+* oberon.eva:
+  * SetExpr = { ... ConstValueRepr:=Elements:ValueReprOut; 
+                    ValueReprOut:={ IF Elements:IsConstOut THEN 
+                                       ValueReprOut:=Elements:ValueReprOut;
+                                    ELSE 
+                                       ValueReprOut:=\OB.\cmtValue;
+                                    END; };
+              }.
+  * Elements = ... [IsConstOut:BOOLEAN SYNTHESIZED] { ... IsConstOut:=TRUE; }.
+    Element  = { ValueReprOut,
+                 IsConstOut:= { ValueReprOut:=\V.\ExtendSet
+                                (/* set     := */ Next:ValueReprOut
+                                ,/* a       := */ Expr1:ValueReprOut
+                                ,/* b       := */ \TT.\ElementCorrection
+                                                  (/* expr2 := */ Expr2
+                                                  ,/* val1  := */ Expr1:ValueReprOut
+                                                  ,/* val2  := */ Expr2:ValueReprOut)
+                                ,/* isConst =: */ IsConstElementOut); 
+                                IF ~Next:IsConstOut THEN IsConstOut:=FALSE; END; (* IF *)
+                              };
+               }.
+* V.pum:               
+  * FUNCTION ExtendSet ( set:ValueReprs , a:ValueReprs , b:ValueReprs => isConst:BOOLEAN ) ValueReprs
+  
+* oberon.ast.CoderInformation:
+  - ForStmt ohne ByCoerce
+
+Da hab ich noch einen Fehler im Evaluator entdeckt und behoben:
+* oberon.che:
+  + IntOper = { CHECK \V.\IsGreaterZeroInteger(ValueRepr2In)
+                ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,Position); }.
+Das Linux-Oberon rechnet uebrigens wunderschoen: i:=10; i:=i DIV (-1); --> -10
+
+Di 16.05.1995
+
+* OB.ast:
+  * Neuer "Zwischen"-Knotentyp FloatTypeRepr
+  
+Fuer's Constant-Folding werden nun auch die Coercions per Seiteneffekt
+berechnet.
+* V.pum:
+  + PROCEDURE DoRealCoercion ( Coercion , REF value:ValueReprs , REF type:TypeReprs ) 
+* oberon.eva:
+  + AssignStmt = ...{...
+    ==> \CO.\DoRealCoercion(Coerce,Exprs:ValueReprOut,Exprs:TypeReprOut); }.
+  + ReturnStmt = ...{...
+    ==> \CO.\DoRealCoercion(Coerce,Exprs:ValueReprOut,Exprs:TypeReprOut); }.
+  + DyExpr = ...{...
+    ==> \CO.\DoRealCoercion(DyOperator:Coerce1,Expr1:ValueReprOut,Expr1:TypeReprOut); 
+    ==> \CO.\DoRealCoercion(DyOperator:Coerce2,Expr2:ValueReprOut,Expr2:TypeReprOut); }.
+  + ExprList = ...{...
+    ==> \CO.\DoRealCoercion(Coerce,Expr:ValueReprOut,Expr:TypeReprOut); }.
+    
+Di 16.05.1995
+
+* UTI.m?:
+  + PROCEDURE MaxLI3(a, b, c : LONGINT) : LONGINT;
+  + PROCEDURE MaxLI4(a, b, c, d : LONGINT) : LONGINT;
+  
+Fr 19.05.1995
+
+Sei 
+    MODULE M;
+    VAR x:LONGINT; a:ARRAY 10 OF LONGINT;
+     PROCEDURE F():LONGINT;
+     BEGIN
+      x:=x+1;
+      RETURN 0;
+     END F;  
+    BEGIN 
+     x:=0; INC(a[F()]); 
+   END M.
+Frage: x=1 oder x=2  ?
+
+* OT.m?:
+  + PROCEDURE ShortenoSTRING(os:oSTRING; len:LONGINT): oSTRING;
+* Makefile:
+  *   PR.mi:	PR.pum OB.TS ERR.md OT.md POS.md UTI.md
+		puma -dinmp7 PR.pum
+  --> PR.mi:	PR.pum OB.TS ERR.md OT.md POS.md UTI.md
+		puma -dinp7 PR.pum
+
+Mo 22.05.1995
+
+* EmitPatch...
+
+Do 25.05.1995
+
+* T.pum:
+  * PREDICATE IsExtensionOf ( Tb:TypeReprs , Ta:TypeReprs )
+     /* Tb =: */ RecordTypeRepr(_,_,_,_,_,_,_,baseType,..)
+    ,/* Ta =: */ RecordTypeRepr ? (baseType#Tb) & IsExtensionOf(baseType,Ta); .
+                                  ^^^^^^^^^^^^^
+    Sonst geraet das Praedikat in eine Endlosschleife, falls es
+    mit einem rekursiv-erweiterten Rekord aufgerufen wird.
+    
+So 28.05.1995
+
+* oberon.eva:
+  * Attribut IsInLoopIn:BOOLEAN --> LoopEndLabelIn:tLabel
+    und verlegt ins Evaluator-Modul Labels
+  * Neues Attribut LabelLimits:tOB THREAD fuer 
+    die Knotentypen Cases und CaseLabels
+* V.pum:
+  + FUNCTION ExtendLabelLimits ( labelLimit1:LabelRanges , labelLimit2:LabelRanges ) LabelRanges
+  + FUNCTION ExtendLabelLimitsByLabels ( labelLimit:LabelRanges , value1:ValueReprs , value2:ValueReprs ) LabelRanges
+  + PREDICATE IsValidLabelRange ( LabelRanges )
+
+Mo 29.05.1995
+
+* OB.ast:
+  + VarEntry = ... [isWithed:BOOLEAN] .
+
+* Es sollte eine Fehlermeldung vom Evaluator kommen, falls der erlaubte
+  Case-Marken-Bereich durch Case-Labels verlassen wird.
+  ... DONE!
+
+Mi 31.05.1995
+
+* V.pum:
+  * FUNCTION OrValue und FUNCTION AndValue korrigiert.
+  + FUNCTION TypeTestValue ( staticType:TypeReprs , testType:TypeReprs ) ValueReprs
+* oberon.eva:
+  * IsExpr = { ... ValueReprOut:=\V.\TypeTestValue(Designator:TypeReprOut,TypeTypeRepr); }.
+  
+  
+Mo 05.06.1995
+
+* Type-Initializers fertig: Sollten aber noch gut getestet werden!
+
+Do 08.06.1995
+
+* oberon.ast:
+  + Guarding = [IsImplicit:BOOLEAN] ... .
+* OB.ast:
+  *   cNonameEntry := mDataEntry( ... (* exportMode := *) PUBLIC  ... );
+  --> cNonameEntry := mDataEntry( ... (* exportMode := *) PRIVATE ... );
+
+Sa 10.06.1995
+
+* OB.ast
+  TypeReprs bekommen zwei weitere Blocklisten 'markBlocklist' und
+  'walkBlocklist', welche die Zeiger beschreiben, deren Zeigerbasis-
+  bloecke lediglich markiert bzw. markiert und traversiert werden muessen.
+  Da aber vier solche Kinder in TypeReprs sich doch etwas "fett" in den
+  entsprechenden Puma-Patterns machen, habe ich sie in eine Unterstruktur
+  'TypeBlocklists' verlegt. Nun heiszts ersteinmal alle Puma-Patterns
+  wieder anpassen... :-(
+
+Mi 26.07.1995
+
+* OB.ast
+  markBlocklist und walkBlocklist wieder entfernt;
+  ptrBlocklist musz ausreichen
+  
+Mi 02.08.1995
+
+* CODE.pum.ProcCalls
+  Aktuelle Parameter auf formale Var-Parameter vom Type ARRAY OF BYTE
+  werden nun gecodet.
+* CODE.pum.Exprs
+  Die Multiplikation von SHORTINT-Werten wird nun so durchgefuehrt,
+  dasz die Operanden erst auf INTEGER umgewandelt werden und das
+  Multiplikationsergebnis wieder auf SHORTINT abgeschnitten wird.
+
+Geaenderte Compile-Info-Ausgabe:
+Alle Prozeduren und die Modul-Init-Statements werden nun gezaehlt.
+* DRV.m?
+  + PROCEDURE ShowCompiling(table : OB.tOB) : OB.tOB; 
+  + PROCEDURE ShowProcCount(table : OB.tOB) : OB.tOB; 
+* oberon.eva
+  * Module = { ... DeclSection:TableIn:=\DRV.\ShowCompiling(Imports:TableOut);
+               ... Stmts:TableIn:= ... (\DRV.\ShowProcCount(DeclSection:TableOut)) ); ... }.
+  * ProcDecl = { ... AlreadyDeclEntry:=\E.\Lookup0(\DRV.\ShowProcCount(TableIn),IdentDef:Ident); ... }.
+  * BoundProcDecl = { ... Receiver:TableIn:=\OB.\mScopeEntry(\DRV.\ShowProcCount(TableIn)); ... }.
+* FIL.m?
+  + tElem = RECORD ... ProcCount:LONGINT; ... END;
+
+Da gab's ein Problem mit FORWARD-Prozeduren ...
+* oberon.eva
+  * ProcDecl = ... { ... Entry:=\E.\Lookup0(TableTmp,IdentDef:Ident); }.
+  
+Es ist guenstiger, Typdeskriptoren von Record-Typen immer zu exportieren,
+ansonsten mueszte fuer folgenden Fall eine Sonderbehandlung
+durchgefuehrt werden:
+   MODULE M
+   TYPE T=RECORD END;
+   VAR v*:T;
+   PROCEDURE P*(VAR p:T); BEGIN END P;
+   END M.
+   MODULE N; IMPORT M;
+   BEGIN M.P(M.v); (* wie bekommt man hier sonst den TDesc her??? *)
+   END N.                                       
+Aus diesem Grund gibt es nun sog. implizite Labels, die die Form
+<Modulname>$<nummer> besitzen.   
+* T.pum
+  * DefineTypeReprLabel: entsprechend geaendert.
+
+Di 08.08.1995
+
+* V.pum
+  * FUNCTION InValue ( p:ValueReprs , ValueReprs ) ValueReprs
+  Geaenderte Funktionalitaet: Falls p konstant und (p<0) OR (MAX(SET)<p) --> FALSE
+
+Sa 12.08.1995
+
+* T.pum:
+  + FUNCTION ElemTypeOfArrayType ( t:TypeReprs ) TypeReprs
+
+*******************************************************************************
+Fr 08.09.1995
+
+* jacob-v0 oeffentlich gemacht
+
+So 24.09.1995
+
+* CODE.pum.Designators:
+  * CodeLDesignator1: Bei der Applikation einer externen Variable eines 
+    Foreign-Moduls wird als Label "_variable" genommen.
+
+Di 03.10.1995
+
+Das Erzeugen des Displays soll optimiert werden. Dazu wird ersteinmal
+ermittelt, welche Levels von einer Prozedur angesprungen werden.
+Achtung! Da die Destination-Levels als BITSET modelliert werden, 
+darf der Nesting-Level 30 nicht ueberschreiten. 
+Wegen Test "ActLevel+1 IN DestLevels".
+
+* OB.ast
+  + CONST NOLEVELS = {};
+  + Knotentyp Environment
+  + ProcedureEntry = ... env:Environment .
+  + BoundProcEntry = ... env:Environment .
+* oberon.eva
+  + Modul Environments
+* E.pum  
+  + FUNCTION LevelOfProcEntry ( Entries ) tLevel
+  + FUNCTION LevelsOfEnv ( OB ) BITSET
+  + PROCEDURE InclEnvLevel ( OB , level:tLevel )
+  
+Zusaetzliche Optimierung: Falls keine lokale und temporaere Variablen
+benoetigt werden (" subl $L4711,%esp ... L4711 = 0"), wird der subl
+obsolet.
+
+Mit -Ss werden nun die Anzahl von Spills und LRs pro Modul ausgegeben.
+  
+Di 17.10.1995
+
+* NDP.mi ASMOP.mi:
+  Behebung eines Fehlers bei der Verwaltung des NDP Stacks bei Vergleichen von 
+  Resultaten von (LONG-)REAL-Funktionen. Bsp:
+  MODULE M;
+  VAR f:BOOLEAN;
+  PROCEDURE F():REAL; BEGIN RETURN 1; END F;
+  BEGIN f:=F()<F(); 
+  END M.
+
+Fr 17.11.1995
+
+* oberon.cgd.opt:
+  Optimierungen fr ~, Zuweisende Regeln entsprechend
+* oberon.ast
+  - Mittels der beiden Prozeduren 'NewTree' und 'OldTree' kann nun endlich
+    ein erzeugter Syntaxbaum wieder weggeworfen werden
+    
+* DRV.mi:
+  - Ausgabe der Statistik umfaát nun zus„tzlich 
+    Heap-Gr”áe fr 'Tree' und 'OB'.
+    
+Mi 29.11.1995
+
+* OB2RTS.as und SysLib.ob2:
+  - Da ja nun m”glich ist, globale FOREIGN-Variable richtig zu benutzen,
+    sind die Prozeduren Errno, GetArgs, GetEnv und SetExitProc rausgeschmissen.
+    Zugriff nun direkt ber die entsprechenden Variablen.
+
+Mo 04.12.1995
+
+* FIL & DRV.mi:
+  + PROCEDURE AdjustClientSourceTime(time : SysLib.timeT); 
+    Aufruf in DRV.Import.import
+  --> Fhrt zur Neucompilation eines Moduls, wenn ein (transitiv) 
+      importiertes Modul jnger ist.
+
+Do 14.12.1995
+
+* oberon.pre: SysValArgumenting
+
+  "EntryOut      := Expr:EntryOut;
+   IsWritableOut := ~\E.\IsExternEntry(Expr:EntryOut,ModuleIn)
+                 OR  \E.\IsWritableEntry(Expr:EntryOut);"
+  wieder reingenommen. Dadurch kann SYSTEM.VAL auch auf
+  einer L-Value-Position vorkommen. Wird jetzt auch richtig gecodet.
+  
+Sa 16.12.1995
+
+* ASM.mi: Code-Optimierung:
+
+      jge L1
+      jmp L2
+  L1:     
+  ==========>
+      jnge L2
+
+* Assemblerkommentar auch fr END (* LOOP *)
+
+Do 21.12.1995
+
+* oberon.rex: Nicht-geschlossene Kommentare wurden ber Modulgrenzen hinweg gemeldet
+  *    EOF { ... }
+   --> EOF { ... NestingLevel := 0; } 
+
+*******************************************************************************
+Do 28.12.1995
+
+* Diplomarbeit abgegeben
+
+Sa 30.12.1995
+
+Foreign-module:
+===============
+
+* Ge„nderte Syntax
+
+  Module            = MODULE ident ';' [ImportList] DeclSeq [BEGIN StatementSeq] END ident 
+                    | FModule .
+  ...
+  FModule           = FOREIGN MODULE ident ';' [ImportList] FDeclSeq END ident '.' .
+  FDeclSeq          = { CONST     {ConstDecl ';'} 
+                      | TYPE      {TypeDecl  ';'} 
+                      | VAR       {VarDecl   ';'}
+                      | PROCEDURE IdentDef [FFormalPars] ';' 
+                      } .
+  FFormalPars       = '(' [FPSections] ')' [':' Qualident] .
+  FFPSections       = FPSection {';' FPSection} 
+                    | FPSection {';' FPSection} ';' '..' 
+                    | '..' .
+
+* šbergabe an formale Var-Parameter
+  + Als Adresse
+* šbergabe an formale Val-Parameter mit offenem Array-Typ
+  + Wie šbergabe an ..
+* šbergabe an formale Val-Parameter 
+  + Als Wert
+* šbergabe an formale Parameter ..
+  + Als Wert: SYSTEM.BYTE, SYSTEM.PTR, BOOLEAN, CHAR, SET, SHORTINT, INTEGER, 
+              LONGINT, NIL, POINTER, PROCEDURE, RECORD
+  + Als Adresse: Zeichenkonstanten, Zeichenketten, ARRAY
+* Berechnung des ParamSpace umgestellt.
+  Jetzt wird in der CGD gerechnet und in aArguments.paramSpace weitergereicht.
+
+* SI.IsEmptySignature zus„tzlich auch fr GenericSignature.
+  Wird in oberon.che:mtExprList benutzt
+* Zuweisungskompatibilit„tsproblem: šbergabe einer Prozedur P an ein
+  Foreign-Modul. Wird P dann aufgerufen, muá mit den Parameter
+  aufgepaát werden.
+  
+So 24.03.1996
+
+* Jacob l„uft als ELF-Executable.  
+
+Mo 25.03.1996
+
+* Jacob erzeugt ELF-Executables (default). Mit -aout umschaltbar.
+* Foreign-Module werden nun mit einer ge„nderten Syntax eingeleitet:
+  Module = MODULE ident EXTERNAL "[" string "]" ";" ...
+  Die Zeichenkette wird unver„ndert an den Linker weitergereicht.
+  
+*******************************************************************************
+Mo 01.04.1996
+
+* jacob-v0.1 ver”ffentlicht
+
+Do 04.04.1996
+
+* Neue Version 0.1.1 wegen fehlerhaftem lib-Path
+
+Mo 22.04.1996
+
+* CODE.pum.Assignments.CodeAssignment:
+  Fehler behoben.
+* ASM.MemCopy:
+  Braucht nun kein tmp-Register mehr bergeben. Das wird nun selbst„ndig
+  berechnet.
+
+Sa 30.05.1998
+
+* zusaetliches make target "test"
+* Fehlerbehandlung fuer Identifier mit Laenge > 255 
+
+-------------------------------------------------------------------------------
+To do:
+
+Mo 18.12.1995
+
+* Optimierung: array[i*const]
+
+So 17.12.1995
+
+* Neue Option -o <name> berschreibt die Vorgabe fr den Executable-Namen.
+
+Di 15.08.1995
+
+* Alle Aenderungen fuer SYSTEM.ASM wieder rausnehmen: siehe
+  history.log (09.02.1995)
+
+Mi 31.05.1995
+
+* LAB.T: lokale Labels so lange wie moeglich als Ganzzahlen halten!
+
+Mo 29.05.1995
+
+* Ohne _CASEFAULT bzw. _WITHFAULT koennte besserer Code erzeugt werden:
+  Falls entsprechendes Statement kein ELSE besitzt und 
+  Expression out of range bzw. letzter TypTest fails 
+  --> direkter Ansprung von _CaseFault bzw. _WithFault
+  
+  Also vielleicht wieder rausnehmen...
+
+Do 25.05.1995
+
+* Alle *.pum:
+  {} Konstanten in Pattern durch Bedingungen ersetzen
+
+Mo 15.05.1995
+
+* Eine Laufzeit-Ueberpruefung bei -si, -in, -li bzw. ABS(si), ABS(in), ABS(li)
+  auf jeweiligen MIN(T)-Wert waere eventuell auch angebracht...
+
+Di 09.05.1995
+
+* Index-Designations koennen effizienter implementiert werden:
+  - Alle Index-Ausdruecke auswerten und die Ergebnisse aufsammeln
+  - Dann die eigentliche neue Adresse aus allen Ergebnissen berechnen.
+
+Mi 03.05.1995
+
+* Ein Foreign-Mocka-Modul zur Basis-Stringbearbeitung in Assembler waere
+  doch schoen schnell...
+
+Di 18.04.1995
+
+* BL.pum: 
+  - AdjustIncr bei PtrBlOfProcLocals????
+
+Mi 12.04.1995
+
+* Die zu den neuen Versionen der Werkzeuge hinzugekommen Features sollten
+  eingesetzt werden:
+  - Pattern-Listen bei Puma-Funktionen
+  - Mehrfachvererbung bei Ast z.B. fuer [Bound](Proc|Forward)Decl
+
+Mi 05.04.1995
+
+* Problem bei den Labels: Ohne Praefix werden alle Labels, die mit "L"
+  beginnen vom Assembler als lokale Labels angesehen, trotz ".globl"!
+  Loesung: Entweder Assembler mit Option "-L" oder doch einen Praefix
+  fuer die Labels.
+
+Sa 18.03.1995
+
+* Verkettung aller globalen Variablensections im OB2ROOT
+
+Do 16.03.1995
+
+* PR.pum: Alle Levels auf -1 oder so
+
+Do 16.02.1995
+
+* oberon.eva: LabelPrefix fuer BoundProcs
+
+Do 09.02.1995
+
+* Im Makefile _ALLE_ Abhaenigkeiten sauber eintragen!
+* Alte Optionen auf neue aus ARG aendern
+
+Mo 06.02.1995
+
+* Entier arbeitet fuer negative Argumente falsch!
+
+-------------------------------------------------------------------------------
+Weitere Optimierungen:
+
+shift und rotate by 0 --> weg damit!

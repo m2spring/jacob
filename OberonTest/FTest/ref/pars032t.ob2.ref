@@ -1,0 +1,18 @@
+MODULE pars032t;
+TYPE
+   a = POINTER TO Hurga;
+   b = POINTER TO Mod$Type;
+   c = POINTER TO ARRAY OF CHAR;
+   e = PROCEDURE;
+   f = PROCEDURE;
+   g = PROCEDURE(VAR a : CHAR;
+                     b : POINTER TO c);
+   h = PROCEDURE(    a ,
+                     b ,
+                     c : Type1;
+                 VAR d : Type2);
+   i = PROCEDURE() : INTEGER;
+   j = PROCEDURE(VAR name : POINTER TO ARRAY OF ARRAY OF CHAR) : QUALI$DENT;
+
+END pars032t.
+

@@ -1,0 +1,28 @@
+Compiling eaet001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+x   REFPARAM  SHORTINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+a   REFPARAM  ARRAY OF CHAR
+-------------------------------------------------------------------------------
+
+'PROCEDURE' R
+-------------------------------------------------------------------------------
+q   VALPARAM  (VAR x:INTEGER)
+-------------------------------------------------------------------------------
+
+'MODULE' eaet001f
+-------------------------------------------------------------------------------
+SYS   SERVER    SYSTEM
+T     TYPE      INTEGER
+P     PROCEDURE (VAR x:INTEGER)
+Q     PROCEDURE (VAR a:ARRAY OF SYSTEM$BYTE)
+R     PROCEDURE (p:(VAR z:REAL))
+-------------------------------------------------------------------------------
+
+eaet001f.ob2: 20,12: Actual declaration doesn't match with forward decl
+eaet001f.ob2: 26,12: Actual declaration doesn't match with forward decl
+eaet001f.ob2: 32,12: Actual declaration doesn't match with forward decl

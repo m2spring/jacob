@@ -1,0 +1,758 @@
+/********************************************************************************************************************************/
+/*** oberon.che / Evaluator check rules                                                                                       ***/
+/********************************************************************************************************************************/
+MODULE Conditions
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+RULE
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Module =
+{
+  CHECK (\FIL.\ActP^.\ModuleIdent=\Idents.\NoIdent)                                                           /* !FileNameMatch */
+     OR (Name=\FIL.\ActP^.\ModuleIdent)
+  ==> \ERR.\MsgPos(\ERR.\MsgModuleFilenameDiffers,Pos);
+
+  CHECK (Name=Name2)
+  ==> \ERR.\MsgPos(\ERR.\MsgModulename2Incorrect,Pos2);                                                /* !ModuleNameRepetition */
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Import =
+{
+  CHECK \E.\IsUndeclared(TableIn,RefId)                                                                    /* !UniqueObjectName */
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,RefPos);
+
+  CHECK (ErrorMsg=\ERR.\NoErrorMsg)                                                         /* {!CyclicImport,!ServerFileAvail} */
+  ==> \ERR.\MsgPos(ErrorMsg,ServerPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ConstDecl =
+{
+  CHECK \E.\IsUndeclared(TableIn,IdentDef:Ident)                                                           /* !UniqueObjectName */
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,IdentDef:Pos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgConstsAlwaysReadOnly,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+TypeDecl =
+{
+  CHECK  \E.\IsUndeclared(TableIn,IdentDef:Ident)                                                          /* !UniqueObjectName */
+     OR ~\E.\IsGenuineEmptyEntry(ForwardedEntry)                                                                /* !ForwardType */
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,IdentDef:Pos);
+
+  CHECK \E.\IsGenuineEmptyEntry(ForwardedEntry)                                                                 /* !ForwardType */
+     OR \T.\IsLegalPointerBaseType(Type:TypeReprOut)                                                       /* !LegalPointerBase */
+  ==> \ERR.\MsgPos(\ERR.\MsgWrongPointerBase,ForwardedPos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypesAlwaysReadOnly,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ProcDecl =
+{
+  CHECK IsUndeclared                                                                                       /* !UniqueObjectName */
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,IdentDef:Pos);
+
+  CHECK \T.\HaveMatchingFormalPars                                                                         /* !ForwardProcMatch */
+        (/* Pa := */ \E.\TypeOfEntry(ForwardedProcEntry)
+        ,/* Pb := */ ProcTypeRepr)
+  ==> \ERR.\MsgPos(\ERR.\MsgNonMatchingActualDecl,IdentDef:Pos);
+
+  CHECK Stmts:ReturnExistsOut                                                                               /* !ReturnMustExist */
+     OR \TT.\IsNoStmts(Stmts)
+     OR \T.\IsGenuineEmptyType(FormalPars:ResultTypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgMissingReturn,EndPos);
+
+  CHECK (IdentDef:Ident=Ident)                                                                           /* !ProcNameRepetition */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcname2Incorrect,IdPos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcsAlwaysReadOnly,IdentDef:Pos);
+
+  CHECK (LevelIn<\OB.MODULELEVEL+\LIM.\MaxProcedureNesting)
+  ==> \ERR.\MsgPos(\ERR.\MsgProcNestedTooDeeply,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ForwardDecl =
+{
+  CHECK \E.\IsUndeclared(TableIn,IdentDef:Ident)                                                           /* !UniqueObjectName */
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,IdentDef:Pos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcsAlwaysReadOnly,IdentDef:Pos);
+
+  CHECK (LevelIn<\OB.MODULELEVEL+\LIM.\MaxProcedureNesting)
+  ==> \ERR.\MsgPos(\ERR.\MsgProcNestedTooDeeply,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+BoundProcDecl =
+{
+  CHECK (LevelIn=\OB.\MODULELEVEL)                                                                         /* !GlobalBoundProcs */
+  ==> \ERR.\MsgPos(\ERR.\MsgBoundProcMustBeGlobal,IdentDef:Pos);
+
+  CHECK Stmts:ReturnExistsOut                                                                               /* !ReturnMustExist */
+     OR \TT.\IsNoStmts(Stmts)
+     OR \T.\IsGenuineEmptyType(FormalPars:ResultTypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgMissingReturn,EndPos);
+
+  CHECK (IdentDef:Ident=Ident)                                                                           /* !ProcNameRepetition */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcname2Incorrect,IdPos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcsAlwaysReadOnly,IdentDef:Pos);
+
+  CHECK (ErrorMsg=\ERR.\NoErrorMsg)                                       /* {!UniqueObjectName,!ForwardBoundMatch,!RedefMatch} */
+  ==> \ERR.\MsgPos(ErrorMsg,IdentDef:Pos);
+
+  CHECK (IdentDef:ExportMode#\OB.\PRIVATE)                                                              /* !BoundMustBeExported */
+     OR ~\E.\IsExportedInheritedProc(AlreadyExistingField)
+     OR ~\E.\IsExportedEntry(\T.\EntryOfType(Receiver:TypeReprOut))
+  ==> \ERR.\MsgPos(\ERR.\MsgRedefMustBeExported,IdentDef:Pos);
+
+  CHECK (LevelIn<\OB.MODULELEVEL+\LIM.\MaxProcedureNesting)
+  ==> \ERR.\MsgPos(\ERR.\MsgProcNestedTooDeeply,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+BoundForwardDecl =
+{
+  CHECK (LevelIn=\OB.\MODULELEVEL)                                                                         /* !GlobalBoundProcs */
+  ==> \ERR.\MsgPos(\ERR.\MsgBoundProcMustBeGlobal,IdentDef:Pos);
+
+  CHECK (IdentDef:ExportMode#\OB.\READONLY)                                                                  /* !ReadOnlyExport */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcsAlwaysReadOnly,IdentDef:Pos);
+
+  CHECK (ErrorMsg=\ERR.\NoErrorMsg)                                       /* {!UniqueObjectName,!ForwardBoundMatch,!RedefMatch} */
+  ==> \ERR.\MsgPos(ErrorMsg,IdentDef:Pos);
+
+  CHECK (IdentDef:ExportMode#\OB.\PRIVATE)                                                              /* !BoundMustBeExported */
+     OR ~\E.\IsExportedInheritedProc(AlreadyExistingField)
+     OR ~\E.\IsExportedEntry(\T.\EntryOfType(Receiver:TypeReprOut))
+  ==> \ERR.\MsgPos(\ERR.\MsgRedefMustBeExported,IdentDef:Pos);
+
+  CHECK (LevelIn<\OB.MODULELEVEL+\LIM.\MaxProcedureNesting)
+  ==> \ERR.\MsgPos(\ERR.\MsgProcNestedTooDeeply,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FormalPars =
+{
+  CHECK \T.\IsLegalResultType(Type:TypeReprOut)                                                                  /* !ResultType */
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalFunctionResult,Type:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ParId =
+{
+  CHECK \E.\IsUndeclared(Table1In,Ident)
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,Pos);                                                          /* !UniqueObjectName */
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Receiver =
+{
+  CHECK (\E.\DeclStatusOfEntry(Entry)=\OB.\DECLARED)                                                        /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,TypePos);
+
+  CHECK \E.\IsTypeEntry(Entry)                                                                                 /* !ReceiverType */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,TypePos);
+
+  CHECK (ParMode=\OB.\REFPAR) & \T.\IsRecordType         (EntryTypeRepr)                                       /* !ReceiverType */
+     OR                         \T.\IsPointerToRecordType(EntryTypeRepr)
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidType,TypePos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NamedType =
+{
+  CHECK \E.\IsTypeEntry(Qualidents:EntryOut)                                                                       /* !NamedRef */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,Qualidents:Position);
+
+  CHECK IsVarParTypeIn                                                                                        /* !RecursiveType */
+/*
+     OR (Qualidents:EntryOut # ToBeDecledEntryIn)
+*/
+     OR \E.\IsNotToBeDeclared(Qualidents:EntryOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalRecursiveType,Qualidents:Position);
+
+  CHECK OpenArrayIsOkIn                                                                                      /* !LegalOpenArray */
+     OR \T.\IsNotOpenArrayType(TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalOpenArray,Qualidents:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+OpenArrayType =
+{
+  CHECK OpenArrayIsOkIn                                                                                      /* !LegalOpenArray */
+  ==> \ERR.\MsgPos(\ERR.\MsgMissingArrayLength,OfPosition);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PointerType =
+{
+  CHECK \E.\IsTypeEntry(BaseTypeEntry)                                                                          /* !PointerType */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,BaseTypePos);
+
+  CHECK \T.\IsLegalPointerBaseType(\E.\TypeOfEntry(BaseTypeEntry))                                         /* !LegalPointerBase */
+  ==> \ERR.\MsgPos(\ERR.\MsgWrongPointerBase,BaseTypePos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PointerToIdType =
+{
+  CHECK ForwardPBaseIsOkIn                                                                                      /* !ForwardType */
+     OR (\E.\DeclStatusOfEntry(BaseTypeEntry)#\OB.\UNDECLARED)                                              /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,IdentPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ExtendedType =
+{
+  CHECK \T.\IsRecordType(BaseTypeRepr)                                                                     /* !RecordExtsRecord */
+  ==> \ERR.\MsgPos(\ERR.\MsgRecordTypeExpected,Qualidents:Position);
+
+  CHECK \E.\IsNotToBeDeclared(Qualidents:EntryOut) /*(Qualidents:EntryOut # ToBeDecledEntryIn)*/              /* !RecursiveType */
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalRecursiveType,Qualidents:Position);
+
+  CHECK (extLevel < \LIM.\MaxExtensionLevel)
+  ==> \ERR.\MsgPos(\ERR.\MsgMaxExtLevelReached,Qualidents:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ArrayExprList =
+{
+  CHECK \T.\IsIntegerType(ConstExpr:TypeReprOut)                                                                  /* !ArraySize */
+  ==> \ERR.\MsgPos(\ERR.\MsgConstantNotInteger,ConstExpr:Position);
+
+  CHECK \V.\IsGreaterZeroInteger(ConstExpr:ValueReprOut)                                                          /* !ArraySize */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidArrayLen,ConstExpr:Position);
+
+  CHECK  (TypeSize <= \OT.\MaxObjectSize)                                                                        /* !ObjectSize */
+     OR ~(ElemSize <= \OT.\MaxObjectSize)
+  ==> \ERR.\MsgPos(\ERR.\MsgObjectTooBig,ConstExpr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IdentList =
+{
+  CHECK \E.\IsErrorEntry(AlreadyDeclaredEntry)                                                             /* !UniqueObjectName */
+     OR (  \E.\IsExternEntry(AlreadyDeclaredEntry,ModuleIn)                                                  /* !DisjointFields */
+        & ~\E.\IsExportedEntry(AlreadyDeclaredEntry))
+  ==> \ERR.\MsgPos(\ERR.\MsgAlreadyDeclared,IdentDef:Pos);
+
+  CHECK  (Next:SizeIn <= \OT.\MaxObjectSize)                                                                     /* !ObjectSize */
+     OR ~(SizeIn      <= \OT.\MaxObjectSize)
+  ==> \ERR.\MsgPos(TooBigMsg,IdentDef:Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+UnqualifiedIdent =
+{
+  CHECK (\E.\DeclStatusOfEntry(EntryOut)#\OB.\UNDECLARED)                                                   /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+QualifiedIdent =
+[ isExistingServer : BOOLEAN ]
+[ isDeclared       : BOOLEAN ]
+[ isServerEntry    : BOOLEAN ]
+{
+  isExistingServer := \E.\ServerHasExistingTable(ServerEntry);
+  isDeclared       := (\E.\DeclStatusOfEntry(ServerEntry)=\OB.\DECLARED);
+  isServerEntry    := \E.\IsServerEntry(ServerEntry);
+
+  CHECK isDeclared                                                                                          /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,Position);
+
+  CHECK isServerEntry                                                                                        /* !ExternalObject */
+  ==> \ERR.\MsgPos(\ERR.\MsgIdentIsNoModule,Position);
+
+  CHECK ~isExistingServer                                                                                   /* !ObjectMustExist */
+     OR ~isDeclared
+     OR ~isServerEntry
+     OR  (\E.\DeclStatusOfEntry(EntryOut)=\OB.\DECLARED)
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredExternIdent,IdentPos);
+
+  CHECK ~isExistingServer                                                                                    /* !ExternalObject */
+     OR ~isDeclared
+     OR ~isServerEntry
+     OR  \E.\IsExportedEntry(EntryOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIdentNotExported,IdentPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IdentDef =
+{
+  CHECK (ExportMode=\OB.\PRIVATE)                                                                              /* !GlobalExport */
+     OR (LevelIn<=\OB.\MODULELEVEL)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalLocalExport,Pos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+AssignStmt =
+{
+  CHECK \E.\IsVarEntry(Designator:EntryOut)                                                                /* !LValueAssignment */
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Designator:Position);
+
+  CHECK Designator:IsWritableOut                                                                        /* !ReadOnlyApplication */
+  ==> \ERR.\MsgPos(\ERR.\MsgObjectIsReadonly,Designator:Position);
+
+  CHECK \T.\IsAssignmentCompatible                                                                     /* !AssignmentCompatible */
+        (/* Tv := */ VarTypeRepr
+        ,/* Te := */ Exprs:TypeReprOut
+        ,/* Ve := */ Exprs:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgNotAssignCompatible,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+CallStmt =
+{
+  CHECK \T.\IsEmptyType(Designator:TypeReprOut)                                                               /* !ProcedureCall */
+  ==> \ERR.\MsgPos(\ERR.\MsgProcedureExpected,Designator:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IfStmt =
+{
+  CHECK \T.\IsBooleanType(Exprs:TypeReprOut)                                                                   /* !IfExpression */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+WhileStmt =
+{
+  CHECK \T.\IsBooleanType(Exprs:TypeReprOut)                                                                /* !WhileExpression */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+CaseStmt =
+{
+  CHECK \T.\IsCharType(Exprs:TypeReprOut)                                                                    /* !CaseExpression */
+     OR \T.\IsIntegerType(Exprs:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalCaseExpr,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+CaseLabel =
+{
+  CHECK ~\T.\IsErrorType(CaseTypeReprIn)                                                                     /* !CaseExpression */
+     OR \T.\IsCharType(ConstExpr1:TypeReprOut)
+     OR \T.\IsIntegerType(ConstExpr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgWrongLabelType,ConstExpr1:Position);
+
+  CHECK (ConstExpr2=ConstExpr1)                                                                              /* !CaseExpression */
+     OR ~\T.\IsErrorType(CaseTypeReprIn)
+     OR \T.\IsCharType(ConstExpr2:TypeReprOut)
+     OR \T.\IsIntegerType(ConstExpr2:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgWrongLabelType,ConstExpr2:Position);
+
+  CHECK \T.\IsCaseExprCompatible                                                                             /* !CaseExpression */
+        (/* Te := */ CaseTypeReprIn
+        ,/* Tl := */ ConstExpr1:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgLabelNotCompatible,ConstExpr1:Position);
+
+  CHECK (ConstExpr2=ConstExpr1)                                                                              /* !CaseExpression */
+     OR \T.\IsCaseExprCompatible
+        (/* Te := */ CaseTypeReprIn
+        ,/* Tl := */ \T.\EmptyTypeToErrorType(ConstExpr2:TypeReprOut))
+  ==> \ERR.\MsgPos(\ERR.\MsgLabelNotCompatible,ConstExpr2:Position);
+
+  CHECK \V.\AreLegalLabelRanges(ConstExpr1:ValueReprOut,ConstExpr2:ValueReprOut)                                 /* !LabelRange */
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalCaseLabelRange,ConstExpr1:Position);
+
+  CHECK ~\V.\IsInLabelRange                                                                               /* !DisjointCaseLabel */
+        (/* labelRange := */ LabelRangeIn
+        ,/* value1     := */ ConstExpr1:ValueReprOut
+        ,/* value2     := */ ConstExpr2:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgOverlappingCaseLabel,ConstExpr1:Position);
+
+  CHECK \V.\IsValidLabelRange(Next:LabelLimitsIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgMaxCaseLabelRange,ConstExpr1:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+RepeatStmt =
+{
+  CHECK \T.\IsBooleanType(Exprs:TypeReprOut)                                                               /* !RepeatExpression */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ForStmt =
+{
+  CHECK (\E.\DeclStatusOfEntry(ControlVarEntry)=\OB.\DECLARED)                                              /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,Pos);
+
+  CHECK \E.\IsVarEntry(ControlVarEntry)                                                                     /* !ControlVariable */
+  ==> \ERR.\MsgPos(\ERR.\MsgVariableExpected,Pos);
+
+  CHECK \T.\IsIntegerType(ControlVarTypeRepr)                                                               /* !ControlVariable */
+  ==> \ERR.\MsgPos(\ERR.\MsgIntegerTypeExpected,Pos);
+
+  CHECK \T.\IsAssignmentCompatible                                                                                 /* !ForExprs */
+        (/* Tv := */ ControlVarTypeRepr
+        ,/* Te := */ From:TypeReprOut
+        ,/* Ve := */ From:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgNotAssignCompatible,From:Position);
+
+  CHECK \T.\IsAssignmentCompatible                                                                                 /* !ForExprs */
+        (/* Tv := */ ControlVarTypeRepr
+        ,/* Te := */ To:TypeReprOut
+        ,/* Ve := */ To:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgNotCompatibleWithCtrlVar,To:Position);
+
+  CHECK \T.\IsIntegerType(By:TypeReprOut)                                                                          /* !ForExprs */
+      & \T.\IsIncludedBy(By:TypeReprOut,\T.LegalForExprTypesOnly(ControlVarTypeRepr))
+  ==> \ERR.\MsgPos(\ERR.\MsgNotCompatibleWithCtrlVar,By:Position);
+
+  CHECK \V.\IsNonZeroInteger(By:ValueReprOut)                                                                   /* !StepNonZero */
+  ==> \ERR.\MsgPos(\ERR.\MsgStepMustBeNonZero,By:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Guard =
+{
+  CHECK \E.\IsTypeEntry(TypeId:EntryOut)                                                                    /* !GuardApplicable */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,TypeId:Position);
+
+  CHECK (    ( \E.\IsVarParamEntry(Variable:EntryOut)                                                       /* !GuardApplicable */
+             & \T.\IsRecordType   (VarTypeRepr      ))
+          OR ( \E.\IsVarEntry     (Variable:EntryOut)
+             & \T.\IsPointerType  (VarTypeRepr      )
+             )
+        )
+      & \T.\IsExtensionOf(TypeTypeRepr,VarTypeRepr)
+  ==> \ERR.\MsgPos(\ERR.\MsgGuardNotApplicable,OpPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ExitStmt =
+{
+  CHECK (LoopEndLabelIn # \LAB.\MT)
+  ==> \ERR.\MsgPos(\ERR.\MsgExitWithoutLoop,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ReturnStmt =
+{
+  /*
+   * RETURN in procs only!
+   */
+  CHECK (LevelIn > \OB.\MODULELEVEL)                                                                         /* !NoModuleReturn */
+  ==> \ERR.\MsgPos(\ERR.\MsgReturnOnlyInProcs,Position);
+
+  /*
+   * If result exists --> RETURN expression must exist!
+   */
+  CHECK  \T.\IsGenuineEmptyType(ResultTypeReprIn)                                                           /* !LegalReturnExpr */
+     OR ~\TT.\IsEmptyExpr(Exprs)
+  ==> \ERR.\MsgPos(\ERR.\MsgMissingReturnExpr,Position);
+
+  /*
+   * In procs only: if no result exists --> no RETURN expression may exist!
+   */
+  CHECK (LevelIn = \OB.\MODULELEVEL)                                                                        /* !LegalReturnExpr */
+     OR ~\T.\IsGenuineEmptyType(ResultTypeReprIn)
+     OR  \TT.\IsEmptyExpr(Exprs)
+  ==> \ERR.\MsgPos(\ERR.\MsgMisplacedReturnExpr,Exprs:Position);
+
+  CHECK \T.\IsAssignmentCompatible                                                                         /* !ResultCompatible */
+        (/* Tv := */ \T.\EmptyTypeToErrorType(ResultTypeReprIn)
+        ,/* Te := */ \T.\EmptyTypeToErrorType(Exprs:TypeReprOut)
+        ,/* Ve := */ Exprs:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIncompatibleReturnExpr,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ConstExpr =
+{
+  CHECK \TT.\IsEmptyExpr(Expr)                                                                                   /* !ConstExpr */
+     OR \V.\IsValidConstValue(Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgExprNotConstant,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NegateExpr =
+{
+  CHECK \T.\IsSetType    (Exprs:TypeReprOut)                                                                 /* !ExprCompatible */
+     OR \T.\IsNumericType(Exprs:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+
+  CHECK ValDontCareIn                                                                                          /* !ShortCircuit */
+     OR ~\V.\IsErrorValue(ValueReprOut)                                                                     /* !ArithmeticError */
+     OR  \V.\IsErrorValue(Exprs:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IdentityExpr =
+{
+  CHECK \T.\IsNumericType(Exprs:TypeReprOut)                                                                 /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NotExpr =
+{
+  CHECK \T.\IsBooleanType(Exprs:TypeReprOut)                                                                 /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Exprs:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IsExpr =
+{
+  CHECK \E.\IsTypeEntry(TypeId:EntryOut)                                                                           /* !TypeTest */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,TypeId:Position);
+
+  CHECK (    ( \E.\IsVarParamEntry(Designator:EntryOut   )                                                         /* !TypeTest */
+             & \T.\IsRecordType   (Designator:TypeReprOut))
+          OR   \T.\IsPointerType  (Designator:TypeReprOut)
+        )
+      & \T.\IsExtensionOf(TypeTypeRepr,Designator:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeTestNotApplicable,OpPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+DesignExpr =
+{
+  CHECK ~\T.\IsEmptyType(Designator:TypeReprOut)                                                           /* !NoProcCallInExpr */
+     OR  \T.\IsErrorType(Designator:TypeReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalFuncCall,Designator:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Element =
+{
+  CHECK \T.\IsIntegerType(Expr1:TypeReprOut)                                                                    /* !SetElements */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr1:Position);
+
+  CHECK \T.\IsIntegerType(Expr2:TypeReprOut)                                                                    /* !SetElements */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr2:Position);
+
+  CHECK \V.\IsLegalSetValue(Expr1:ValueReprOut)                                                                 /* !SetElements */
+  ==> \ERR.\MsgPos(\ERR.\MsgIntOutOfSet,Expr1:Position);
+
+  CHECK \V.\IsLegalSetValue(Expr2:ValueReprOut)                                                                 /* !SetElements */
+  ==> \ERR.\MsgPos(\ERR.\MsgIntOutOfSet,Expr1:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+RelationOper =
+{
+  CHECK ~\T.\IsErrorType(TypeReprTmp)                                                                        /* !ExprCompatible */
+     OR  \T.\IsErrorType(TypeRepr1In)
+     OR  \T.\IsErrorType(TypeRepr2In)
+  ==> \ERR.\MsgPos(\ERR.\MsgOperatorNotApplicable,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+OrderRelationOper =
+{
+  CHECK \T.\IsLegalOrderRelationInputType(TypeReprTmp)                                                       /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgOperatorNotApplicable,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+InOper =
+{
+  CHECK \T.\IsIntegerType(TypeRepr1In)                                                                       /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr1PosIn);
+
+  CHECK \T.\IsSetType(TypeRepr2In)                                                                           /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr2PosIn);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+NumSetOper =
+[ calculationSuccess : BOOLEAN ]
+{
+
+  CHECK ~\T.\IsErrorType(TypeReprTmp)                                                                        /* !ExprCompatible */
+     OR  \T.\IsErrorType(TypeRepr1In)
+     OR  \T.\IsErrorType(TypeRepr2In)
+  ==> \ERR.\MsgPos(\ERR.\MsgOperatorNotApplicable,Position);
+
+  calculationSuccess:= ValDontCareIn                                                                           /* !ShortCircuit */
+                    OR  \T.\IsErrorType(TypeReprTmp)                                                        /* !ArithmeticError */
+                    OR ~\V.\IsCalculatableValue(ValueRepr1In)
+                    OR ~\V.\IsCalculatableValue(ValueRepr2In)
+                    OR ~\V.\IsErrorValue(ValueReprOut);
+
+  CHECK calculationSuccess
+  ==> \ERR.\MsgPos(\ERR.\MsgConstArithmeticError,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+IntOper =
+{
+  calculationSuccess:=\V.\IsGreaterZeroInteger(ValueRepr2In);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+BoolOper =
+{
+  CHECK \T.\IsBooleanType(TypeRepr1In)                                                                       /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr1PosIn);
+
+  CHECK \T.\IsBooleanType(TypeRepr2In)                                                                       /* !ExprCompatible */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr2PosIn);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Designator =
+{
+  CHECK (\E.\DeclStatusOfEntry(Entry)=\OB.\DECLARED)                                                        /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredIdent,Position);
+
+  CHECK \E.\IsNotTypeEntry(EntryOut)                                                                        /* !LegalDesignator */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeNotAllowed,Position);
+
+  CHECK \E.\IsNotServerEntry(Entry)                                                                         /* !LegalDesignator */
+     OR \TT.\IsImportingDesignation(Designations)
+  ==> \ERR.\MsgPos(\ERR.\MsgModulesNotAllowed,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Importing =
+{
+  CHECK (\E.\DeclStatusOfEntry(Entry)=\OB.\DECLARED)                                                        /* !ObjectMustExist */
+  ==> \ERR.\MsgPos(\ERR.\MsgUndeclaredExternIdent,IdPos);
+
+  CHECK \E.\IsExportedEntry(Entry)                                                                           /* !ExternalObject */
+  ==> \ERR.\MsgPos(\ERR.\MsgIdentNotExported,IdPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Selecting =
+{
+  CHECK \T.\IsRecordType(TypeReprIn)                                                                          /* !FieldSelector */
+      & \E.\IsVarEntry(EntryIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgSelectorNotApplicable,Position);
+
+  CHECK (\E.\DeclStatusOfEntry(Entry  )=\OB.\DECLARED)                                                      /* !ObjectMustExist */
+     OR (\E.\DeclStatusOfEntry(EntryIn)#\OB.\DECLARED)
+  ==> \ERR.\MsgPos(\ERR.\MsgRecordFieldNotFound,IdPos);
+
+  CHECK ~\E.\IsExternEntry(Entry,ModuleIn)                                                                   /* !ExternalFields */
+     OR  \E.\IsExportedEntry(Entry)
+  ==> \ERR.\MsgPos(\ERR.\MsgRecordFieldNotExported,IdPos);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Indexing =
+{
+  CHECK \T.\IsArrayType(TypeReprIn)                                                                              /* !ArrayIndex */
+      & \E.\IsVarEntry(EntryIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgIndexNotApplicable,Position);
+
+  CHECK \T.\IsIntegerType(Expr:TypeReprOut)                                                                      /* !ArrayIndex */
+  ==> \ERR.\MsgPos(\ERR.\MsgInvalidExprType,Expr:Position);
+
+  CHECK ValDontCareIn                                                                                          /* !ShortCircuit */
+     OR \V.\IsLegalArrayIndex(Expr:ValueReprOut,Len)                                                          /* !ArrayElements */
+  ==> \ERR.\MsgPos(\ERR.\MsgIndexOutOfBounds,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Dereferencing =
+{
+  CHECK \T.\IsPointerType(TypeReprIn)                                                                          /* !PointerDeref */
+      & \E.\IsVarEntry(EntryIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgDerefNotApplicable,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Supering =
+[ isReceiver : BOOLEAN ]
+{
+  isReceiver := \E.\IsReceiverEntry(PrevEntryIn);
+
+  CHECK isReceiver                                                                                        /* !ReceiverSuperCall */
+  ==> \ERR.\MsgPos(\ERR.\MsgNonReceiverSupered,Position);
+
+  CHECK ~isReceiver                                                                                       /* !ReceiverSuperCall */
+     OR \T.\IsExistingBoundProc(ModuleIn,baseTypeRepr,EntryIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgMissingRedefined,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Argumenting =
+[ isBoundProc : BOOLEAN ]
+{
+  isBoundProc := \E.\IsBoundProcEntry(EntryIn); 
+
+  CHECK \T.\IsProcedureType(TypeReprIn)                                                                  /* !ProcedureArguments */
+      & (  \E.\IsVarEntry(EntryIn)
+        OR \E.\IsProcedureEntry(EntryIn)
+        OR isBoundProc
+        )
+  ==> \ERR.\MsgPos(\ERR.\MsgArgumentsNotAllowed,Position);
+  
+  CHECK ~isBoundProc
+     OR \T.\IsRecordType(\E.\ReceiverTypeOfBoundProc(EntryIn))
+     OR \T.\IsPointerOrArrayOfPointerType(\E.\TypeOfEntry(PrevEntryIn))
+  ==> \ERR.\MsgPos(\ERR.\MsgReceiverParamNotPointer,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+Guarding =
+{
+  CHECK \E.\IsTypeEntry(Qualidents:EntryOut)                                                                /* !GuardApplicable */
+  ==> \ERR.\MsgPos(\ERR.\MsgTypeExpected,Qualidents:Position);
+
+  CHECK (Position.Line=0)                                                           /* An implicit type guard has this position */
+     OR (    ( \E.\IsVarParamEntry(EntryIn   )                                                              /* !GuardApplicable */
+             & \T.\IsRecordType   (TypeReprIn))
+          OR   \T.\IsPointerType  (TypeReprIn)
+        )
+      & \T.\IsExtensionOf(TestTypeRepr,TypeReprIn)
+  ==> \ERR.\MsgPos(\ERR.\MsgGuardNotApplicable,Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+mtExprList =
+{
+  CHECK \SI.\IsEmptySignature(SignatureIn)                                                          /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooFewParams,ClosingPosIn);
+}.
+
+ExprList =
+[ IsLValueOK:BOOLEAN ]
+{
+  CHECK \SI.\IsExistingSignature(SignatureIn)                                                       /* !CorrespondingParameters */
+  ==> \ERR.\MsgPos(\ERR.\MsgTooManyParams,Expr:Position);
+
+  CHECK \SI.\IsCompatibleParam                                                                              /* !CompatibleParam */
+        (/* parMode := */ parMode
+        ,/* Tf      := */ formalTypeRepr
+        ,/* Ta      := */ Expr:TypeReprOut
+        ,/* Va      := */ Expr:ValueReprOut)
+  ==> \ERR.\MsgPos(\ERR.\MsgParmNotCompatible,Expr:Position);
+
+  IsLValueOK:=(parMode#\OB.\REFPAR) OR Expr:IsLValueOut; 						     /* !LValueVarParam */
+  CHECK IsLValueOK
+  ==> \ERR.\MsgPos(\ERR.\MsgLValueExpected,Expr:Position);
+
+  CHECK ~IsLValueOK
+     OR (parMode#\OB.\REFPAR)                                                                           /* !ReadOnlyApplication */
+     OR Expr:IsWritableOut
+  ==> \ERR.\MsgPos(\ERR.\MsgIllegalROVarPar,Expr:Position);
+}.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+END Conditions
+
+/********************************************************************************************************************************/
+/*** END oberon.che                                                                                                           ***/
+/********************************************************************************************************************************/
+
+

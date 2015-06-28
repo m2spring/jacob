@@ -1,0 +1,28 @@
+Compiling epfp003f
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+f   REFPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+f   REFPARAM  T1
+i   VAR       INTEGER
+-------------------------------------------------------------------------------
+
+'MODULE' epfp003f
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+               END
+i    VAR       SET
+r0   VAR       T0
+Q    PROCEDURE (VAR f:INTEGER)
+P    PROCEDURE (VAR f:T1)
+-------------------------------------------------------------------------------
+
+epfp003f.ob2: 32,4: Actual parameter not compatible with formal
+epfp003f.ob2: 35,4: Actual parameter not compatible with formal

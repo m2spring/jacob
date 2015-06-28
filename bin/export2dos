@@ -1,0 +1,103 @@
+#!/bin/sh
+rm export/* 2>/dev/null
+
+cp -v \
+Jacob.mi \
+ARG.md \
+ARG.mi \
+ASM.md \
+ASM.mi \
+ASMOP.md \
+ASMOP.mi \
+BETO.md \
+BETO.mi \
+Target.md \
+Target.mi \
+CV.md \
+CV.mi \
+DRV.md \
+DRV.mi \
+ED.md \
+ED.mi \
+ERR.md \
+ERR.mi \
+Errors.md \
+Errors.mi \
+FIL.md \
+FIL.mi \
+LAB.md \
+LAB.mi \
+LIM.md \
+LIM.mi \
+NDP.md \
+NDP.mi \
+O.md \
+O.mi \
+OT.md \
+OT.mi \
+POS.md \
+POS.mi \
+Source.md \
+Source.mi \
+STR.md \
+STR.mi \
+TBL.md \
+TBL.mi \
+UTI.md \
+UTI.mi \
+OB2RTS.as \
+Storage.c \
+Storage.h \
+oberon.rex \
+oberon.ast \
+oberon.eva \
+oberon.che \
+oberon.pre \
+oberon.lal \
+OB.ast \
+TT.pum \
+E.pum \
+SI.pum \
+T.pum \
+V.pum \
+PR.pum \
+CO.pum \
+ADR.pum \
+BL.pum \
+CMT.pum \
+CODE.pum \
+CODE.pum.ProcCalls \
+CODE.pum.Assignments \
+CODE.pum.Stmts \
+CODE.pum.Exprs \
+CODE.pum.BooleanExprs \
+CODE.pum.Designators \
+CODE.pum.Predecls \
+CODEf.pum \
+CODEf.pum.Init \
+CODEf.pum.TDesc \
+TD.pum \
+OD.pum \
+oberon.cgd \
+oberon.cgd.min \
+oberon.cgd.opt \
+oberon.cgd.floats.min \
+oberon.cgd.floats.opt \
+export
+
+cd export
+mv CODE.pum.ProcCalls CODEproc.pum
+mv CODE.pum.Assignments CODEassi.pum
+mv CODE.pum.Stmts CODEstmt.pum
+mv CODE.pum.Exprs CODEexpr.pum
+mv CODE.pum.BooleanExprs CODEbool.pum
+mv CODE.pum.Designators CODEdesi.pum
+mv CODE.pum.Predecls CODEpred.pum
+mv CODEf.pum.Init CODEfini.pum
+mv CODEf.pum.TDesc CODEftde.pum
+mv oberon.cgd.min oberon.min
+mv oberon.cgd.opt oberon.opt
+mv oberon.cgd.floats.min oberon.fmi
+mv oberon.cgd.floats.opt oberon.fop
+zip -m9ll jacobsrc *
+

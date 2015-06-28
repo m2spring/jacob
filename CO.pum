@@ -1,0 +1,79 @@
+/********************************************************************************************************************************/
+/*** CO.pum / Coercion related functions                                                                                      ***/
+/********************************************************************************************************************************/
+TRAFO CO TREE OB PUBLIC 
+
+ GetCoercion                                                                       /* Yields the appropriate coercion           */
+ DoCoercion                                                                        /* Coerces a value according to the coercion */
+ DoRealCoercion
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT  OT; }
+
+GLOBAL{ IMPORT  OT        ,
+                StringMem ; }
+
+/********************************************************************************************************************************/
+/*$1*/
+FUNCTION GetCoercion ( SrcType:TypeReprs , DstType:TypeReprs ) Coercion
+ _                  , NIL              RETURN {OB.cmtCoercion       }?.
+ NIL                , _                RETURN {OB.cmtCoercion       }?.
+ ShortintTypeRepr   , IntegerTypeRepr  RETURN {OB.cShortint2Integer }?.
+ ShortintTypeRepr   , LongintTypeRepr  RETURN {OB.cShortint2Longint }?.
+ ShortintTypeRepr   , RealTypeRepr     RETURN {OB.cShortint2Real    }?.
+ ShortintTypeRepr   , LongrealTypeRepr RETURN {OB.cShortint2Longreal}?.
+ IntegerTypeRepr    , LongintTypeRepr  RETURN {OB.cInteger2Longint  }?.
+ IntegerTypeRepr    , RealTypeRepr     RETURN {OB.cInteger2Real     }?.
+ IntegerTypeRepr    , LongrealTypeRepr RETURN {OB.cInteger2Longreal }?.
+ LongintTypeRepr    , RealTypeRepr     RETURN {OB.cLongint2Real     }?.
+ LongintTypeRepr    , LongrealTypeRepr RETURN {OB.cLongint2Longreal }?.
+ RealTypeRepr       , LongrealTypeRepr RETURN {OB.cReal2Longreal    }?.
+ CharStringTypeRepr , StringTypeRepr   RETURN {OB.cChar2String      }?.
+ ..                                    RETURN {OB.cmtCoercion       }?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION DoCoercion ( coerce:Coercion , arg:ValueReprs ) ValueReprs
+ LOCAL{ VAR result:OB.tOB; vLongint:OT.oLONGINT; vReal:OT.oREAL; vLongreal:OT.oLONGREAL; vChar:OT.oCHAR; vString:OT.oSTRING; }
+
+ Shortint2Real     , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oREAL(vLongint,vReal);
+                                                               result:=OB.mRealValue(vReal); };.
+ Integer2Real      , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oREAL(vLongint,vReal);
+                                                               result:=OB.mRealValue(vReal); };.
+ Longint2Real      , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oREAL(vLongint,vReal);
+                                                               result:=OB.mRealValue(vReal); };.
+
+ Shortint2Longreal , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oLONGREAL(vLongint,vLongreal);
+                                                               result:=OB.mLongrealValue(vLongreal); };.
+ Integer2Longreal  , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oLONGREAL(vLongint,vLongreal);
+                                                               result:=OB.mLongrealValue(vLongreal); };.
+ Longint2Longreal  , IntegerValue(vLongint) RETURN {result} ?{ OT.oLONGINT2oLONGREAL(vLongint,vLongreal);
+                                                               result:=OB.mLongrealValue(vLongreal); };.
+
+ Real2Longreal     , RealValue(vReal)       RETURN {result} ?{ OT.oREAL2oLONGREAL(vReal,vLongreal);
+                                                               result:=OB.mLongrealValue(vLongreal); };.
+
+ Char2String       , CharValue(vChar)       RETURN {result} ?{ OT.oCHAR2oSTRING(vChar,vString);
+                                                               result:=OB.mStringValue(vString); };.
+
+ ..                                         RETURN arg ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PROCEDURE DoRealCoercion ( Coercion , REF value:ValueReprs , REF type:TypeReprs ) 
+LOCAL{ VAR r:REAL; l:OT.oLONGREAL; }
+
+ Shortint2Real     , IntegerValue(v),_ ;
+ Integer2Real      , IntegerValue(v),_ ;
+ Longint2Real      , IntegerValue(v),_ ?{ OT.oLONGINT2oREAL    (v,r); value:=OB.mRealValue    (r); type:=OB.cRealTypeRepr;     };.
+ Shortint2Longreal , IntegerValue(v),_ ;
+ Integer2Longreal  , IntegerValue(v),_ ;
+ Longint2Longreal  , IntegerValue(v),_ ?{ OT.oLONGINT2oLONGREAL(v,l); value:=OB.mLongrealValue(l); type:=OB.cLongrealTypeRepr; };.
+ Real2Longreal     , RealValue   (v),_ ?{ OT.oREAL2oLONGREAL   (v,l); value:=OB.mLongrealValue(l); type:=OB.cLongrealTypeRepr; };.
+ ..                                    ?.
+ 
+/********************************************************************************************************************************/
+/*** END CO.pum                                                                                                               ***/
+/********************************************************************************************************************************/
+
+

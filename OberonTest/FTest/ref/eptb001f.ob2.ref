@@ -1,0 +1,44 @@
+Compiling eptb001f
+'BOUND' NotGlobal
+-------------------------------------------------------------------------------
+r   RECEIVER  Ableitung1
+-------------------------------------------------------------------------------
+
+'BOUND' Basisproc
+-------------------------------------------------------------------------------
+r   RECEIVER  Basistyp
+-------------------------------------------------------------------------------
+
+'BOUND' Bound
+-------------------------------------------------------------------------------
+p   RECEIVER  PtrAbleitung2
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Proc1
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'MODULE' eptb001f
+-------------------------------------------------------------------------------
+Basistyp        TYPE      RECORD
+                           Basisproc   BOUND     VAR r:Basistyp()
+                          END
+                          (-->Ableitung1)
+
+Ableitung1      TYPE      RECORD(Basistyp)
+                           Basisproc   INHERITED VAR r:Basistyp()
+                           NotGlobal   BOUND     VAR r:Ableitung1()
+                          END
+                          (-->Ableitung2)
+
+Ableitung2      TYPE      RECORD(Ableitung1)
+                           Basisproc   INHERITED VAR r:Basistyp()
+                           NotGlobal   INHERITED VAR r:Ableitung1()
+                           Bound       BOUND     p:PtrAbleitung2()
+                          END
+PtrAbleitung2   TYPE      POINTER TO Ableitung2
+Proc1           PROCEDURE ()
+-------------------------------------------------------------------------------
+
+eptb001f.ob2: 22,31: Bound procedure must be global
+eptb001f.ob2: 30,31: Bound procedure must be global

@@ -1,0 +1,31 @@
+Compiling eswi001t
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r   REFPARAM  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eswi001t
+-------------------------------------------------------------------------------
+T0    TYPE      RECORD
+                 s   VAR       SET
+                END
+                (-->T1)
+
+T1    TYPE      RECORD(T0)
+                 s   VAR       SET
+                 i   VAR       INTEGER
+                END
+                (-->T2)
+
+T2    TYPE      RECORD(T1)
+                 s   VAR       SET
+                 i   VAR       INTEGER
+                 b   VAR       BOOLEAN
+                END
+PT0   TYPE      POINTER TO T0
+PT1   TYPE      POINTER TO T1
+PT2   TYPE      POINTER TO T2
+p     VAR       PT0
+P     PROCEDURE (VAR r:T0)
+-------------------------------------------------------------------------------
+

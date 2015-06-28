@@ -1,0 +1,135 @@
+Compiling LDes06 (LDes06.ob2) 
+  Importing LDes01 (LDes01.ob2)
+Linking LDes06
+	.comm	LDes06$G,8
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+LDes06$N:
+	.asciz	"LDes06"
+	.align	2,144
+	.long	LDes06$N
+	.long	0
+	.long	_NILPROC
+	.globl	LDes06$D
+LDes06$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# PROCEDURE P1()
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L0$N:
+	.asciz	"LDes06.P1"
+	.align	2,144
+	.long	L0$N
+	.long	0
+	.long	_NILPROC
+L0$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L0:
+	pushl	%ebp
+	pushl	$L0$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L2,%esp
+
+	leave
+	ret
+L2=	0
+
+#------------------------------------------------------------------------------
+#     44 addr pr (VAR LDes01.TPR)
+#     40 addr po (VAR LDes01.TPO)
+#     36 addr se (VAR SET)
+#     32 addr lr (VAR LONGREAL)
+#     28 addr re (VAR REAL)
+#     24 addr li (VAR LONGINT)
+#     20 addr in (VAR INTEGER)
+#     16 addr si (VAR SHORTINT)
+#     12 addr ch (VAR CHAR)
+#      8 addr bo (VAR BOOLEAN)
+# PROCEDURE P2(VAR bo:BOOLEAN; VAR ch:CHAR; VAR si:SHORTINT; VAR in:INTEGER; VAR li:LONGINT; VAR re:REAL; VAR lr:LONGREAL; VAR se:SET; VAR po:LDes01.TPO; VAR pr:LDes01.TPR)
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L1$N:
+	.asciz	"LDes06.P2"
+	.align	2,144
+	.long	L1$N
+	.long	0
+	.long	_NILPROC
+L1$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L1:
+	pushl	%ebp
+	pushl	$L1$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L3,%esp
+
+	leave
+	ret
+L3=	0
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+LDes06$I$N:
+	.asciz	"LDes06$I"
+	.align	2,144
+	.long	LDes06$I$N
+	.long	0
+	.long	_NILPROC
+LDes06$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	LDes06$I
+LDes06$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$LDes06$I$D
+	subl	$L4,%esp
+
+	# P2(L.bo,L.ch,L.si,L.in,L.li,L.re,L.lr,L.se,L.po,L.pr);
+	leal	40+LDes01$G,%eax	# pr 
+	pushl	%eax
+	leal	36+LDes01$G,%eax	# po 
+	pushl	%eax
+	leal	32+LDes01$G,%eax	# se 
+	pushl	%eax
+	leal	24+LDes01$G,%eax	# lr 
+	pushl	%eax
+	leal	20+LDes01$G,%eax	# re 
+	pushl	%eax
+	leal	16+LDes01$G,%eax	# li 
+	pushl	%eax
+	leal	12+LDes01$G,%eax	# in 
+	pushl	%eax
+	leal	10+LDes01$G,%eax	# si 
+	pushl	%eax
+	leal	9+LDes01$G,%eax	# ch 
+	pushl	%eax
+	leal	8+LDes01$G,%eax	# bo 
+	pushl	%eax
+	call	L1
+	addl	$40,%esp
+
+	leave
+	ret
+L4=	0
+

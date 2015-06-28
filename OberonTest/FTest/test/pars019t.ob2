@@ -1,0 +1,7 @@
+(* DeclSeq *)
+
+MODULE pars019t;
+VAR a:bla;
+VAR b:bla;
+VAR c:hurga;
+END pars019t.

@@ -1,0 +1,30 @@
+Compiling eapc002t
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+a   REFPARAM  ARRAY OF SYSTEM$BYTE
+-------------------------------------------------------------------------------
+
+'MODULE' eapc002t
+-------------------------------------------------------------------------------
+SYS          SERVER    SYSTEM
+trecord      TYPE      RECORD
+                        f   VAR       SHORTINT
+                       END
+tpointer     TYPE      POINTER TO trecord
+tprocedure   TYPE      (A:SET)
+tarray       TYPE      ARRAY 10 OF CHAR
+si           VAR       SHORTINT
+i            VAR       INTEGER
+li           VAR       LONGINT
+r            VAR       REAL
+lr           VAR       LONGREAL
+s            VAR       SET
+c            VAR       CHAR
+b            VAR       BOOLEAN
+rec          VAR       trecord
+ptr          VAR       tpointer
+arr          VAR       tarray
+pro          VAR       tprocedure
+P            PROCEDURE (VAR a:ARRAY OF SYSTEM$BYTE)
+-------------------------------------------------------------------------------
+

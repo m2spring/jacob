@@ -1,0 +1,13 @@
+Compiling econ001f
+'MODULE' econ001f
+-------------------------------------------------------------------------------
+T       TYPE      ARRAY OF CHAR
+A       VAR       INTEGER
+N       CONST     INTEGER = <EmptyValue>
+C       CONST     CHAR = <EmptyValue>
+TSIZE   CONST     SHORTINT = 0
+-------------------------------------------------------------------------------
+
+econ001f.ob2: 15,11: Expression not constant
+econ001f.ob2: 19,11: Expression not constant
+econ001f.ob2: 23,16: Open arrays are not allowed here

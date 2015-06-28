@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/cctb/lib/puma/puma -l/usr/cctb/lib/puma $*

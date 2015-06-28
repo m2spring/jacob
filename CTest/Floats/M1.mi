@@ -1,0 +1,9 @@
+MODULE M1;
+VAR re,ra,rb:REAL;
+    lr,la,lb:LONGREAL;
+    si, si1, si2:SHORTINT; 
+    in:INTEGER; 
+    li:LONGINT; 
+BEGIN (* M1 *)  
+ re:=ra+rb; 
+END M1.

@@ -1,0 +1,12 @@
+Compiling esca002f
+'MODULE' esca002f
+-------------------------------------------------------------------------------
+i   VAR       INTEGER
+j   VAR       INTEGER
+c   VAR       CHAR
+h   VAR       CHAR
+-------------------------------------------------------------------------------
+
+esca002f.ob2: 15,4: Overlapping case label
+esca002f.ob2: 19,8: Expression not constant
+esca002f.ob2: 29,4: Overlapping case label

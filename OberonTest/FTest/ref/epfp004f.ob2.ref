@@ -1,0 +1,34 @@
+Compiling epfp004f
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+f   VALPARAM  INTEGER
+-------------------------------------------------------------------------------
+
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+f   VALPARAM  T1
+-------------------------------------------------------------------------------
+
+'PROCEDURE' R
+-------------------------------------------------------------------------------
+f   VALPARAM  ARRAY 4 OF CHAR
+-------------------------------------------------------------------------------
+
+'MODULE' epfp004f
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+               END
+i    VAR       REAL
+r0   VAR       T0
+Q    PROCEDURE (f:INTEGER)
+P    PROCEDURE (f:T1)
+R    PROCEDURE (f:ARRAY 4 OF CHAR)
+-------------------------------------------------------------------------------
+
+epfp004f.ob2: 34,4: Actual parameter not compatible with formal
+epfp004f.ob2: 37,4: Actual parameter not compatible with formal
+epfp004f.ob2: 40,4: Actual parameter not compatible with formal

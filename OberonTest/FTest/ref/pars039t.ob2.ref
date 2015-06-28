@@ -1,0 +1,28 @@
+MODULE pars039t;
+
+BEGIN (* pars039t *)
+   LOOP
+   END; (* LOOP *)
+   LOOP
+      LOOP
+         EXIT;
+         aber;
+         wohin;
+      END; (* LOOP *)
+   END; (* LOOP *)
+   LOOP
+      LOOP
+         LOOP
+            LOOP
+               LOOP
+                  innermost;
+                  statement;
+                  sequence;
+               END; (* LOOP *)
+            END; (* LOOP *)
+            EXIT;
+         END; (* LOOP *)
+      END; (* LOOP *)
+   END; (* LOOP *)
+END pars039t.
+

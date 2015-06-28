@@ -1,0 +1,4 @@
+MODULE M1;
+IMPORT M2;
+BEGIN (* M1 *)
+END M1.

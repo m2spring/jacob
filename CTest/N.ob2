@@ -1,0 +1,8 @@
+MODULE N;
+
+ PROCEDURE P(p:BOOLEAN; r:INTEGER);
+ BEGIN (* P *)
+ END P;
+  
+BEGIN (* N *)
+END N.

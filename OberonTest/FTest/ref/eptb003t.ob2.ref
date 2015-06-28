@@ -1,0 +1,111 @@
+Compiling eptb003t
+'BOUND' BoundToT0
+-------------------------------------------------------------------------------
+r   RECEIVER  T0
+-------------------------------------------------------------------------------
+
+'BOUND' BoundToT1
+-------------------------------------------------------------------------------
+r   RECEIVER  T1
+-------------------------------------------------------------------------------
+
+'BOUND' BoundToU2
+-------------------------------------------------------------------------------
+r   RECEIVER  U2
+-------------------------------------------------------------------------------
+
+'BOUND' BoundToV2
+-------------------------------------------------------------------------------
+r   RECEIVER  V2
+-------------------------------------------------------------------------------
+
+'BOUND' BoundToY1
+-------------------------------------------------------------------------------
+r   RECEIVER  Y1
+-------------------------------------------------------------------------------
+
+'MODULE' eptb003t
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+                BoundToT0   BOUND     VAR r:T0()
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   BOUND     VAR r:T1()
+               END
+               (-->U1,V1)
+
+U1   TYPE      RECORD(T1)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+               END
+               (-->U2)
+
+V1   TYPE      RECORD(T1)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+               END
+               (-->V2)
+
+U2   TYPE      RECORD(U1)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToU2   BOUND     VAR r:U2()
+               END
+               (-->U3)
+
+U3   TYPE      RECORD(U2)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToU2   INHERITED VAR r:U2()
+               END
+               (-->U4)
+
+U4   TYPE      RECORD(U3)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToU2   INHERITED VAR r:U2()
+               END
+V2   TYPE      RECORD(V1)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   BOUND     VAR r:V2()
+               END
+               (-->W1,X1,Y1)
+
+W1   TYPE      RECORD(V2)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   INHERITED VAR r:V2()
+               END
+X1   TYPE      RECORD(V2)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   INHERITED VAR r:V2()
+               END
+Y1   TYPE      RECORD(V2)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   INHERITED VAR r:V2()
+                BoundToY1   BOUND     VAR r:Y1()
+               END
+               (-->Y2)
+
+Y2   TYPE      RECORD(Y1)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   INHERITED VAR r:V2()
+                BoundToY1   INHERITED VAR r:Y1()
+               END
+               (-->Y3)
+
+Y3   TYPE      RECORD(Y2)
+                BoundToT0   INHERITED VAR r:T0()
+                BoundToT1   INHERITED VAR r:T1()
+                BoundToV2   INHERITED VAR r:V2()
+                BoundToY1   INHERITED VAR r:Y1()
+               END
+-------------------------------------------------------------------------------
+

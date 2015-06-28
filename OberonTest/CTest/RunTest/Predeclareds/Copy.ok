@@ -1,0 +1,298 @@
+	.comm	Copy$G,68
+#      8 s_fixed: ARRAY 20 OF CHAR L-accessed
+#     28 d_fixed: ARRAY 20 OF CHAR
+#     48 s_open1: POINTER TO ARRAY OF CHAR L-accessed
+#     52 d_open1: POINTER TO ARRAY OF CHAR
+#     56 s_open2: POINTER TO ARRAY OF ARRAY OF CHAR L-accessed
+#     60 d_open2: POINTER TO ARRAY OF ARRAY OF CHAR
+#     64 tst: POINTER TO ARRAY OF ARRAY OF CHAR L-accessed
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Copy$N:
+	.asciz	"Copy"
+	.align	2,144
+	.long	Copy$N
+	.long	0
+	.long	_NILPROC
+	.globl	Copy$D
+Copy$D:
+# (48,5,4,H0,-)
+	.long	44
+	.long	48
+	.long	52
+	.long	56
+	.long	60
+	.long	-1
+
+#------------------------------------------------------------------------------
+# TDesc for Copy.s_open1^
+Copy$1$N:
+	.asciz	"Copy.s_open1^"
+	.align	2,144
+Copy$1$S:
+	movl	(%ebx),%eax
+	leal	15(%ebx,%eax),%ebx
+	andb	$0x000000f8,%bl
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	Copy$1$N	# -12 name
+	.long	-1	# -8  size/odim
+	.long	Copy$1$S	# -4  skipper
+
+	.globl	Copy$1$D
+Copy$1$D:
+	.byte	0
+	.long	-1
+	.long	Copy$1$D+1
+
+	.globl	Copy$1$I
+Copy$1$I:
+	ret
+
+#------------------------------------------------------------------------------
+# TDesc for Copy.s_open2^
+Copy$2$N:
+	.asciz	"Copy.s_open2^"
+	.align	2,144
+Copy$2$S:
+	movl	(%ebx),%eax
+	leal	23(%ebx,%eax),%ebx
+	andb	$0x000000f8,%bl
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	Copy$2$N	# -12 name
+	.long	-2	# -8  size/odim
+	.long	Copy$2$S	# -4  skipper
+
+	.globl	Copy$2$D
+Copy$2$D:
+	.byte	0
+	.long	-1
+	.long	Copy$2$D+1
+
+	.globl	Copy$2$I
+Copy$2$I:
+	ret
+
+#------------------------------------------------------------------------------
+# TDesc for Copy.tst^
+Copy$3$N:
+	.asciz	"Copy.tst^"
+	.align	2,144
+Copy$3$S:
+	movl	(%ebx),%eax
+	leal	23(%ebx,%eax),%ebx
+	andb	$0x000000f8,%bl
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	Copy$3$N	# -12 name
+	.long	-2	# -8  size/odim
+	.long	Copy$3$S	# -4  skipper
+
+	.globl	Copy$3$D
+Copy$3$D:
+	.byte	0
+	.long	-1
+	.long	Copy$3$D+1
+
+	.globl	Copy$3$I
+Copy$3$I:
+	ret
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Copy$I$N:
+	.asciz	"Copy$I"
+	.align	2,144
+	.long	Copy$I$N
+	.long	0
+	.long	_NILPROC
+Copy$I$D:
+	.long	-1
+
+	.align	2,144
+	.globl	Copy$I
+Copy$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Copy$I$D
+	subl	$L4,%esp
+
+	# pointer variable init code
+	xorl	%eax,%eax
+	leal	48+Copy$G,%edi
+	movl	$5,%ecx
+	cld
+	repz
+	stosl
+
+	# s_fixed:='Fixed String';
+	movl	L5,%eax	# s_fixed 
+	movl	%eax,8+Copy$G
+	movl	4+L5,%eax
+	movl	%eax,12+Copy$G
+	movl	8+L5,%eax
+	movl	%eax,16+Copy$G
+	movb	$0,20+Copy$G
+
+	# NEW(s_open1,20);
+	pushl	$20
+	pushl	$1
+	pushl	$Copy$1$I
+	pushl	$Copy$1$D
+	pushl	$1
+	leal	48+Copy$G,%eax	# s_open1 
+	pushl	%eax
+	call	_$openNEW
+	addl	$17,%esp
+
+	# COPY('Open1-String',s_open1^);
+	movl	48+Copy$G,%eax	# s_open1 
+	movl	(%eax),%ecx
+	cmpl	$13,%ecx
+	jle	L7
+	movl	$13,%ecx
+L7:
+	leal	L6,%esi
+	leal	4(%eax),%edi
+	decl	%ecx
+	jl	L8
+	jz	L9
+	cld
+L10:
+	lodsb
+	stosb
+	testb	%al,%al
+	loopnz	L10
+	jz	L8
+L9:
+	movb	$0,(%edi)
+L8:
+
+	# NEW(s_open2,10,20);
+	pushl	$20
+	pushl	$10
+	pushl	$2
+	pushl	$Copy$2$I
+	pushl	$Copy$2$D
+	pushl	$1
+	leal	56+Copy$G,%eax	# s_open2 
+	pushl	%eax
+	call	_$openNEW
+	addl	$18,%esp
+
+	# COPY('Open2_String',s_open2^[5]);
+	pushl	$13
+	leal	L11,%esi
+	movl	56+Copy$G,%eax	# s_open2 
+	leal	(%eax),%edx
+	movl	$5,%eax
+	pushl	%eax
+	movl	8(%edx),%ebx	# %ebx:=1 * 8(%edx); headerBaseReg=%edx displacementReg=%ecx sizeReg=%ebx tmpReg=%eax
+	popl	%ecx
+	imull	%ebx,%ecx
+	pushl	8(%edx)
+	leal	12(%edx,%ecx),%edi
+	popl	%ecx
+	cmpl	(%esp),%ecx
+	jle	L12
+	movl	(%esp),%ecx
+L12:
+	addl	$4,%esp
+	decl	%ecx
+	jl	L13
+	jz	L14
+	cld
+L15:
+	lodsb
+	stosb
+	testb	%al,%al
+	loopnz	L15
+	jz	L13
+L14:
+	movb	$0,(%edi)
+L13:
+
+	# NEW(tst,50,50);
+	pushl	$50
+	pushl	$50
+	pushl	$2
+	pushl	$Copy$3$I
+	pushl	$Copy$3$D
+	pushl	$1
+	leal	64+Copy$G,%eax	# tst 
+	pushl	%eax
+	call	_$openNEW
+	addl	$18,%esp
+
+	# COPY('Test',tst^[0]);
+	pushl	$5
+	leal	L16,%esi
+	movl	64+Copy$G,%eax	# tst 
+	leal	(%eax),%edx
+	movl	$0,%eax
+	pushl	%eax
+	movl	8(%edx),%ebx	# %ebx:=1 * 8(%edx); headerBaseReg=%edx displacementReg=%ecx sizeReg=%ebx tmpReg=%eax
+	popl	%ecx
+	imull	%ebx,%ecx
+	pushl	8(%edx)
+	leal	12(%edx,%ecx),%edi
+	popl	%ecx
+	cmpl	(%esp),%ecx
+	jle	L17
+	movl	(%esp),%ecx
+L17:
+	addl	$4,%esp
+	decl	%ecx
+	jl	L18
+	jz	L19
+	cld
+L20:
+	lodsb
+	stosb
+	testb	%al,%al
+	loopnz	L20
+	jz	L18
+L19:
+	movb	$0,(%edi)
+L18:
+
+	# O.StrLn(tst^[0]);
+	movl	64+Copy$G,%eax	# tst 
+	leal	(%eax),%edx
+	movl	$0,%eax
+	pushl	%eax
+	movl	8(%edx),%ebx	# %ebx:=1 * 8(%edx); headerBaseReg=%edx displacementReg=%ecx sizeReg=%ebx tmpReg=%eax
+	popl	%ecx
+	imull	%ebx,%ecx
+	leal	12(%edx,%ecx),%eax
+	leal	(%eax),%eax
+	pushl	-4(%eax)
+	pushl	%eax
+	call	Out_StrLn
+	addl	$8,%esp
+
+	movl	%ebp,%esp
+	popl	%ebp
+	ret
+L4=	0
+
+#------------------------------------------------------------------------------
+L6:
+	.asciz	"Open1-String"
+L5:
+	.asciz	"Fixed String"
+L11:
+	.asciz	"Open2_String"
+L16:
+	.asciz	"Test"
+

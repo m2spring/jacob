@@ -1,0 +1,19 @@
+MODULE M2;
+
+VAR i,j:LONGINT; 
+    c:CHAR; 
+    a:POINTER TO ARRAY OF ARRAY OF CHAR; 
+
+PROCEDURE P*;
+
+ PROCEDURE Q;
+ BEGIN (* Q *)
+ END Q;
+
+BEGIN (* P *)
+ Q;
+END P;
+
+BEGIN (* M2 *)
+ c:=a[i,j]; 
+END M2.

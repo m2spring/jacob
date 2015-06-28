@@ -1,0 +1,306 @@
+/********************************************************************************************************************************/
+/*** CODEf.pum.TDesc                                                                                                          ***/
+/********************************************************************************************************************************/
+PROCEDURE GlobalTDesc ( ptrBl:Blocklists )
+LOCAL{ VAR nLab,dLab:LAB.T; }
+
+ .. ?{
+    IF ARG.OptionCommentsInAsm THEN ASM.SepLine; ASM.CmtLnS('TDesc for module globals'); END;
+    
+    nLab:=LAB.AppS(FIL.ActP^.Modulename,'$N'); 
+    dLab:=LAB.AppS(FIL.ActP^.Modulename,'$D'); 
+    
+    ASM.Text;
+    ASM.Label(nLab); 
+    
+    ASM.Asciz(FIL.ActP^.Modulename^); 
+    ASM.Align(2);
+    ASM.LongL(nLab);
+    ASM.LongI(0); 
+    ASM.LongL(LAB.NILPROC); 
+
+    ASM.GLabel(dLab); 
+    IF ARG.OptionCommentsInAsm THEN CMT.CmtBlocklist(ptrBl); END;
+    CodeGlobalBlocklists(ptrBl);
+    ASM.Ln;
+ };.
+
+/*END GlobalTDesc */
+
+/********************************************************************************************************************************/
+PROCEDURE NamePath ( NamePaths )
+             
+ IdentNamePath      (prev:NamePaths,id) ?{ NamePath(prev); ASM.WrId(id ); };.
+ SelectNamePath     (prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('.' ); };.
+ IndexNamePath      (prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('[]'); };.
+ DereferenceNamePath(prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('^' ); };.
+
+/*END NamePath */
+
+/********************************************************************************************************************************/
+PROCEDURE LocalTDesc ( entry:Entries , ptrBl:Blocklists )
+
+ BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,namePath:NamePaths,..),.. ;
+ ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,namePath:NamePaths,_ ),.. ? LocalTDesc1(label,namePath,ptrBl);.
+
+/*END LocalTDesc */
+
+/********************************************************************************************************************************/
+PROCEDURE LocalTDesc1 ( label:tLabel , namePath:NamePaths , ptrBl:Blocklists )
+LOCAL{ VAR nLab,dLab:LAB.T; }
+
+ ..?{
+    IF ARG.OptionCommentsInAsm THEN ASM.CmtLnS('TDesc for proc locals'); END;
+    
+    nLab:=LAB.AppS(label,'$N'); 
+    
+    ASM.Text;
+    ASM.Label(nLab); 
+
+    IF ARG.OptionCommentsInAsm THEN 
+       ASM.WrS('	.asciz	"'); NamePath(namePath);  ASM.WrS('"'); ASM.WrLn;
+    ELSE 
+       ASM.WrS('.asciz "'); NamePath(namePath);  ASM.WrS('"'); ASM.WrLn;
+    END;
+
+    ASM.Align(2);
+    ASM.LongL(nLab); 
+    ASM.LongI(0); 
+    ASM.LongL(LAB.NILPROC); 
+
+    dLab:=LAB.AppS(label,'$D'); 
+    ASM.Label(dLab); 
+    IF ARG.OptionCommentsInAsm THEN CMT.CmtBlocklist(ptrBl); END;
+    CodeLocalBlocklists(ptrBl); 
+ };.
+
+/*END LocalTDesc1 */
+
+/********************************************************************************************************************************/
+PROCEDURE TDescList ( TDescList )
+
+ TDescList(l:TDescElems)?{ TDescElems(l); };.
+
+/*END TDescList */
+
+/********************************************************************************************************************************/
+PROCEDURE TDescElems ( TDescElems )
+
+ TDescElem(prev:TDescElems,namePath:NamePaths,t:TypeReprs)?{
+    TDescElems(prev); 
+    
+    IF ARG.OptionCommentsInAsm THEN 
+       ASM.SepLine; ASM.WrS('# TDesc for '); NamePath(namePath); ASM.WrLn;
+    END;
+
+    ASM.Text;
+    TDesc(t,namePath); 
+ };.
+
+/*END TDescElems */
+
+/********************************************************************************************************************************/
+PROCEDURE TDesc ( type:TypeReprs , name:NamePaths )
+LOCAL{ VAR label,dLab,iLab:LAB.T; i,n,ofs,odim,size,num:LONGINT; t:OB.tOB; save_edi:BOOLEAN; ptrBl,prcBl:OB.tOB; }
+
+ TypeRepr(entry,typesize,..),_ ?{
+
+    label:=T.LabelOfTypeRepr(type); 
+
+    ASM.Label(LAB.AppS(label,'$N')); 
+    IF ARG.OptionCommentsInAsm THEN 
+       ASM.WrS('	.asciz	"'); NamePath(name);  ASM.WrS('"'); ASM.WrLn;
+    ELSE 
+       ASM.WrS('.asciz "'); NamePath(name);  ASM.WrS('"'); ASM.WrLn;
+    END;
+
+    ASM.Align(2);
+    ASM.Label(LAB.AppS(label,'$S')); 
+    Skipper(type); 
+    ASM.Ln;
+
+    ASM.Align(2);
+    ofs:=-12; 
+    IF T.OpenDimAndElemSizeOfArrayType(type,odim,size) THEN 
+       ASM.LongI(size); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('-16 elemSize'); END;
+       size:=-odim; 
+    ELSE 
+       size:=typesize; 
+
+       (* ProcTab *)           
+       n:=T.NumberOfBoundProcsOfType(type); 
+       DEC(ofs,4*(LIM.MaxExtensionLevel+n)); 
+       IF n>0 THEN 
+          InitProcTab(n); 
+          EnterProcsIntoTab(T.FieldsOfRecordType(type)); 
+          FOR i:=n-1 TO 0 BY -1 DO
+           IF ProcTab^[i]#NIL THEN 
+              ASM.LongL(E.LabelOfEntry(ProcTab^[i])); IF ARG.OptionCommentsInAsm THEN ASM.CmtI(ofs); INC(ofs,4); END;
+           ELSE 
+              ERR.Fatal('Coder.CodeTDesc: ProcTab problems'); 
+           END;
+          END;
+          ASM.Ln;
+       END;
+   
+       (* BaseTypes *)
+       t:=type; n:=0; 
+       WHILE (n<LIM.MaxExtensionLevel) & T.IsRecordType(t) DO
+        INC(n); BaseTypes[n]:=t; t:=T.RecordBaseTypeOfType(t); 
+       END;
+
+       num:=0; 
+       FOR i:=n TO 1 BY -1 DO
+        ASM.LongL(LAB.AppS(T.LabelOfTypeRepr(BaseTypes[i]),'$D')); 
+        IF ARG.OptionCommentsInAsm THEN ASM.CmtI(ofs); INC(ofs,4); ASM.CmtS(" type"); ASM.CmtI(num); INC(num); END;
+       END;
+       FOR i:=n+1 TO LIM.MaxExtensionLevel DO
+        ASM.LongI(0); 
+        IF ARG.OptionCommentsInAsm THEN ASM.CmtI(ofs); INC(ofs,4); ASM.CmtS(" type"); ASM.CmtI(num); INC(num); END;
+       END;
+       ASM.Ln;
+    END;
+
+    ASM.LongL(LAB.AppS(label,'$N')); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('-12 name'); END;
+    ASM.LongI(size);                 IF ARG.OptionCommentsInAsm THEN ASM.CmtS('-8  size/odim'); END;
+    ASM.LongL(LAB.AppS(label,'$S')); IF ARG.OptionCommentsInAsm THEN ASM.CmtS('-4  skipper'); END;
+    ASM.Ln;
+
+    (* pointer offsets *)
+    dLab:=LAB.AppS(label,'$D'); 
+    ASM.Globl(dLab); 
+    ASM.Label(dLab); 
+    ptrBl:=BL.PtrBlocklistOfType(type); 
+    IF ARG.OptionCommentsInAsm THEN CMT.CmtBlocklist(ptrBl); END;
+    ASM.ByteI(0); 
+    CodeBlocklists(ptrBl);
+
+    IF ARG.OptionCommentsInAsm THEN ASM.WrS('	.long	'); ELSE ASM.WrS('.long '); END;
+    ASM.WrL(dLab); 
+    ASM.WrS('+1'); ASM.WrLn;
+    ASM.Ln;
+    
+    (* Initializer *)
+    prcBl:=BL.ProcBlocklistOfType(type); 
+    save_edi:=(~BL.IsEmptyBlocklist(ptrBl) & ~BL.IsEmptyBlocklist(prcBl)); 
+
+    iLab:=LAB.AppS(label,'$I'); 
+    ASM.Globl(iLab); 
+    ASM.Label(iLab); 
+    IF save_edi THEN ASM.C1( pushl  ,  R(edi) ); END;
+
+    TypeInitializing(ptrBl,(*isPtr:=*)TRUE ); 
+    IF save_edi THEN ASM.C1( popl   ,  R(edi) ); END;
+    TypeInitializing(prcBl,(*isPtr:=*)FALSE); 
+    ASM.C0                 ( ret              ); 
+    ASM.Ln;
+ };.
+
+/*END TDesc */
+
+/********************************************************************************************************************************/
+PROCEDURE EnterProcsIntoTab ( Entries )
+
+ entry:BoundProcEntry(prev,..); 
+ InheritedProcEntry(prev,_,_,_,_,_,entry:BoundProcEntry)?{
+    EnterProcsIntoTab(prev); 
+    EnterProcsIntoTab1(entry);
+ };.
+    
+ DataEntry(prev:Entries,..)?{
+    EnterProcsIntoTab(prev); 
+ };.
+
+/*END EnterProcsIntoTab */
+
+/********************************************************************************************************************************/
+PROCEDURE EnterProcsIntoTab1 ( entry:Entries )
+
+ BoundProcEntry(prev,_,_,_,_,_,_,_,_,_,_,_,_,procNum,_) ?{  
+    IF (0<=procNum) & (procNum<ProcTabSize)
+    &  (ProcTab^[procNum]=NIL) THEN 
+       ProcTab^[procNum]:=entry; 
+    ELSE                       
+       ERR.Fatal('Coder.EnterProcsIntoTab1: ProcTab problems'); 
+    END;
+ };.
+
+/*END EnterProcsIntoTab1 */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeBlocklists ( bl:Blocklists )
+
+ Blocklist(_,subl,ofs,count,incr,_) ? (count<0); {
+    ASM.LongI(-2); 
+    ASM.LongI(ADR.ArrayOfsFromODim(-count)); 
+    ASM.LongI(incr); 
+    CodeFixedBls(subl,0); 
+    ASM.LongI(-1); 
+ };.
+
+ .. ?{
+    CodeFixedBls(bl,0); 
+    ASM.LongI(-1); 
+ };.
+
+/*END CodeBlocklists */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeGlobalBlocklists ( bl:Blocklists )
+
+ .. ?{
+    CodeFixedBls(bl,-4); 
+    ASM.LongI(-1); 
+ };.
+
+/*END CodeGlobalBlocklists */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeLocalBlocklists ( bl:Blocklists )
+
+ .. ?{
+    CodeFixedBls(bl,0); 
+    ASM.LongI(-1); 
+    CodeOpenBls(bl); 
+ };.
+
+/*END CodeLocalBlocklists */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeOpenBls ( bl:Blocklists )
+
+ Blocklist(prev,subl,ofs,count,incr,_) ? (count<0); {
+    CodeOpenBls(prev); 
+    ASM.LongI(-2); 
+    ASM.LongI(ofs); 
+    ASM.LongI(incr); 
+    CodeFixedBls(subl,0); 
+    ASM.LongI(-1); 
+ };.
+
+ Blocklist(prev,..) ?{
+    CodeOpenBls(prev); 
+ };.
+
+/*END CodeOpenBls */
+
+/********************************************************************************************************************************/
+PROCEDURE CodeFixedBls ( bl:Blocklists , base:LONGINT )
+LOCAL{ VAR ii:LONGINT; }
+
+ Blocklist(prev,NoBlocklist,ofs,count,incr,_),_ ?{
+    CodeFixedBls(prev,base); 
+    FOR ii:=0 TO count-1 DO ASM.LongI(base+ofs+ii*incr); END;
+ };.
+
+ Blocklist(prev,subl,ofs,count,incr,_),_ ?{
+    CodeFixedBls(prev,base); 
+    FOR ii:=0 TO count-1 DO CodeFixedBls(subl,base+ofs+ii*incr); END;
+ };.
+ 
+/*END CodeFixedBls */
+
+/********************************************************************************************************************************/
+/*** END CODEf.pum.TDesc                                                                                                      ***/
+/********************************************************************************************************************************/
+

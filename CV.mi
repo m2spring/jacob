@@ -1,0 +1,359 @@
+IMPLEMENTATION MODULE CV;
+FROM   Storage IMPORT ALLOCATE, DEALLOCATE;  
+IMPORT ARG, ASM, FIL, LAB, O, OT, StringMem, Strings;
+
+CONST TabSize     = 1024;
+(*$1*)
+TYPE  tLabels     = POINTER TO tLabelsDesc;
+(*$*)
+      tLabelsDesc = RECORD
+                     next       : tLabels;
+                     label      : LAB.T;
+                     isExported : BOOLEAN; 
+                    END;
+      tElem       = POINTER TO tElemDesc;
+      tElemDesc   = RECORD
+                     next   : tElem;
+                     labels : tLabels;
+                     CASE :CARDINAL OF
+                     |0: string  : OT.oSTRING;
+                     |1: real    : OT.oREAL;
+                     |2: longreal: OT.oLONGREAL;
+                     |3: a,b     : LONGINT; 
+                     |4: set     : OT.oSET;
+                     END;
+                    END;
+      tTab        = RECORD
+                     HashMethod  : PROCEDURE(VAR tElemDesc):CARDINAL; 
+                     EqualMethod : PROCEDURE(VAR tElemDesc,tElem):BOOLEAN; 
+                     CodeMethod  : PROCEDURE(tElem);
+                     isEmpty     : BOOLEAN; 
+                     root        : ARRAY [0..TabSize-1] OF tElem;
+                    END;
+(*$1*)
+TYPE tTable       = POINTER TO RECORD
+                                st,re,lr,se:tTab;
+                               END;
+
+(************************************************************************************************************************)
+PROCEDURE HashString(VAR e:tElemDesc):CARDINAL; 
+VAR s:Strings.tString; idx:CARDINAL; i:Strings.tStringIndex; 
+BEGIN (* HashString *)
+ StringMem.GetString(e.string,s); idx:=0; 
+ FOR i:=1 TO s.Length DO INC(idx,ORD(s.Chars[i])); END; (* FOR *)
+ RETURN idx MOD TabSize; 
+END HashString;
+
+PROCEDURE HashReal(VAR e:tElemDesc):CARDINAL;
+BEGIN (* HashReal *)
+ RETURN CARDINAL(e.real) MOD TabSize;
+END HashReal;
+
+PROCEDURE HashLongreal(VAR e:tElemDesc):CARDINAL;
+VAR retype:RECORD
+            CASE :CARDINAL OF
+            |0: longreal : OT.oLONGREAL;
+            |1: lo,hi    : CARDINAL; 
+            END; (* CASE *)
+           END;
+BEGIN (* HashLongreal *)
+ retype.longreal:=e.longreal; 
+ RETURN (retype.lo+retype.hi) MOD TabSize; 
+END HashLongreal;
+
+PROCEDURE HashSet(VAR e:tElemDesc):CARDINAL;
+BEGIN (* HashSet *)
+ RETURN CARDINAL(e.set) MOD TabSize;
+END HashSet;
+
+(************************************************************************************************************************)
+PROCEDURE EqualString(VAR e:tElemDesc; f:tElem):BOOLEAN; 
+VAR s:Strings.tString; 
+BEGIN (* EqualString *)
+ StringMem.GetString(e.string,s); 
+ RETURN StringMem.IsEqual(f^.string,s);
+END EqualString;
+
+PROCEDURE EqualReal(VAR e:tElemDesc; f:tElem):BOOLEAN;
+BEGIN (* EqualReal *)                                 
+ RETURN e.real=f^.real; 
+END EqualReal;
+
+PROCEDURE EqualLongreal(VAR e:tElemDesc; f:tElem):BOOLEAN;
+BEGIN (* EqualLongreal *)
+ RETURN e.longreal.v=f^.longreal.v; 
+END EqualLongreal;
+
+PROCEDURE EqualSet(VAR e:tElemDesc; f:tElem):BOOLEAN;
+BEGIN (* EqualSet *)
+ RETURN e.set=f^.set; 
+END EqualSet;
+
+(************************************************************************************************************************)
+PROCEDURE CodeString(e:tElem);
+VAR str:Strings.tString; arr,tmp:ARRAY [0..2*Strings.cMaxStrLength+1] OF CHAR; 
+    i,v,src,dst:CARDINAL; c:CHAR; 
+BEGIN (* CodeString *)
+ StringMem.GetString(e^.string,str); 
+ Strings.StringToArray(str,arr); 
+ 
+ src:=0; dst:=0; 
+ LOOP
+  IF src>=HIGH(arr) THEN EXIT; END; (* IF *)
+  c:=arr[src]; 
+  CASE c OF
+  |0C                        : EXIT; 				 
+  |1C..37C,'"','\',177C..377C: tmp[dst]:='\'; INC(dst); 
+                               CASE c OF
+                               |10C    : tmp[dst]:='b'; 
+                               |11C    : tmp[dst]:='t'; 
+                               |12C    : tmp[dst]:='n'; 
+                               |14C    : tmp[dst]:='f'; 
+                               |15C    : tmp[dst]:='r'; 
+                               |'"','\': tmp[dst]:=c; 
+                               ELSE      v:=ORD(c); 
+                                         tmp[dst+2]:=CHR(48+(v MOD 8)); v:=v DIV 8; 
+                                         tmp[dst+1]:=CHR(48+(v MOD 8)); v:=v DIV 8; 
+                                         tmp[dst  ]:=CHR(48+(v MOD 8)); 
+                                         INC(dst,2); 
+                               END; (* CASE *)
+                               INC(dst); 
+  ELSE                         tmp[dst]:=c; INC(dst); 
+  END; (* CASE *)                      
+  INC(src); 
+ END; (* WHILE *)
+ tmp[dst]:=0C; 
+ 
+ ASM.Asciz(tmp); 
+END CodeString;
+
+PROCEDURE CodeReal(e:tElem);
+VAR retype:RECORD
+            CASE :CARDINAL OF
+            |0: real: REAL;
+            |1: int : LONGINT;
+            END;
+           END;
+    arr:ARRAY [0..30] OF CHAR; 
+BEGIN (* CodeReal *)
+ retype.real:=e^.real; 
+ ASM.LongI(retype.int); 
+ IF ARG.OptionCommentsInAsm THEN OT.oREAL2ARR(e^.real,arr); ASM.CmtS(arr); END; (* IF *)
+END CodeReal;
+
+PROCEDURE CodeLongreal(e:tElem);
+VAR retype:RECORD
+            CASE :CARDINAL OF
+            |0: longreal: OT.oLONGREAL;
+            |1: lo,hi   : LONGINT; 
+            END;
+           END;
+    arr:ARRAY [0..30] OF CHAR; 
+BEGIN (* CodeLongreal *)
+ retype.longreal:=e^.longreal; 
+ ASM.LongI2(retype.lo,retype.hi); 
+ IF ARG.OptionCommentsInAsm THEN OT.oLONGREAL2ARR(e^.longreal,arr); ASM.CmtS(arr); END; (* IF *)
+END CodeLongreal;
+
+PROCEDURE CodeSet(e:tElem);
+VAR retype:RECORD
+            CASE :CARDINAL OF
+            |0: set: OT.oSET;
+            |1: int: LONGINT;
+            END;
+           END;
+    arr:ARRAY [0..30] OF CHAR; 
+BEGIN (* CodeSet *)
+ retype.set:=e^.set; 
+ ASM.LongI(retype.int); 
+ IF ARG.OptionCommentsInAsm THEN OT.oSET2ARR(e^.set,arr); ASM.CmtS(arr); END; (* IF *)
+END CodeSet;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE Init;
+VAR t:tTable; i:CARDINAL; 
+BEGIN (* Init *)
+ NEW(t); 
+ WITH t^.st DO
+  HashMethod:=HashString; EqualMethod:=EqualString; CodeMethod:=CodeString; 
+  isEmpty:=TRUE; 
+  FOR i:=0 TO TabSize-1 DO root[i]:=NIL; END; (* FOR *)
+ END; (* WITH *) 
+ WITH t^.re DO
+  HashMethod:=HashReal; EqualMethod:=EqualReal; CodeMethod:=CodeReal; 
+  isEmpty:=TRUE; 
+  FOR i:=0 TO TabSize-1 DO root[i]:=NIL; END; (* FOR *)
+ END; (* WITH *) 
+ WITH t^.lr DO
+  HashMethod:=HashLongreal; EqualMethod:=EqualLongreal; CodeMethod:=CodeLongreal; 
+  isEmpty:=TRUE; 
+  FOR i:=0 TO TabSize-1 DO root[i]:=NIL; END; (* FOR *)
+ END; (* WITH *) 
+ WITH t^.se DO
+  HashMethod:=HashSet; EqualMethod:=EqualSet; CodeMethod:=CodeSet; 
+  isEmpty:=TRUE; 
+  FOR i:=0 TO TabSize-1 DO root[i]:=NIL; END; (* FOR *)
+ END; (* WITH *) 
+ FIL.ActP^.ConstTable:=t; 
+END Init;
+
+(************************************************************************************************************************)
+PROCEDURE Lookup(VAR tab:tTab; VAR elem:tElemDesc):tElem; 
+VAR idx:CARDINAL; e:tElem; 
+BEGIN (* Lookup *)
+ idx:=tab.HashMethod(elem); 
+ 
+ e:=tab.root[idx]; 
+ WHILE e#NIL DO
+  IF tab.EqualMethod(elem,e) THEN RETURN e; END; (* IF *)
+  e:=e^.next; 
+ END; (* WHILE *)
+ 
+ NEW(e); 
+ e^:=elem; e^.next:=tab.root[idx]; e^.labels:=NIL; tab.root[idx]:=e; 
+ RETURN e; 
+END Lookup;
+
+(************************************************************************************************************************)
+PROCEDURE AppendLabel(VAR labels:tLabels; lab:LAB.T; isExported:BOOLEAN);
+VAR l:tLabels;
+BEGIN (* AppendLabel *)                                  
+ NEW(l); l^.next:=labels; l^.label:=lab; l^.isExported:=isExported; labels:=l; 
+END AppendLabel;
+
+(************************************************************************************************************************)
+PROCEDURE NamedConst(VAR tab:tTab; VAR elem:tElemDesc; name:LAB.T; isExported:BOOLEAN);
+VAR e:tElem; 
+BEGIN (* NamedConst *)
+ e:=Lookup(tab,elem); 
+ IF isExported THEN 
+    AppendLabel(e^.labels,name,isExported); 
+    tab.isEmpty:=FALSE; 
+ END; (* IF *)
+END NamedConst;
+
+(************************************************************************************************************************)
+PROCEDURE Const(VAR tab:tTab; VAR elem:tElemDesc):LAB.T;
+VAR e:tElem; 
+BEGIN (* Const *)
+ e:=Lookup(tab,elem); 
+ IF e^.labels=NIL THEN 
+    AppendLabel(e^.labels,LAB.NewLocal(),FALSE); 
+    tab.isEmpty:=FALSE; 
+ END; (* IF *)
+ RETURN e^.labels^.label; 
+END Const;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE NamedString(v:OT.oSTRING; name:LAB.T; isExported:BOOLEAN);
+VAR elem:tElemDesc; 
+BEGIN (* NamedString *)
+ IF OT.LengthOfoSTRING(v)#0 THEN 
+    elem.string:=v; NamedConst(FIL.ActP^.ConstTable^.st,elem,name,isExported); 
+ END; (* IF *)
+END NamedString;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE String(v:OT.oSTRING):LAB.T;
+VAR elem:tElemDesc; 
+BEGIN (* String *)
+ IF OT.LengthOfoSTRING(v)#0 THEN 
+    elem.string:=v; RETURN Const(FIL.ActP^.ConstTable^.st,elem); 
+ ELSE 			 
+    RETURN LAB.NullChar; 
+ END; (* IF *)
+END String;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE NamedReal(v:OT.oREAL; name:LAB.T; isExported:BOOLEAN);
+VAR elem:tElemDesc; 
+BEGIN (* NamedReal *)
+ elem.real:=v; NamedConst(FIL.ActP^.ConstTable^.re,elem,name,isExported); 
+END NamedReal;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE Real(v:OT.oREAL):LAB.T;
+VAR elem:tElemDesc; 
+BEGIN (* Real *)
+ elem.real:=v; RETURN Const(FIL.ActP^.ConstTable^.re,elem); 
+END Real;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE NamedLongreal(v:OT.oLONGREAL; name:LAB.T; isExported:BOOLEAN);
+VAR elem:tElemDesc; 
+BEGIN (* NamedLongreal *)
+ elem.longreal:=v; NamedConst(FIL.ActP^.ConstTable^.lr,elem,name,isExported); 
+END NamedLongreal;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE Longreal(v:OT.oLONGREAL):LAB.T;
+VAR elem:tElemDesc; 
+BEGIN (* Longreal *)
+ elem.longreal:=v; RETURN Const(FIL.ActP^.ConstTable^.lr,elem); 
+END Longreal;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE Set(v:OT.oSET):LAB.T;
+VAR elem:tElemDesc; 
+BEGIN (* Set *)
+ elem.set:=v; RETURN Const(FIL.ActP^.ConstTable^.se,elem); 
+END Set;
+
+(************************************************************************************************************************)
+PROCEDURE CodeTab(VAR tab:tTab);
+VAR i:INTEGER; e,f:tElem; l,k:tLabels;
+BEGIN (* CodeTab *)
+ FOR i:=0 TO TabSize-1 DO
+  e:=tab.root[i]; 
+  WHILE e#NIL DO
+   IF e^.labels#NIL THEN 
+      l:=e^.labels; 
+      WHILE l#NIL DO
+       IF l^.isExported THEN ASM.Globl(l^.label); END; (* IF *)
+       ASM.Label(l^.label); 
+       k:=l; l:=l^.next; DISPOSE(k); 
+      END; (* WHILE *)
+      tab.CodeMethod(e); 
+   END; (* IF *)
+   f:=e; e:=e^.next; DISPOSE(f); 
+  END; (* WHILE *)
+ END; (* FOR *)
+END CodeTab;
+
+(************************************************************************************************************************)
+(*$1*)
+PROCEDURE Code;
+
+ PROCEDURE code;
+ BEGIN (* code *)
+  WITH FIL.ActP^.ConstTable^ DO
+   IF st.isEmpty & re.isEmpty & lr.isEmpty & se.isEmpty THEN RETURN; END; (* IF *)
+ 
+   ASM.Ln;
+   IF ARG.OptionCommentsInAsm THEN ASM.SepLine; END; (* IF *)
+  
+   ASM.Text;
+   CodeTab(FIL.ActP^.ConstTable^.st); 
+   IF re.isEmpty & lr.isEmpty & se.isEmpty THEN RETURN; END; (* IF *)
+   ASM.Align(2);
+   CodeTab(FIL.ActP^.ConstTable^.re); 
+   CodeTab(FIL.ActP^.ConstTable^.lr); 
+   CodeTab(FIL.ActP^.ConstTable^.se); 
+  END; (* WITH *)
+ END code;
+
+BEGIN (* Code *)	   
+ code;
+ DISPOSE(FIL.ActP^.ConstTable); 
+END Code;
+
+(************************************************************************************************************************)
+END CV.

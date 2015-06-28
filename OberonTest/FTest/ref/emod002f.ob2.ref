@@ -1,0 +1,18 @@
+Compiling edec001t
+Compiling emod002f
+'MODULE' emod002f
+-------------------------------------------------------------------------------
+SERV    SERVER    edec001t
+short   CONST     <ErrorType> = <EmptyValue>
+si      VAR       SHORTINT
+r       VAR       <ErrorType>
+T       TYPE      RECORD(edec001t$t1Record)
+                   edec001t$i* VAR       INTEGER
+                   edec001t$c- VAR       CHAR
+                   edec001t$d  VAR       BOOLEAN
+                  END
+-------------------------------------------------------------------------------
+
+emod002f.ob2: 11,13: Identifier not declared
+emod002f.ob2: 11,13: Expression not constant
+emod002f.ob2: 16,7: Identifier not declared

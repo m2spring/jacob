@@ -1,0 +1,31 @@
+MODULE M8;
+FROM Storage IMPORT ALLOCATE; IMPORT InOut;
+
+CONST n = 3;
+      maxdepth = 12;
+TYPE tP = POINTER TO tR;
+     tR = RECORD
+           p:ARRAY [0..n-1] OF tP; 
+          END;
+VAR root:tP; i,count:LONGINT; 
+
+PROCEDURE Generate(depth:LONGINT):tP;
+VAR p:tP; i:LONGINT; 
+BEGIN (* Generate *) 
+ IF depth<=maxdepth THEN 
+    INC(count); 
+    NEW(p); 
+    FOR i:=0 TO n-1 DO
+     p^.p[i]:=Generate(depth+1); 
+    END; (* FOR *)		  
+ END; (* IF *)
+ 
+ RETURN p; 
+END Generate;
+	  
+BEGIN (* M8 *)
+ InOut.WriteString('Generating...'); InOut.WriteLn;
+ count:=0; 
+ root:=Generate(1); 
+ InOut.WriteInt(count,0); InOut.WriteString(' elements'); InOut.WriteLn;
+END M8.

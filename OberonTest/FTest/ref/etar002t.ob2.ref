@@ -1,0 +1,11 @@
+Compiling etar002t
+'MODULE' etar002t
+-------------------------------------------------------------------------------
+T1   TYPE      ARRAY OF CHAR
+T2   TYPE      ARRAY OF ARRAY OF SET
+T3   TYPE      ARRAY OF T2
+T4   TYPE      T3
+T5   TYPE      POINTER TO ARRAY OF CHAR
+T6   TYPE      (P1:ARRAY OF CHAR; VAR P2:T2)
+-------------------------------------------------------------------------------
+

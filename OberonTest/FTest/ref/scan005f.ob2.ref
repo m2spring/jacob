@@ -1,0 +1,11 @@
+File scan005f.ob2
+0005,001: <char>     0X
+0006,001: <string>   ''
+0006,003: <string>   ''
+0007,001: <string>   ''
+0007,003: <string>   ''
+0008,001: <eof>      
+
+scan005f.ob2: 5,1: Illegal char constant
+scan005f.ob2: 6,3: String not terminated
+scan005f.ob2: 7,3: String not terminated

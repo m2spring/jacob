@@ -1,0 +1,40 @@
+Compiling edec003f
+'PROCEDURE' hurga
+-------------------------------------------------------------------------------
+c   VAR       CHAR
+l   VAR       REAL
+-------------------------------------------------------------------------------
+
+'PROCEDURE' bla
+-------------------------------------------------------------------------------
+l     VAR       LONGREAL
+bla   VAR       INTEGER
+l     TYPE      SHORTINT
+-------------------------------------------------------------------------------
+
+'MODULE' edec003f
+-------------------------------------------------------------------------------
+a       TYPE      INTEGER
+I       VAR       INTEGER
+L       VAR       LONGINT
+C       VAR       CHAR
+e       VAR       REAL
+d       VAR       REAL
+c       VAR       REAL
+b       VAR       REAL
+a       VAR       REAL
+f       VAR       REAL
+r       TYPE      RECORD
+                   a   VAR       INTEGER
+                   x   VAR       REAL
+                   a   VAR       SHORTINT
+                  END
+hurga   VAR       BOOLEAN
+hurga   PROCEDURE ()
+bla     PROCEDURE ()
+-------------------------------------------------------------------------------
+
+edec003f.ob2: 15,11: Identifier already declared
+edec003f.ob2: 23,8: Identifier already declared
+edec003f.ob2: 31,11: Identifier already declared
+edec003f.ob2: 47,4: Identifier already declared

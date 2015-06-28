@@ -1,0 +1,8 @@
+MODULE Mm3;
+TYPE T=INTEGER; 
+VAR a,b:T; f:BOOLEAN; 
+
+BEGIN (* Mm3 *)		  
+ a:=-a; 
+ a:=-b; 
+END Mm3.

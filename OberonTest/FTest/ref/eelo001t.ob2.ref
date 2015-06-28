@@ -1,0 +1,13 @@
+Compiling eelo001t
+'MODULE' eelo001t
+-------------------------------------------------------------------------------
+T   CONST     BOOLEAN = TRUE
+F   CONST     BOOLEAN = FALSE
+A   CONST     BOOLEAN = TRUE
+B   CONST     BOOLEAN = TRUE
+C   CONST     BOOLEAN = TRUE
+D   CONST     BOOLEAN = FALSE
+E   CONST     BOOLEAN = FALSE
+G   CONST     BOOLEAN = TRUE
+-------------------------------------------------------------------------------
+

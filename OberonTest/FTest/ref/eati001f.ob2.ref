@@ -1,0 +1,20 @@
+Compiling eati001f
+'MODULE' eati001f
+-------------------------------------------------------------------------------
+si   VAR       SHORTINT
+i    VAR       INTEGER
+li   VAR       LONGINT
+r    VAR       REAL
+lr   VAR       LONGREAL
+-------------------------------------------------------------------------------
+
+eati001f.ob2: 23,6: Expression not assignment compatible
+eati001f.ob2: 27,6: Expression not assignment compatible
+eati001f.ob2: 31,6: Expression not assignment compatible
+eati001f.ob2: 35,6: Expression not assignment compatible
+eati001f.ob2: 40,5: Expression not assignment compatible
+eati001f.ob2: 44,5: Expression not assignment compatible
+eati001f.ob2: 48,5: Expression not assignment compatible
+eati001f.ob2: 53,6: Expression not assignment compatible
+eati001f.ob2: 57,6: Expression not assignment compatible
+eati001f.ob2: 61,5: Expression not assignment compatible

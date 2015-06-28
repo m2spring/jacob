@@ -1,0 +1,23 @@
+Compiling epfp002f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' Q
+-------------------------------------------------------------------------------
+i   VALPARAM  INTEGER
+a   VAR       A
+-------------------------------------------------------------------------------
+
+'MODULE' epfp002f
+-------------------------------------------------------------------------------
+R   TYPE      RECORD
+              END
+A   TYPE      ARRAY 3 OF CHAR
+P   PROCEDURE () : R
+Q   PROCEDURE (i:INTEGER) : A
+-------------------------------------------------------------------------------
+
+epfp002f.ob2: 10,15: Illegal type of function result
+epfp002f.ob2: 13,10: RETURN expression not compatible with formal result type
+epfp002f.ob2: 17,24: Illegal type of function result

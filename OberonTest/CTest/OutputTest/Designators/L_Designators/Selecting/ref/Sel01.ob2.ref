@@ -1,0 +1,295 @@
+Compiling Sel01 (Sel01.ob2) 
+Linking Sel01
+	.comm	Sel01$G,44
+#      8 r: Sel01.tRec1
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+Sel01$N:
+	.asciz	"Sel01"
+	.align	2,144
+	.long	Sel01$N
+	.long	0
+	.long	_NILPROC
+	.globl	Sel01$D
+Sel01$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# TDesc for Sel01.tPtr^
+L6$N:
+	.asciz	"Sel01.tPtr^"
+	.align	2,144
+L6$S:
+	movl	(%ebx),%eax
+	leal	15(%ebx,%eax),%ebx
+	andl	$0xfffffff8,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	1	# -16 elemSize
+	.long	L6$N	# -12 name
+	.long	-1	# -8  size/odim
+	.long	L6$S	# -4  skipper
+
+L6$D:
+
+#------------------------------------------------------------------------------
+# TDesc for Sel01.tRec1
+L0$N:
+	.asciz	"Sel01.tRec1"
+	.align	2,144
+L0$S:
+	addl	$40,%ebx
+	jmp	%esi
+
+	.align	2,144
+	.long	L0$D	# -44 type0
+	.long	0	# -40 type1
+	.long	0	# -36 type2
+	.long	0	# -32 type3
+	.long	0	# -28 type4
+	.long	0	# -24 type5
+	.long	0	# -20 type6
+	.long	0	# -16 type7
+
+	.long	L0$N	# -12 name
+	.long	33	# -8  size/odim
+	.long	L0$S	# -4  skipper
+
+L0$D:
+
+#------------------------------------------------------------------------------
+# PROCEDURE RDesProc()
+# LEVEL  = 1
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L3$N:
+	.asciz	"Sel01.RDesProc"
+	.align	2,144
+	.long	L3$N
+	.long	0
+	.long	_NILPROC
+L3$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L3:
+	pushl	%ebp
+	pushl	$L3$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L7,%esp
+
+	leave
+	ret
+L7=	0
+
+#------------------------------------------------------------------------------
+# PROCEDURE P3()
+# LEVEL  = 2
+# LSPACE = 0
+# TSPACE = 0
+
+# TDesc for proc locals
+L5$N:
+	.asciz	"Sel01.P2.P3"
+	.align	2,144
+	.long	L5$N
+	.long	0
+	.long	_NILPROC
+L5$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L5:
+	pushl	%ebp
+	pushl	$L5$D	# TDesc of proc
+	pushl	-8(%ebp)
+	leal	8(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$L8,%esp
+
+	# rloc.bo:=TRUE;
+	movl	-8(%ebp),%eax
+	movb	$1,-44(%eax)
+
+	# rloc.ch:='A';
+	movl	-8(%ebp),%eax
+	movb	$65,-43(%eax)
+
+	# rloc.si:=1;
+	movl	-8(%ebp),%eax
+	movb	$1,-42(%eax)
+
+	# rloc.in:=4711;
+	movl	-8(%ebp),%eax
+	movw	$4711,-41(%eax)
+
+	# rloc.li:=80000;
+	movl	-8(%ebp),%eax
+	movl	$80000,-39(%eax)
+
+	# rloc.re:=1.00000E0;
+	movl	-8(%ebp),%eax
+	movl	$1065353215,-35(%eax)
+
+	# rloc.lr:=1.0000000000000D1;
+	movl	-8(%ebp),%eax
+	movl	$0,-31(%eax)
+	movl	$1076101120,-27(%eax)
+
+	# rloc.se:={};
+	movl	-8(%ebp),%eax
+	movl	$0,-23(%eax)
+
+	# rloc.po:=NIL;
+	movl	-8(%ebp),%eax
+	movl	$0,-19(%eax)
+
+	# rloc.pr:=RDesProc;
+	movl	-8(%ebp),%ebx
+	leal	L3,%eax	# RDesProc 
+	movl	%eax,-15(%ebx)
+
+	leave
+	ret
+L8=	0
+
+#------------------------------------------------------------------------------
+# PROCEDURE P2()
+# LEVEL  = 1
+# LSPACE = 36
+# TSPACE = 0
+#    -44 rloc: Sel01.tRec1
+
+# TDesc for proc locals
+L4$N:
+	.asciz	"Sel01.P2"
+	.align	2,144
+	.long	L4$N
+	.long	0
+	.long	_NILPROC
+L4$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+L4:
+	pushl	%ebp
+	pushl	$L4$D	# TDesc of proc
+	leal	4(%esp),%ebp
+	pushl	%ebp	# disp-next
+	subl	$36+L9,%esp
+
+	# pointer variable init code
+	movl	$0,-19(%ebp)
+
+	# proc variable init code
+	movl	$_NILPROC,-15(%ebp)
+
+	# rloc.bo:=TRUE;
+	movb	$1,-44(%ebp)	# rloc 
+
+	# rloc.ch:='A';
+	movb	$65,-43(%ebp)	# rloc 
+
+	# rloc.si:=1;
+	movb	$1,-42(%ebp)	# rloc 
+
+	# rloc.in:=4711;
+	movw	$4711,-41(%ebp)	# rloc 
+
+	# rloc.li:=80000;
+	movl	$80000,-39(%ebp)	# rloc 
+
+	# rloc.re:=1.00000E0;
+	movl	$1065353215,-35(%ebp)	# rloc 
+
+	# rloc.lr:=1.0000000000000D1;
+	movl	$0,-31(%ebp)	# rloc 
+	movl	$1076101120,-27(%ebp)	# rloc 
+
+	# rloc.se:={};
+	movl	$0,-23(%ebp)	# rloc 
+
+	# rloc.po:=NIL;
+	movl	$0,-19(%ebp)	# rloc 
+
+	# rloc.pr:=RDesProc;
+	leal	L3,%eax	# RDesProc 
+	movl	%eax,-15(%ebp)	# rloc 
+
+	leave
+	ret
+L9=	0
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+Sel01$I$N:
+	.asciz	"Sel01$I"
+	.align	2,144
+	.long	Sel01$I$N
+	.long	0
+	.long	_NILPROC
+Sel01$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	Sel01$I
+Sel01$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$Sel01$I$D
+	subl	$L10,%esp
+
+	# pointer variable init code
+	movl	$0,33+Sel01$G
+
+	# proc variable init code
+	movl	$_NILPROC,37+Sel01$G
+
+	# r.bo:=TRUE;
+	movb	$1,8+Sel01$G	# r 
+
+	# r.ch:='A';
+	movb	$65,9+Sel01$G	# r 
+
+	# r.si:=1;
+	movb	$1,10+Sel01$G	# r 
+
+	# r.in:=4711;
+	movw	$4711,11+Sel01$G	# r 
+
+	# r.li:=80000;
+	movl	$80000,13+Sel01$G	# r 
+
+	# r.re:=1.00000E0;
+	movl	$1065353215,17+Sel01$G	# r 
+
+	# r.lr:=1.0000000000000D1;
+	movl	$0,21+Sel01$G	# r 
+	movl	$1076101120,25+Sel01$G	# r 
+
+	# r.se:={};
+	movl	$0,29+Sel01$G	# r 
+
+	# r.po:=NIL;
+	movl	$0,33+Sel01$G	# r 
+
+	# r.pr:=RDesProc;
+	leal	L3,%eax	# RDesProc 
+	movl	%eax,37+Sel01$G	# r 
+
+	leave
+	ret
+L10=	0
+

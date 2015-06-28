@@ -1,0 +1,113 @@
+Compiling eapc005f
+'PROCEDURE' PGet
+-------------------------------------------------------------------------------
+a   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PPut
+-------------------------------------------------------------------------------
+a   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PGetReg
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PPutReg
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PMove
+-------------------------------------------------------------------------------
+a0   VAR       LONGINT
+a1   VAR       LONGINT
+-------------------------------------------------------------------------------
+
+'PROCEDURE' PNew
+-------------------------------------------------------------------------------
+tr   TYPE      RECORD
+               END
+ta   TYPE      ARRAY 3 OF CHAR
+pr   VAR       POINTER TO tr
+pa   VAR       POINTER TO ta
+-------------------------------------------------------------------------------
+
+'MODULE' eapc005f
+-------------------------------------------------------------------------------
+SYS          SERVER    SYSTEM
+trecord      TYPE      RECORD
+                        f   VAR       SHORTINT
+                       END
+tpointer     TYPE      POINTER TO trecord
+tprocedure   TYPE      (A:SET)
+tarray       TYPE      ARRAY 10 OF CHAR
+si           VAR       SHORTINT
+i            VAR       INTEGER
+li           VAR       LONGINT
+r            VAR       REAL
+lr           VAR       LONGREAL
+c            VAR       CHAR
+b            VAR       BOOLEAN
+s            VAR       SET
+ptr          VAR       tpointer
+pro          VAR       tprocedure
+byte         VAR       SYSTEM$BYTE
+rec          VAR       trecord
+arr          VAR       tarray
+PGet         PROCEDURE ()
+PPut         PROCEDURE ()
+PGetReg      PROCEDURE ()
+PPutReg      PROCEDURE ()
+PMove        PROCEDURE ()
+PNew         PROCEDURE ()
+-------------------------------------------------------------------------------
+
+eapc005f.ob2: 42,10: Actual parameter not compatible with formal
+eapc005f.ob2: 46,12: Actual parameter not compatible with formal
+eapc005f.ob2: 50,12: Actual parameter not compatible with formal
+eapc005f.ob2: 54,10: Actual parameter not compatible with formal
+eapc005f.ob2: 58,10: Actual parameter not compatible with formal
+eapc005f.ob2: 70,10: Actual parameter not compatible with formal
+eapc005f.ob2: 74,12: Actual parameter not compatible with formal
+eapc005f.ob2: 78,12: Actual parameter not compatible with formal
+eapc005f.ob2: 82,10: Actual parameter not compatible with formal
+eapc005f.ob2: 86,10: Actual parameter not compatible with formal
+eapc005f.ob2: 96,13: Expression not constant
+eapc005f.ob2: 100,13: Expression not constant
+eapc005f.ob2: 104,13: Expression not constant
+eapc005f.ob2: 108,15: Actual parameter not compatible with formal
+eapc005f.ob2: 112,15: Actual parameter not compatible with formal
+eapc005f.ob2: 122,13: Expression not constant
+eapc005f.ob2: 126,13: Expression not constant
+eapc005f.ob2: 130,13: Expression not constant
+eapc005f.ob2: 134,15: Actual parameter not compatible with formal
+eapc005f.ob2: 138,15: Actual parameter not compatible with formal
+eapc005f.ob2: 150,14: Actual parameter not compatible with formal
+eapc005f.ob2: 154,11: Actual parameter not compatible with formal
+eapc005f.ob2: 154,13: Actual parameter not compatible with formal
+eapc005f.ob2: 154,15: Actual parameter not compatible with formal
+eapc005f.ob2: 158,17: Actual parameter not compatible with formal
+eapc005f.ob2: 162,17: Actual parameter not compatible with formal
+eapc005f.ob2: 179,10: Actual parameter not compatible with formal
+eapc005f.ob2: 183,13: Actual parameter not compatible with formal
+eapc005f.ob2: 195,5: Expression not assignment compatible
+eapc005f.ob2: 199,6: Expression not assignment compatible
+eapc005f.ob2: 205,16: Actual parameter not compatible with formal
+eapc005f.ob2: 209,16: Actual parameter not compatible with formal
+eapc005f.ob2: 213,16: Actual parameter not compatible with formal
+eapc005f.ob2: 217,13: Actual parameter not compatible with formal
+eapc005f.ob2: 224,5: Expression not assignment compatible
+eapc005f.ob2: 228,12: Expression not constant
+eapc005f.ob2: 235,16: Actual parameter not compatible with formal
+eapc005f.ob2: 239,16: Actual parameter not compatible with formal
+eapc005f.ob2: 243,8: Expression not assignment compatible
+eapc005f.ob2: 247,8: Expression not assignment compatible
+eapc005f.ob2: 251,8: Expression not assignment compatible
+eapc005f.ob2: 255,16: Actual parameter not compatible with formal
+eapc005f.ob2: 262,16: Actual parameter not compatible with formal
+eapc005f.ob2: 266,16: Actual parameter not compatible with formal
+eapc005f.ob2: 270,8: Expression not assignment compatible
+eapc005f.ob2: 274,18: Actual parameter not compatible with formal
+eapc005f.ob2: 278,8: Expression not assignment compatible
+eapc005f.ob2: 282,21: Actual parameter not compatible with formal
+eapc005f.ob2: 289,9: Expression not assignment compatible

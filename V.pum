@@ -1,0 +1,534 @@
+/********************************************************************************************************************************/
+/*** V.pum / Value related functions & predicates                                                                             ***/
+/********************************************************************************************************************************/
+TRAFO V TREE OB PUBLIC
+
+ /*** Primitive predicates ***/
+
+ IsCalculatableValue
+ IsValidConstValue
+ IsErrorValue
+ IsFalseValue
+ IsTrueValue
+ IsCharValue
+ IsStringValue
+ IsIntegerValue
+ IsLongrealValue
+ IsNullChar
+ IsGreaterZeroInteger
+ IsNonZeroInteger
+ IsLegalSetValue
+ IsLegalArrayIndex
+
+ /*** Selector functions ***/
+
+ ValueOfInteger
+ LengthOfString
+
+ /*** SET and label range functions & predicates ***/
+
+ ExtendSet                                               /* Extends a SET by an integer range                                   */
+ ExtendLabelRange                                        /* Extends a case label set by an integer or char range                */
+ AreLegalLabelRanges                                     /* Tests the legality of a case label range                            */
+ IsInLabelRange                                          /* Is a case label range disjoint to a case label set?                 */
+ ExtendLabelLimits
+ IsValidLabelRange
+
+ /*** Unary value operations ***/
+
+ NegateValue
+ NotValue
+
+ /*** Binary value operations ***/
+
+ RelationValue                                           /* Calculates the value of a relation                                  */
+ OperationValue                                          /* Calculates the value of binary operations with equal argument types */
+
+ InValue                                                 /* IN                                                                  */
+ TypeTestValue                                           /* IS                                                                  */
+ OrValue                                                 /* OR                                                                  */
+ AndValue                                                /* &                                                                   */
+
+ /*** Compile-time calculatable predeclared function value operations ***/
+
+ AbsValue
+ AshValue
+ CapValue
+ ChrValue
+ EntierValue
+ LongValue
+ MaxValue
+ MinValue
+ OddValue
+ OrdValue
+ ShortValue
+ SizeValue
+ 
+ AdjustNilValue
+ LabelOfMemValue
+ IsMemValue
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT OT;
+        TYPE   oLONGINT = OT.oLONGINT ; 
+               oSET     = OT.oSET     ; 
+               tLabel   = OB.tLabel   ; }
+
+GLOBAL{ IMPORT CV, LIM, OT, PR, T, Tree; }
+
+/********************************************************************************************************************************/
+/*$1*/
+PREDICATE IsCalculatableValue ( ValueReprs )
+ mtValue    ? FAIL; .
+ ErrorValue ? FAIL; .
+ _          ?       .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsValidConstValue ( ValueReprs )
+ ErrorValue ?.
+ ValueRepr  ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsErrorValue ( ValueReprs )
+ ErrorValue ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsFalseValue ( ValueReprs )
+ BooleanValue (v) ? { RETURN ~v; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsTrueValue ( ValueReprs )
+ BooleanValue (v) ? { RETURN v; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsCharValue ( ValueReprs )
+ ErrorValue ?.
+ CharValue  ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsStringValue ( ValueReprs )
+ ErrorValue  ?.
+ StringValue ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsIntegerValue ( ValueReprs )
+ ErrorValue   ?.
+ IntegerValue ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsLongrealValue ( ValueReprs )
+ ErrorValue    ?.
+ LongrealValue ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsNullChar ( ValueReprs )
+ CharValue(v) ? { RETURN (v = OT.oNULL); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsGreaterZeroInteger ( ValueReprs )
+ IntegerValue(v) ? { RETURN (v > 0); };.
+ _               ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsNonZeroInteger ( ValueReprs )
+ IntegerValue(v) ? { RETURN (v # 0); };.
+ _               ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsLegalSetValue ( ValueReprs )
+ mtValue         ?.
+ ErrorValue      ?.
+ IntegerValue(v) ? { RETURN OT.IsLegalSetValue(v); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsLegalArrayIndex ( ValueReprs , len:oLONGINT )
+ IntegerValue(v) , _ ? { RETURN ((len=OB.OPENARRAYLEN) OR ((0<=v) & (v<len))); };.
+ ..                  ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ValueOfInteger ( ValueReprs ) oLONGINT
+ IntegerValue(v) RETURN v ?.
+ _               RETURN 0 ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION LengthOfString ( ValueReprs ) oLONGINT
+ StringValue(v) RETURN {OT.LengthOfoSTRING(v)} ?.
+ _              RETURN 0                       ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ExtendSet ( set:ValueReprs , a:ValueReprs , b:ValueReprs => isConst:BOOLEAN ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; vs:OT.oSET; }                                                                         /* !SetElementRange */
+
+ SetValue(s) , IntegerValue(v1) , IntegerValue(v2) => TRUE  RETURN {o} ?{ OT.ExtendSet(vs,s,v1,v2); o:=OB.mSetValue(vs); };.
+ ..                                                => FALSE RETURN set ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ExtendLabelRange ( labelRange : LabelRanges
+                          , value1     : ValueReprs
+                          , value2     : ValueReprs ) LabelRanges
+
+ mtLabelRange,CharValue(a)   ,mtValue         RETURN CharRange(labelRange,a,a)    ?.
+ mtLabelRange,CharValue(a)   ,CharValue(b)    RETURN CharRange(labelRange,a,b)    ?.
+
+ CharRange   ,CharValue(a)   ,mtValue         RETURN CharRange(labelRange,a,a)    ?.
+ CharRange   ,CharValue(a)   ,CharValue(b)    RETURN CharRange(labelRange,a,b)    ?.
+
+ mtLabelRange,IntegerValue(a),mtValue         RETURN IntegerRange(labelRange,a,a) ?.
+ mtLabelRange,IntegerValue(a),IntegerValue(b) RETURN IntegerRange(labelRange,a,b) ?.
+
+ IntegerRange,IntegerValue(a),mtValue         RETURN IntegerRange(labelRange,a,a) ?.
+ IntegerRange,IntegerValue(a),IntegerValue(b) RETURN IntegerRange(labelRange,a,b) ?.
+
+ ..                                           RETURN labelRange                   ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE AreLegalLabelRanges ( value1 : ValueReprs
+                              , value2 : ValueReprs )
+
+ CharValue(v1)   ,CharValue(v2)    ? { RETURN (v1<=v2); };.                                                      /* !LabelRange */
+ IntegerValue(v1),IntegerValue(v2) ? { RETURN (v1<=v2); };.
+ ..                                ?                      .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsInLabelRange ( labelRange : LabelRanges                                         /* The case label set already built */
+                         , value1     : ValueReprs                                          /* Lower limit of the label range   */
+                         , value2     : ValueReprs )                                        /* Upper limit of the label range   */
+
+ CharRange(next:LabelRanges,ra,rb)    , CharValue(va)    , mtValue          ?{ RETURN OT.AreOverlappingCharRanges(ra,rb,va,va)
+                                                                                   OR IsInLabelRange(next,value1,value2); };.
+
+ CharRange(next:LabelRanges,ra,rb)    , CharValue(va)    , CharValue(vb)    ?{ RETURN OT.AreOverlappingCharRanges(ra,rb,va,vb)
+                                                                                   OR IsInLabelRange(next,value1,value2); };.
+
+ IntegerRange(next:LabelRanges,ra,rb) , IntegerValue(va) , mtValue          ?{ RETURN OT.AreOverlappingIntegerRanges(ra,rb,va,va)
+                                                                                   OR IsInLabelRange(next,value1,value2); };.
+
+ IntegerRange(next:LabelRanges,ra,rb) , IntegerValue(va) , IntegerValue(vb) ?{ RETURN OT.AreOverlappingIntegerRanges(ra,rb,va,vb)
+                                                                                   OR IsInLabelRange(next,value1,value2); };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ExtendLabelLimits ( labelLimit:LabelRanges , value1:ValueReprs , value2:ValueReprs ) LabelRanges
+
+ mtLabelRange       ,CharValue   (a),mtValue         RETURN CharRange({OB.cmtLabelRange},a,a)    ?.
+ mtLabelRange       ,CharValue   (a),CharValue   (b) RETURN CharRange({OB.cmtLabelRange},a,b)    ?.
+                    
+ mtLabelRange       ,IntegerValue(a),mtValue         RETURN IntegerRange({OB.cmtLabelRange},a,a) ?.
+ mtLabelRange       ,IntegerValue(a),IntegerValue(b) RETURN IntegerRange({OB.cmtLabelRange},a,b) ?.
+
+ CharRange   (_,x,y),CharValue   (a),mtValue         ;
+ IntegerRange(_,x,y),IntegerValue(a),mtValue         RETURN labelLimit ?{ IF a<x THEN x:=a; END;
+                                                                          IF a>y THEN y:=a; END; };.
+ CharRange   (_,x,y),CharValue   (a),CharValue   (b) ;
+ IntegerRange(_,x,y),IntegerValue(a),IntegerValue(b) RETURN labelLimit ?{ IF a<x THEN x:=a; END;
+                                                                          IF a>y THEN y:=a; END;
+                                                                          IF b<x THEN x:=b; END;
+                                                                          IF b>y THEN y:=b; END; };.
+                                                                          
+ ..                                                  RETURN labelLimit ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsValidLabelRange ( LabelRanges )
+ CharRange   (_,a,b) ;
+ IntegerRange(_,a,b) ? { RETURN ((b-a) < LIM.MaxCaseLabelRange); };.
+ _                   ?. 
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION NegateValue ( ValueReprs ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; vSet:OT.oSET; vLongint:OT.oLONGINT; vReal:OT.oREAL; vLongreal:OT.oLONGREAL; OK:BOOLEAN; }
+
+ ErrorValue       RETURN {OB.cErrorValue} ?.
+ SetValue(v)      RETURN {o} ?{ OT.NegateSet(vSet,v); o:=OB.mSetValue(vSet); };.
+ IntegerValue(v)  RETURN {o} ?{ OT.NegateLongint(vLongint,v,OK);
+                                IF OK THEN o:=OB.mIntegerValue(vLongint); ELSE o:=OB.cErrorValue; END; };.
+ RealValue(v)     RETURN {o} ?{ OT.NegateReal(vReal,v); o:=OB.mRealValue(vReal); };.
+ LongrealValue(v) RETURN {o} ?{ OT.NegateLongreal(vLongreal,v); o:=OB.mLongrealValue(vLongreal); };.
+ _                RETURN {OB.cmtValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION NotValue ( ValueReprs ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; vb:OT.oBOOLEAN; }
+
+ ErrorValue      RETURN {OB.cErrorValue} ?.
+ BooleanValue(v) RETURN {o} ?{ OT.NotBoolean(vb,v); o:=OB.mBooleanValue(vb); };.
+ _               RETURN {OB.cmtValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION RelationValue ( arg1:ValueReprs , arg2:ValueReprs , operator:SHORTCARD ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; v:OT.oBOOLEAN; }
+
+ mtValue           , _                 , _ RETURN {OB.cmtValue} ?.
+ _                 , mtValue           , _ RETURN {OB.cmtValue} ?.
+
+ BooleanValue(v1)  , BooleanValue(v2)  , _ RETURN {o} ?{ OT.BooleanRelation(v,v1,v2,operator);  o:=OB.mBooleanValue(v); };.
+ CharValue(v1)     , CharValue(v2)     , _ RETURN {o} ?{ OT.CharRelation(v,v1,v2,operator);     o:=OB.mBooleanValue(v); };.
+ StringValue(v1)   , StringValue(v2)   , _ RETURN {o} ?{ OT.StringRelation(v,v1,v2,operator);   o:=OB.mBooleanValue(v); };.
+ SetValue(v1)      , SetValue(v2)      , _ RETURN {o} ?{ OT.SetRelation(v,v1,v2,operator);      o:=OB.mBooleanValue(v); };.
+ IntegerValue(v1)  , IntegerValue(v2)  , _ RETURN {o} ?{ OT.IntegerRelation(v,v1,v2,operator);  o:=OB.mBooleanValue(v); };.
+ RealValue(v1)     , RealValue(v2)     , _ RETURN {o} ?{ OT.RealRelation(v,v1,v2,operator);     o:=OB.mBooleanValue(v); };.
+ LongrealValue(v1) , LongrealValue(v2) , _ RETURN {o} ?{ OT.LongrealRelation(v,v1,v2,operator); o:=OB.mBooleanValue(v); };.
+ NilValue          , NilValue          , _ RETURN {o} ?{ IF operator=Tree.EqualOper THEN
+                                                            o:=OB.cTrueValue; 
+                                                         ELSE 
+                                                            o:=OB.cFalseValue; 
+                                                         END; };.   
+ ..                                        RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION OperationValue ( arg1:ValueReprs , arg2:ValueReprs , operator:SHORTCARD ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; vReal:OT.oREAL; vLongreal:OT.oLONGREAL; vSet:OT.oSET; OK:BOOLEAN; }
+
+ mtValue           , _                 , _ RETURN {OB.cmtValue} ?.
+ _                 , mtValue           , _ RETURN {OB.cmtValue} ?.
+ IntegerValue(v1)  , IntegerValue(v2)  , _ RETURN {o} ?{ OT.IntegerOperation(vLongint,v1,v2,operator,OK);
+                                                       IF OK THEN o:=OB.mIntegerValue(vLongint); ELSE o:=OB.cErrorValue; END; };.
+ RealValue(v1)     , RealValue(v2)     , _ RETURN {o} ?{ OT.RealOperation(vReal,v1,v2,operator,OK);
+                                                         IF OK THEN o:=OB.mRealValue(vReal); ELSE o:=OB.cErrorValue; END; };.
+ LongrealValue(v1) , LongrealValue(v2) , _ RETURN {o} ?{ OT.LongrealOperation(vLongreal,v1,v2,operator,OK);
+                                                         IF OK THEN o:=OB.mLongrealValue(vLongreal);
+                                                               ELSE o:=OB.cErrorValue; END; };.
+ SetValue(v1)      , SetValue(v2)      , _ RETURN {o} ?{ OT.SetOperation(vSet,v1,v2,operator,OK); o:=OB.mSetValue(vSet); };.
+ ..                                        RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION InValue ( ValueReprs , ValueReprs ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; vb:OT.oBOOLEAN; }
+
+ mtValue          , _            RETURN {OB.cmtValue} ?.
+ IntegerValue(v1) , _            RETURN {o} ? ((v1<0) OR (OT.MAXoSET<v1)); { o:=OB.cFalseValue };.
+ _                , mtValue      RETURN {OB.cmtValue} ?.
+ IntegerValue(v1) , SetValue(v2) RETURN {o} ?{ OT.IntegerInSet(vb,v1,v2); o:=OB.mBooleanValue(vb); };.
+ ..                              RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION TypeTestValue ( staticType:TypeReprs , testType:TypeReprs ) ValueReprs
+
+                                                   RecordTypeRepr(_,_,_,_,_,staticLevel,..)
+,                                                  RecordTypeRepr(_,_,_,_,_,testLevel  ,..) ;
+
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr(_,_,_,_,_,staticLevel,..))) 
+,PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr(_,_,_,_,_,testLevel  ,..))) RETURN {OB.cTrueValue} 
+                                                                                            ? (staticLevel=testLevel);.
+
+ ..                                                                                         RETURN {OB.cmtValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION OrValue ( v1:ValueReprs , v2:ValueReprs ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; }
+
+ ErrorValue      , _            RETURN v1            ?.
+ _               , ErrorValue   RETURN v2            ?.
+ 
+ BooleanValue(b) , BooleanValue RETURN {o}           ?{ IF b THEN o:=v1; ELSE o:=v2; END; };.                  /* !ShortCircuit */
+ BooleanValue(b) , _            RETURN {o}           ?{ IF b THEN o:=v1; ELSE o:=OB.cmtValue; END; };.         /* !ShortCircuit */
+
+ ..                             RETURN {OB.cmtValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION AndValue ( v1:ValueReprs , v2:ValueReprs ) ValueReprs
+ LOCAL{ VAR o:OB.tOB; }
+
+ ErrorValue      , _            RETURN v1            ?.
+ _               , ErrorValue   RETURN v2            ?.
+ 
+ BooleanValue(b) , BooleanValue RETURN {o}           ?{ IF ~b THEN o:=v1; ELSE o:=v2; END; };.                 /* !ShortCircuit */
+ BooleanValue(b) , _            RETURN {o}           ?{ IF ~b THEN o:=v1; ELSE o:=OB.cmtValue; END; };.        /* !ShortCircuit */
+
+ ..                             RETURN {OB.cmtValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION AbsValue ( ValueReprs => BOOLEAN ) ValueReprs                                                           /* !PredeclAbs */
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; vReal:OT.oREAL; vLongreal:OT.oLONGREAL; OK:BOOLEAN; }
+
+ mtValue          => {TRUE} RETURN {OB.cmtValue} ?.
+ IntegerValue(v)  => {OK}   RETURN {o} ?{ OT.IntegerAbs(vLongint,v,OK);
+                                          IF OK THEN o:=OB.mIntegerValue(vLongint); ELSE o:=OB.cErrorValue; END; };.
+ RealValue(v)     => {OK}   RETURN {o} ?{ OT.RealAbs(vReal,v,OK);
+                                          IF OK THEN o:=OB.mRealValue(vReal); ELSE o:=OB.cErrorValue; END; };.
+ LongrealValue(v) => {OK}   RETURN {o} ?{ OT.LongrealAbs(vLongreal,v,OK);
+                                          IF OK THEN o:=OB.mLongrealValue(vLongreal); ELSE o:=OB.cErrorValue; END; };.
+ _                => {TRUE} RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION AshValue ( ValueReprs , ValueReprs => BOOLEAN ) ValueReprs                                              /* !PredeclAsh */
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; OK:BOOLEAN; }
+
+ mtValue          , _                => {TRUE} RETURN {OB.cmtValue} ?.
+ _                , mtValue          => {TRUE} RETURN {OB.cmtValue} ?.
+ IntegerValue(v1) , IntegerValue(v2) => {OK}   RETURN {o} ?{ OT.IntegerAsh(vLongint,v1,v2,OK);
+                                                             IF OK THEN o:=OB.mIntegerValue(vLongint);
+                                                                   ELSE o:=OB.cErrorValue; END; };.
+ ..                                  => {TRUE} RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION CapValue ( ValueReprs ) ValueReprs                                                                      /* !PredeclCap */
+ LOCAL{ VAR o:OB.tOB; vChar:OT.oCHAR; }
+
+ mtValue      RETURN {OB.cmtValue} ?.
+ CharValue(v) RETURN {o} ?{ OT.CharCap(vChar,v); o:=OB.mCharValue(vChar); };.
+ _            RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ChrValue ( ValueReprs => BOOLEAN ) ValueReprs                                                           /* !PredeclChr */
+ LOCAL{ VAR o:OB.tOB; vChar:OT.oCHAR; OK:BOOLEAN; }
+
+ mtValue      => {TRUE} RETURN {OB.cmtValue} ?.
+ IntegerValue(v) => {OK}   RETURN {o} ?{ OT.IntegerChr(vChar,v,OK);
+                                      IF OK THEN o:=OB.mCharValue(vChar); ELSE o:=OB.cErrorValue; END; };.
+ _            => {TRUE} RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION EntierValue ( ValueReprs => BOOLEAN ) ValueReprs                                                     /* !PredeclEntier */
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; OK:BOOLEAN; }
+
+ mtValue          => {TRUE} RETURN {OB.cmtValue} ?.
+ RealValue(v)     => {OK}   RETURN {o} ?{ OT.RealEntier(vLongint,v,OK);
+                                          IF OK THEN o:=OB.mIntegerValue(vLongint); ELSE o := OB.cErrorValue; END; };.
+ LongrealValue(v) => {OK}   RETURN {o} ?{ OT.LongrealEntier(vLongint,v,OK);
+                                          IF OK THEN o:=OB.mIntegerValue(vLongint); ELSE o := OB.cErrorValue; END; };.
+ _                => {TRUE} RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION LongValue ( ValueReprs ) ValueReprs                                                                    /* !PredeclLong */
+ LOCAL{ VAR o:OB.tOB; vLongreal:OT.oLONGREAL; }
+
+ mtValue         RETURN {OB.cmtValue} ?.
+ IntegerValue(v) RETURN {o} ?{ o := OB.mIntegerValue(v); };.
+ RealValue(v)    RETURN {o} ?{ OT.oREAL2oLONGREAL(v,vLongreal); o:=OB.mLongrealValue(vLongreal); };.
+ _               RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION MaxValue ( TypeReprs ) ValueReprs                                                                    /* !PredeclMaxMin */
+
+ BooleanTypeRepr  RETURN {OB.mBooleanValue (OT.MAXoBOOLEAN )} ?.
+ CharTypeRepr     RETURN {OB.mCharValue    (OT.MAXoCHAR    )} ?.
+ ShortintTypeRepr RETURN {OB.mIntegerValue (OT.MAXoSHORTINT)} ?.
+ IntegerTypeRepr  RETURN {OB.mIntegerValue (OT.MAXoINTEGER )} ?.
+ LongintTypeRepr  RETURN {OB.mIntegerValue (OT.MAXoLONGINT )} ?.
+ RealTypeRepr     RETURN {OB.mRealValue    (OT.MAXoREAL    )} ?.
+ LongrealTypeRepr RETURN {OB.mLongrealValue(OT.MAXoLONGREAL)} ?.
+ SetTypeRepr      RETURN {OB.mIntegerValue (OT.MAXoSET     )} ?.
+ _                RETURN {OB.cErrorValue                    } ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION MinValue ( TypeReprs ) ValueReprs                                                                    /* !PredeclMaxMin */
+
+ BooleanTypeRepr  RETURN {OB.mBooleanValue (OT.MINoBOOLEAN )} ?.
+ CharTypeRepr     RETURN {OB.mCharValue    (OT.MINoCHAR    )} ?.
+ ShortintTypeRepr RETURN {OB.mIntegerValue (OT.MINoSHORTINT)} ?.
+ IntegerTypeRepr  RETURN {OB.mIntegerValue (OT.MINoINTEGER )} ?.
+ LongintTypeRepr  RETURN {OB.mIntegerValue (OT.MINoLONGINT )} ?.
+ RealTypeRepr     RETURN {OB.mRealValue    (OT.MINoREAL    )} ?.
+ LongrealTypeRepr RETURN {OB.mLongrealValue(OT.MINoLONGREAL)} ?.
+ SetTypeRepr      RETURN {OB.mIntegerValue (OT.MINoSET     )} ?.
+ _                RETURN {OB.cErrorValue                    } ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION OddValue ( ValueReprs ) ValueReprs                                                                      /* !PredeclOdd */
+ LOCAL{ VAR o:OB.tOB; vBoolean:OT.oBOOLEAN; }
+
+ mtValue         RETURN {OB.cmtValue} ?.
+ IntegerValue(v) RETURN {o} ?{ OT.IntegerOdd(vBoolean,v); o:=OB.mBooleanValue(vBoolean); };.
+ _               RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION OrdValue ( ValueReprs ) ValueReprs                                                                      /* !PredeclOrd */
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; }
+
+ mtValue         RETURN {OB.cmtValue} ?.
+ CharValue(v)    RETURN {o} ?{ OT.CharOrd(vLongint,v); o:=OB.mIntegerValue(vLongint); };.
+ _               RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION ShortValue ( TypeReprs , ValueReprs => BOOLEAN ) ValueReprs                                           /* !PredeclShort */
+ LOCAL{ VAR o:OB.tOB; vReal:OT.oREAL; OK:BOOLEAN; }
+
+ _               , mtValue         => {TRUE} RETURN {OB.cmtValue} ?.
+ IntegerTypeRepr , IntegerValue(v) => {OK}   RETURN {o} ?{ OK:=(OT.MINoSHORTINT<=v) & (v<=OT.MAXoSHORTINT);
+                                                           IF OK THEN o:=OB.mIntegerValue(v); ELSE o:=OB.cErrorValue; END; };.
+ LongintTypeRepr , IntegerValue(v) => {OK}   RETURN {o} ?{ OK:=(OT.MINoINTEGER<=v) & (v<=OT.MAXoINTEGER);
+                                                           IF OK THEN o:=OB.mIntegerValue(v); ELSE o:=OB.cErrorValue; END; };.
+ _ , LongrealValue(v)              => {OK}   RETURN {o} ?{ OT.oLONGREAL2oREAL(v,vReal,OK);
+                                                           IF OK THEN o:=OB.mRealValue(vReal); ELSE o:=OB.cErrorValue; END; };.
+ ..                                => {TRUE} RETURN {OB.cErrorValue} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION SizeValue ( t:TypeReprs ) ValueReprs                                                                   /* !PredeclSize */
+ LOCAL{ VAR o:OB.tOB; vLongint:OT.oLONGINT; size:CARDINAL; }
+
+ _ RETURN {o} ?{ size:=T.SizeOfType(t);
+                 IF size<=OT.MaxObjectSize
+                    THEN OT.LONGCARD2oLONGINT(size,vLongint);
+                         o := OB.mIntegerValue(vLongint);
+                    ELSE o := OB.cmtValue;
+                 END; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PROCEDURE AdjustNilValue ( val:ValueReprs , TypeReprs => ValueReprs )
+
+ NilValue,PtrTypeRepr       => {OB.cNilPointerValue  } ?.
+ NilValue,PointerTypeRepr   => {OB.cNilPointerValue  } ?.
+ NilValue,ProcedureTypeRepr => {OB.cNilProcedureValue} ?.
+
+ ..                         => val                     ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+FUNCTION LabelOfMemValue ( ValueReprs ) tLabel
+
+ StringValue  (v) RETURN {CV.String  (v)} ?.
+ RealValue    (v) RETURN {CV.Real    (v)} ?.
+ LongrealValue(v) RETURN {CV.Longreal(v)} ?.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/*$1*/
+PREDICATE IsMemValue ( ValueReprs )
+
+ MemValueRepr ?.
+ 
+/********************************************************************************************************************************/
+/*** END V.pum                                                                                                                ***/
+/********************************************************************************************************************************/
+
+

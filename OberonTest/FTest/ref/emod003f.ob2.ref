@@ -1,0 +1,9 @@
+Compiling edec001t
+Compiling emod003f
+'MODULE' emod003f
+-------------------------------------------------------------------------------
+edec001t   SERVER    edec001t
+SERV       SERVER    emod003f
+-------------------------------------------------------------------------------
+
+emod003f.ob2: 6,24: Cyclic imports not allowed

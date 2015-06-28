@@ -1,0 +1,89 @@
+; Comments start with a ';'
+
+01 "Illegal char in source"                                   ; MsgIllegalCharInSource      
+02 "Comment not closed"                                       ; MsgCommentNotClosed         
+03 "Illegal integer constant"                                 ; MsgIllegalIntegerConst      
+04 "Illegal real constant"                                    ; MsgIllegalRealConst         
+05 "Illegal longreal constant"                                ; MsgIllegalLongrealConst     
+06 "Illegal char constant"                                    ; MsgIllegalCharConst         
+07 "String not terminated"                                    ; MsgStringNotTerminated      
+08 "Identifier not declared"                                  ; MsgUndeclaredIdent          
+09 "Identifier not exported from qualified module"            ; MsgIdentNotExported         
+10 "Identifier already declared"                              ; MsgAlreadyDeclared          
+11 "Identifier not declared in qualified module"              ; MsgUndeclaredExternIdent    
+12 "Unresolved forward reference"                             ; MsgUnresolvedForwardType    
+13 "Unresolved forward procedure"                             ; MsgUnresolvedForwardProc    
+14 "CONSTs are always read-only"                              ; MsgConstsAlwaysReadOnly     
+15 "TYPEs are always read-only"                               ; MsgTypesAlwaysReadOnly      
+16 "Procedures are always read-only"                          ; MsgProcsAlwaysReadOnly      
+17 "Only globals can be exported"                             ; MsgIllegalLocalExport       
+18 "Missing array length"                                     ; MsgMissingArrayLength       
+19 "Invalid length of array"                                  ; MsgInvalidArrayLen          
+20 "Constant not integer"                                     ; MsgConstantNotInteger       
+21 "Open arrays are not allowed here"                         ; MsgIllegalOpenArray         
+22 "Object too big"                                           ; MsgObjectTooBig             
+23 "Record type expected"                                     ; MsgRecordTypeExpected       
+24 "Wrong type of pointer base"                               ; MsgWrongPointerBase         
+25 "Illegal recursive type application"                       ; MsgIllegalRecursiveType     
+26 "Expression not constant"                                  ; MsgExprNotConstant          
+27 "Invalid type of expression"                               ; MsgInvalidExprType          
+28 "Const arithmetic error"                                   ; MsgConstArithmeticError     
+29 "Expression exceeds set bounds"                            ; MsgIntOutOfSet              
+30 "Type test not applicable"                                 ; MsgTypeTestNotApplicable    
+31 "Operator not applicable"                                  ; MsgOperatorNotApplicable    
+32 "Type expected"                                            ; MsgTypeExpected             
+33 "L-value expected"                                         ; MsgLValueExpected           
+34 "Module identifier expected"                               ; MsgIdentIsNoModule          
+35 "Modules are not allowed here"                             ; MsgModulesNotAllowed        
+36 "Types are not allowed here"                               ; MsgTypeNotAllowed           
+37 "Record field not found"                                   ; MsgRecordFieldNotFound      
+38 "Record field not exported"                                ; MsgRecordFieldNotExported   
+39 "Field selector not applicable"                            ; MsgSelectorNotApplicable    
+40 "Index not applicable"                                     ; MsgIndexNotApplicable       
+41 "Index out of bounds"                                      ; MsgIndexOutOfBounds         
+42 "Dereference not applicable"                               ; MsgDerefNotApplicable       
+43 "Arguments not allowed here"                               ; MsgArgumentsNotAllowed      
+44 "Guard not applicable"                                     ; MsgGuardNotApplicable       
+45 "Illegal call of redefined procedure"                      ; MsgNonReceiverSupered       
+46 "There is no redefined procedure to call"                  ; MsgMissingRedefined         
+47 "Only the redefined procedure is callable here"            ; MsgSuperingWithinRedefining 
+48 "Procedure name not correctly repeated"                    ; MsgProcname2Incorrect       
+49 "Actual declaration doesn't match with forward decl"       ; MsgNonMatchingActualDecl    
+50 "Illegal type of function result"                          ; MsgIllegalFunctionResult    
+51 "Too many actual parameters"                               ; MsgTooManyParams            
+52 "Too few actual parameters"                                ; MsgTooFewParams             
+53 "Actual parameter not compatible with formal"              ; MsgParmNotCompatible        
+54 "Read-only variable not allowed as actual VAR-Parameter"   ; MsgIllegalROVarPar          
+55 "Expression not assignment compatible"                     ; MsgNotAssignCompatible      
+56 "Object is read-only"                                      ; MsgObjectIsReadonly         
+57 "Variable expected"                                        ; MsgVariableExpected         
+58 "Integer type expected"                                    ; MsgIntegerTypeExpected      
+59 "Expression not compatible with control variable"          ; MsgNotCompatibleWithCtrlVar 
+60 "BY expression must be non-zero"                           ; MsgStepMustBeNonZero        
+61 "Procedure call not allowed here"                          ; MsgIllegalFuncCall          
+62 "Procedure expected"                                       ; MsgProcedureExpected        
+63 "No RETURN in function procedure"                          ; MsgMissingReturn            
+64 "Missing RETURN expression"                                ; MsgMissingReturnExpr        
+65 "Misplaced RETURN expression"                              ; MsgMisplacedReturnExpr      
+66 "RETURN expression not compatible with formal result type" ; MsgIncompatibleReturnExpr   
+67 "RETURN not allowed here"                                  ; MsgReturnOnlyInProcs        
+68 "Wrong type of CASE-expression"                            ; MsgIllegalCaseExpr          
+69 "Case label not compatible with case expression"           ; MsgLabelNotCompatible       
+70 "Overlapping case label"                                   ; MsgOverlappingCaseLabel     
+71 "Illegal CASE-label range"                                 ; MsgIllegalCaseLabelRange    
+72 "Wrong type of CASE-label"                                 ; MsgWrongLabelType           
+73 "EXIT without LOOP"                                        ; MsgExitWithoutLoop          
+74 "Bound procedure must be global"                           ; MsgBoundProcMustBeGlobal    
+75 "Redefinition must be exported"                            ; MsgRedefMustBeExported      
+76 "Non-matching formal parameters in redefinition"           ; MsgNonMatchingRedef         
+77 "Invalid type"                                             ; MsgInvalidType              
+78 "Receiver parameter must be a pointer"                     ; MsgReceiverParamNotPointer
+79 "Module name differs from file name"                       ; MsgModuleFilenameDiffers    
+80 "Module name not correctly repeated"                       ; MsgModulename2Incorrect     
+81 "File not found"                                           ; MsgFileNotFound             
+82 "Cyclic imports not allowed"                               ; MsgCyclicImport             
+83 "Limit: object exceeds variable memory space"              ; MsgTooManyVars              
+84 "Illegal LEN dimension"                                    ; MsgIllegalLenDimension      
+85 "Limit: Procedure nested too deeply"                       ; MsgProcNestedTooDeeply
+86 "Limit: Type exceeds max. extension level"                 ; MsgMaxExtLevelReached
+87 "Limit: case range too large"                              ; MsgMaxCaseLabelRange

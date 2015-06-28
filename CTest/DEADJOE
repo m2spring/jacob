@@ -1,0 +1,17 @@
+
+*** Modified files in JOE when it aborted on Thu Nov  2 10:40:37 1995
+*** JOE was aborted by signal 15
+
+*** File '(Unnamed)'
+T.ob2
+T.ob2
+T.ob2
+
+*** File 'T.ob2'
+(* $! OC T # *)
+MODULE T;
+IMPORT O:=Out;
+BEGIN (* T *)
+ O.String('Hallo'); O.Ln;
+ O.String('Hallo'); O.Ln;
+END T.

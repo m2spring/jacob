@@ -1,0 +1,16 @@
+File scan006t.ob2
+0003,001: <char>     0X
+0004,001: <char>     'A'
+0005,001: <char>     'A'
+0006,001: <char>     'a'
+0007,001: <string>   ''
+0008,001: <string>   ''
+0009,001: <char>     '"'
+0010,001: <char>     "'"
+0011,001: <string>   'laberstring'
+0012,001: <string>   'blubberstring'
+0013,001: <string>   ' auch das ist ein string'
+0014,001: <string>   "ich bin's doch"
+0015,001: <string>   'hab "acht"'
+0016,001: <eof>      
+

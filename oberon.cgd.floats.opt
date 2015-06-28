@@ -1,0 +1,141 @@
+(********************************************************************************************************************************)
+(*** oberon.cgd.floats.opt / OBERON-2 Code Generator Description (FLOATing pointS (OPTimized)                                 ***)
+(********************************************************************************************************************************)
+(*$2*)
+RULE a:FloatAssignment dst:Memory   c:FloatContentOf src:Memory;
+COST 1;
+COND{ a.size=c.size }
+SCRATCH tmp <eax..edi>;
+EMIT{ ASM.CS2                                        ( mov,l           ,  Loc(src.loc),R(tmp)                                   ); 
+      ASM.CS2                                        ( mov,l           ,  R(tmp),Loc(dst.loc)                                   ); 
+      IF a.size=l THEN
+         INC(src.loc.ofs,4); INC(dst.loc.ofs,4);
+         ASM.CS2                                     ( mov,l           ,  Loc(src.loc),R(tmp)                                   ); 
+         ASM.CS2                                     ( mov,l           ,  R(tmp),Loc(dst.loc)                                   ); 
+      END;
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:FloatSymDyOper a:AMem Float -> Float;
+COST 1;
+EMIT{ NDP.CS1                                        ( op.code,a.size  ,  Operand(a.oper)                                       );
+    }
+
+(*$2*)
+RULE op:FloatDyOper a:AMem Float -> Float;
+COST 1;
+EMIT{ NDP.CS1                                        ( ASMOP.RevFloatTab[op.code],a.size  ,  Operand(a.oper)                    );
+    }
+
+RULE op:FloatDyOper Float a:AMem -> Float;
+COST 1;
+EMIT{ NDP.CS1                                        ( op.code,a.size  ,  Operand(a.oper)                                       );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+RULE op:FloatSymDyOper 
+        Int2Float a:AMem 
+        Float
+     -> Float;
+COST 1;
+COND{ (a.size=w) OR (a.size=l) }
+EMIT{ IF a.size=w THEN sz:=s; ELSE sz:=a.size; END;
+      NDP.CS1                                        ( ASMOP.IntFloatTab[op.code],sz  ,  Operand(a.oper)                        );
+    }
+RULE op:FloatDyOper 
+        Int2Float a:AMem 
+        Float
+     -> Float;
+COST 1;
+COND{ (a.size=w) OR (a.size=l) }
+EMIT{ IF a.size=w THEN sz:=s; ELSE sz:=a.size; END;
+      NDP.CS1                                        ( ASMOP.RevFloatTab[ASMOP.IntFloatTab[op.code]],sz  ,  Operand(a.oper)     );
+    }
+RULE op:FloatDyOper 
+        Float
+        Int2Float a:AMem 
+     -> Float;
+COST 1;
+COND{ (a.size=w) OR (a.size=l) }
+EMIT{ IF a.size=w THEN sz:=s; ELSE sz:=a.size; END;
+      NDP.CS1                                        ( ASMOP.IntFloatTab[op.code],sz  ,  Operand(a.oper)                        );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$2*)
+RULE op:Branch
+       cc:FloatCompare aLabel Float a:AMem
+     -> aBoolean;
+COST 5;
+CHANGE <ax>;
+EMIT{ oper:=ASM.BranchOperTab[ASM.InvRelTab[cc.rel],(*isSignedRelation:=*)FALSE]; 
+      NDP.CS1                                        ( fcomp,a.size    ,  Operand(a.oper)                                       );
+      NDP.C1                                         ( fstsw           ,  R(ax)                                                 );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper            ,  L(op.falseLabel)                                      );
+      ASM.C1                                         ( jmp             ,  L(op.trueLabel)                                       );
+    }
+     
+RULE op:Branch
+       cc:FloatCompare aLabel a:AMem Float
+     -> aBoolean;
+COST 5;
+CHANGE <ax>;
+EMIT{ oper:=ASM.BranchOperTab[ASM.InvRelTab[ASM.RevRelTab[cc.rel]],(*isSignedRelation:=*)FALSE]; 
+      NDP.CS1                                        ( fcomp,a.size    ,  Operand(a.oper)                                       );
+      NDP.C1                                         ( fstsw           ,  R(ax)                                                 );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper            ,  L(op.falseLabel)                                      );
+      ASM.C1                                         ( jmp             ,  L(op.trueLabel)                                       );
+    }
+     
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE BoolVal
+       op:Branch
+         cc:FloatCompare aLabel Float a:AMem
+     -> r:BReg;
+COST 4;
+CHANGE <ax>;
+EMIT{ oper:=ASM.FlagSetOperTab[cc.rel,(*isSignedRelation:=*)FALSE]; 
+      NDP.CS1                                        ( fcomp,a.size    ,  Operand(a.oper)                                       );
+      NDP.C1                                         ( fstsw           ,  R(ax)                                                 );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper            ,  R(r)                                                  );
+    }
+RULE BoolVal
+       op:Branch
+         cc:FloatCompare aLabel a:AMem Float
+     -> r:BReg;
+COST 4;
+CHANGE <ax>;
+EMIT{ oper:=ASM.FlagSetOperTab[ASM.RevRelTab[cc.rel],(*isSignedRelation:=*)FALSE]; 
+      NDP.CS1                                        ( fcomp,a.size    ,  Operand(a.oper)                                       );
+      NDP.C1                                         ( fstsw           ,  R(ax)                                                 );
+      ASM.C0                                         ( sahf                                                                     ); 
+      ASM.C1                                         ( oper            ,  R(r)                                                  );
+    }
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+RULE Int2Float r:BReg<al> -> Float;
+COST 4;
+CHANGE <ah>;
+EMIT{ ASM.C0                                         ( cbw                                                                      ); 
+      ASM.C1                                         ( pushl           ,  R(eax)                                                ); 
+      NDP.CS1                                        ( fild,w          ,  B(esp)                                                );
+      ASM.CS2                                        ( add,l           ,  i(4),R(esp)                                           );
+    }
+RULE Int2Float a:AMem -> Float;
+COST 1;
+SCRATCH tmp <eax..edi>;
+EMIT{ IF a.size=b THEN 
+         ASM.C2                                      ( movsbl          ,  Operand(a.oper),R(tmp)                                ); 
+         ASM.C1                                      ( pushl           ,  R(tmp)                                                ); 
+         NDP.CS1                                     ( fild,l          ,  B(esp)                                                );
+         ASM.CS2                                     ( add,l           ,  i(4),R(esp)                                           );
+      ELSE 
+         NDP.CS1                                     ( fild,a.size     ,  Operand(a.oper)                                       );
+      END;
+    }
+(********************************************************************************************************************************)
+(*** END oberon.cgd.floats.opt                                                                                                ***)
+(********************************************************************************************************************************)
+

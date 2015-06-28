@@ -1,0 +1,5 @@
+MODULE s;
+ 
+TYPE T* = INTEGER;
+ 
+END s.

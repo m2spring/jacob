@@ -1,0 +1,13 @@
+MODULE ValTest;
+IMPORT SYSTEM;
+
+VAR s:BITSET;
+
+PROCEDURE P(r:REAL);
+BEGIN (* P *)
+END P;
+
+BEGIN (* ValTest *)
+ s:={20}; 
+ P(VAL(REAL,s)); 
+END ValTest.

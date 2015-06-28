@@ -1,0 +1,14 @@
+Compiling edec001t
+Compiling edec008f
+'MODULE' edec008f
+-------------------------------------------------------------------------------
+e    SERVER    edec001t
+f    CONST     SHORTINT = 10
+li   VAR       LONGINT
+d    VAR       <ErrorType>
+v1   VAR       <ErrorType>
+-------------------------------------------------------------------------------
+
+edec008f.ob2: 14,10: Identifier not exported from qualified module
+edec008f.ob2: 18,10: Identifier not declared in qualified module
+edec008f.ob2: 22,8: Module identifier expected

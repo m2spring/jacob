@@ -1,0 +1,221 @@
+/********************************************************************************************************************************/
+/*** CODE.pum.BooleanExprs                                                                                                    ***/
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeBooleanExpr ( expr:Exprs , exprVal:ValueReprs , exprLabel:tLabel , trueLabel:tLabel 
+                          , falseLabel:tLabel => BoolCode )
+LOCAL{ VAR condcode:CondCode; boolcode,bool1code,bool2code:BoolCode; dcode,dcode1,dcode2:DCode; expr2Label:tLabel; 
+           labelcode:Cons.Label; isSigned:BOOLEAN; }
+
+ Exprs,BooleanValue(v),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.UnnamedConst); 
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.ConstBranch(v,trueLabel,falseLabel,labelcode,boolcode); 
+    SHOWCODE(CodeBooleanExpr.UnnamedConst,boolcode); 
+ };.
+ 
+ NotExpr(_,_,_,e:Exprs(_,_,value)),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.NotExpr); 
+    CodeBooleanExpr(e,value,exprLabel,falseLabel,trueLabel,boolcode); 
+    Cons.Not(boolcode,boolcode); 
+    SHOWCODE(CodeBooleanExpr.NotExpr,boolcode); 
+ };.
+
+ DesignExpr(_,_,_,Designator(_,_,_,Importing(_,_,_,_,a:PredeclArgumenting,_,_),_,_,_,_,_),_),.. ;
+ DesignExpr(_,_,_,Designator(_,_,_,                  a:PredeclArgumenting     ,_,_,_,_,_),_),.. => {boolcode} 
+ ?{ TRACE(CodeBooleanExpr.Predecl); 
+    CodePredeclPredicates(a,exprLabel,trueLabel,falseLabel,boolcode); 
+    SHOWCODE(CodeBooleanExpr.Predecl,boolcode); 
+ };.
+
+ DesignExpr(_,_,_,designator:Designator,_),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.DesignExpr); 
+    CodeRDesignator(designator,dcode);
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Flag(ASM.unequal,labelcode,dcode,condcode); 
+    Cons.Branch((*isSigned:=*)TRUE,trueLabel,falseLabel,condcode,boolcode); 
+    SHOWCODE(CodeBooleanExpr.DesignExpr,boolcode); 
+ };.
+
+ DyExpr(_,_,_,OrOper,e1:Exprs(_,_,v1),e2:Exprs(_,_,v2)),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.OR); 
+    CodeBooleanExpr(e1,v1,exprLabel ,trueLabel,LAB.New(expr2Label),bool1code); 
+    CodeBooleanExpr(e2,v2,expr2Label,trueLabel,falseLabel         ,bool2code); 
+    Cons.Or(bool1code,bool2code,boolcode); 
+    SHOWCODE(CodeBooleanExpr.OR,boolcode); 
+ };.
+
+ DyExpr(_,_,_,AndOper,e1:Exprs(_,_,v1),e2:Exprs(_,_,v2)),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.AND); 
+    CodeBooleanExpr(e1,v1,exprLabel ,LAB.New(expr2Label),falseLabel,bool1code); 
+    CodeBooleanExpr(e2,v2,expr2Label,trueLabel          ,falseLabel,bool2code); 
+    Cons.And(bool1code,bool2code,boolcode); 
+    SHOWCODE(CodeBooleanExpr.AND,boolcode); 
+ };.
+
+ DyExpr(_,_,_,InOper(_,_,co1,co2),e1:Exprs(_,type1,_),e2:Exprs(_,type2,val2)),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.IN); 
+    CodeRExpr(type1,e1,co1,dcode1);
+    CodeSecondInExpr(val2,e2,co2,dcode2); 
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Int2Longint(dcode1,dcode1); 
+    Cons.In(trueLabel,falseLabel,labelcode,dcode1,dcode2,boolcode); 
+    SHOWCODE(CodeBooleanExpr.IN,boolcode); 
+ };.
+
+ DyExpr(_,_,_,RelationOper,e1:Exprs(_,type1,val1),e2:Exprs(_,type2,val2)),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.Relation); 
+    CodeRelation(type1,type2,val1,val2,expr,exprLabel,condcode,isSigned); 
+    Cons.Branch(isSigned,trueLabel,falseLabel,condcode,boolcode); 
+    SHOWCODE(CodeBooleanExpr.Relation,boolcode); 
+ };.
+
+ IsExpr(_,_,_,designator:Designator(_,_,_,_,staticType,_,_,_,_),_,_,testType),.. => {boolcode} ?{ TRACE(CodeBooleanExpr.IS); 
+    CodeIsExpr(staticType,testType,designator,exprLabel,trueLabel,falseLabel,boolcode); 
+    SHOWCODE(CodeBooleanExpr.Is,boolcode); 
+ };.
+
+ .. => NIL ? { ERR.Fatal('CODE.CodeBooleanExpr: failed'); };.
+
+/*END CodeBooleanExpr */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeSecondInExpr ( val:ValueReprs , expr:Exprs , co:Coercion => DCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; }
+
+ SetValue(v),.. => {dcode} ?{ TRACE(CodeSecondInExpr.Const); 
+    Cons.GlobalVariable(CV.Set(v),0,Idents.NoIdent,acode);
+    Cons.ContentOf(l,acode,dcode); 
+    SHOWCODE(CodeSecondInExpr.Const,dcode); 
+ };.
+
+ _,Exprs(_,type,_),.. => {dcode} ?{ TRACE(CodeSecondInExpr.Default); 
+    CodeRExpr(type,expr,co,dcode);
+    SHOWCODE(CodeSecondInExpr.Default,dcode); 
+ };.
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeRelation ( type1:TypeReprs , type2:TypeReprs , val1:ValueReprs , val2:ValueReprs , expr:DyExpr
+                       , exprLabel:tLabel => CondCode , isSigned:BOOLEAN )
+LOCAL{ VAR condcode:CondCode; dcode1,dcode2:DCode; labelcode:Cons.Label; string1,string2:OT.oSTRING; }
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ CharStringTypeRepr,ArrayTypeRepr,CharValue(chr1),_,DyExpr(_,_,_,RelationOper(_,oper,_,co2),_,e2:Exprs),..
+ => {condcode},FALSE ?{ TRACE(CodeRelation.Char.Array); 
+    CodeRExpr(type2,e2,co2,dcode2);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    OT.oCHAR2oSTRING(chr1,string1); 
+    Cons.ConstStringCompare(ASM.RevRelTab[RelTab[oper]],string1,labelcode,dcode2,condcode); 
+    SHOWCODE(CodeRelation.String.Char,condcode); 
+ };.
+
+ ArrayTypeRepr,CharStringTypeRepr,_,CharValue(chr2),DyExpr(_,_,_,RelationOper(_,oper,co1,_),e1:Exprs,_),..
+ => {condcode},FALSE ?{ TRACE(CodeRelation.Char.String); 
+    CodeRExpr(type1,e1,co1,dcode1);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    OT.oCHAR2oSTRING(chr2,string2); 
+    Cons.ConstStringCompare(RelTab[oper],string2,labelcode,dcode1,condcode); 
+    SHOWCODE(CodeRelation.Char.String,condcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ StringTypeRepr,ArrayTypeRepr,StringValue(str1),_,DyExpr(_,_,_,RelationOper(_,oper,_,co2),_,e2:Exprs),..
+ => {condcode},FALSE ? (OT.LengthOfoSTRING(str1)<=LIM.MaxLenToUseInlinedStrCmp); { TRACE(CodeRelation.String.Array); 
+    CodeRExpr(type2,e2,co2,dcode2);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.ConstStringCompare(ASM.RevRelTab[RelTab[oper]],str1,labelcode,dcode2,condcode); 
+    SHOWCODE(CodeRelation.String.Array,condcode); 
+ };.
+
+ ArrayTypeRepr,StringTypeRepr,_,StringValue(str2),DyExpr(_,_,_,RelationOper(_,oper,co1,_),e1:Exprs,_),..
+ => {condcode},FALSE ? (OT.LengthOfoSTRING(str2)<=LIM.MaxLenToUseInlinedStrCmp); { TRACE(CodeRelation.Array.String); 
+    CodeRExpr(type1,e1,co1,dcode1);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.ConstStringCompare(RelTab[oper],str2,labelcode,dcode1,condcode); 
+    SHOWCODE(CodeRelation.Array.String,condcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ StringTypeRepr,ArrayTypeRepr ,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. ;
+ ArrayTypeRepr ,StringTypeRepr,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. ;
+ ArrayTypeRepr ,ArrayTypeRepr ,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. 
+ => {condcode},FALSE, ?{ TRACE(CodeRelation.Array.Array); 
+    CodeRExpr(type1,e1,co1,dcode1);
+    CodeRExpr(type2,e2,co2,dcode2);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.StringCompare(RelTab[oper],labelcode,dcode1,dcode2,condcode); 
+    SHOWCODE(CodeRelation.Array.Array,condcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ FloatTypeRepr,_            ,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. ;
+ _            ,FloatTypeRepr,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. => {condcode},TRUE ?
+ { TRACE(CodeRelation.Floats); 
+    CodeRExpr(type1,e1,co1,dcode1);
+    CodeRExpr(type2,e2,co2,dcode2);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.FloatCompare(RelTab[oper],labelcode,dcode1,dcode2,condcode); 
+    SHOWCODE(CodeRelation.Floats,condcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ _,_,_,_,DyExpr(_,_,_,RelationOper(_,oper,co1,co2),e1:Exprs,e2:Exprs),.. => {condcode},TRUE ?{ TRACE(CodeRelation.Default); 
+    CodeRExpr(type1,e1,co1,dcode1);
+    CodeRExpr(type2,e2,co2,dcode2);
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Compare(RelTab[oper],labelcode,dcode1,dcode2,condcode); 
+    SHOWCODE(CodeRelation.Default,condcode); 
+ };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+ .. => NIL,FALSE ? { ERR.Fatal('CODE.CodeRelation: failed'); };.
+
+/*END CodeRelation */
+
+/********************************************************************************************************************************/
+/*$1*/
+PROCEDURE CodeIsExpr ( StaticType:TypeReprs , TestType:TypeReprs , designator:Designator 
+                     , exprLabel:tLabel , trueLabel:tLabel , falseLabel:tLabel => BoolCode )
+LOCAL{ VAR acode:ACode; dcode:DCode; boolcode:BoolCode; labelcode:Cons.Label; idData:tImplicitDesignationData; ofs:LONGINT; }
+
+ staticType:RecordTypeRepr
+,  testType:RecordTypeRepr,.. => {boolcode} ?{ TRACE(CodeIsExpr.RecordTypeRepr); 
+    IF ~ADR.TTableElemOfsInTDesc(staticType,testType,ofs) THEN ERR.Fatal('CODE.CodeIsExpr.Record: failed'); END;
+
+    CodeImplicitLDesignator(designator,idData,acode); 
+    Cons.Selector(idData.ofsOfObjHeader,idData.acodeToObjHeader,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Is(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,trueLabel,falseLabel,labelcode,dcode,boolcode);
+    SHOWCODE(CodeIsExpr.RecordTypeRepr,boolcode); 
+ };.
+
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,staticType:TypeReprs))
+,PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,  testType:TypeReprs)),.. => {boolcode} ?{ TRACE(CodeIsExpr.PointerTypeRepr); 
+    IF ~ADR.TTableElemOfsInTDesc(staticType,testType,ofs) THEN ERR.Fatal('CODE.CodeIsExpr.Pointer: failed'); END;
+
+    CodeLDesignator(designator,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+    IF ARG.OptionNilChecking THEN Cons.NilCheck(dcode,dcode); END;
+    Cons.PointerFrom(dcode,acode); 
+
+    Cons.Selector(-4,acode,acode); 
+    Cons.ContentOf(l,acode,dcode); 
+
+    Cons.LabelDef(exprLabel,labelcode); 
+    Cons.Is(LAB.AppS(T.LabelOfTypeRepr(testType),'$D'),ofs,trueLabel,falseLabel,labelcode,dcode,boolcode);
+    SHOWCODE(CodeIsExpr.PointerTypeRepr,boolcode); 
+ };.
+
+ .. => NIL ? { ERR.Fatal('CODE.CodeIsExpr: failed'); };.
+ 
+/*END CodeIsExpr */
+
+/********************************************************************************************************************************/
+/*** END CODE.pum.BooleanExprs                                                                                                ***/
+/********************************************************************************************************************************/
+

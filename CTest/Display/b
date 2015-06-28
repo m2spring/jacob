@@ -1,0 +1,2 @@
+as -o Main.o Main.s -a >Main.lst
+ld -static -o Main /usr/lib/crt0.o /home/sepp/oberon/OB2RTS.o _Main.o Main.o M2.o M1.o -lc

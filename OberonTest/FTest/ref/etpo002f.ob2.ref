@@ -1,0 +1,9 @@
+Compiling etpo002f
+'MODULE' etpo002f
+-------------------------------------------------------------------------------
+tInt   TYPE      INTEGER
+tP1    TYPE      POINTER TO INTEGER
+p1     VAR       tP1
+-------------------------------------------------------------------------------
+
+etpo002f.ob2: 11,29: Wrong type of pointer base

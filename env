@@ -1,0 +1,10 @@
+PRJHOME=`pwd`
+export PRJHOME
+
+# project binaries
+PATH=$PRJHOME/bin:$PATH
+
+# we need a cpp
+PATH=$PATH:/usr/lib/gcc-lib/i386-linux/2.7.2.1
+
+export PATH

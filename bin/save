@@ -1,0 +1,15 @@
+#!/bin/sh
+if [ "$1" = "h" ]; then
+   mount /h 2>/dev/null
+   cd ~/oberon
+   make totalclean
+   tar cvzf /tmp/oberon.tgz .
+   ls -l /tmp/oberon.*
+else
+   mount /a
+   cd ~/oberon
+   make totalclean
+   tar cvzf /a/oberon.tgz .
+   ls -l /a
+   umount /a
+fi

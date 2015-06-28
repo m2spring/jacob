@@ -1,0 +1,24 @@
+#/bin/sh
+MUSTPATCH=0
+DATE=`date +"%m\/%d\/%y"`
+echo $DATE >JacobDate.tmp
+if [ -f JacobDate.act ]
+then
+   if cmp JacobDate.tmp JacobDate.act >/dev/null
+   then
+      rm JacobDate.tmp
+   else
+      MUSTPATCH=1
+   fi
+else
+   MUSTPATCH=1
+fi
+
+if [ $MUSTPATCH = 1 ]
+then
+   echo Patching Jacob.mi...
+   mv JacobDate.tmp JacobDate.act
+   sed -e s/"[0-9][0-9]\/[0-9][0-9]\/[0-9][0-9]"/"$DATE"/ Jacob.mi >Jacob.mi.tmp
+   mv Jacob.mi.tmp Jacob.mi
+fi
+

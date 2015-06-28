@@ -1,0 +1,50 @@
+char-array <-> char-array
+abcde = abcde
+abcde <= abcde
+abcde >= abcde
+
+char-array <-> char-array
+abcd # abcde
+abcd < abcde
+abcd <= abcde
+
+char-array <-> char-array
+abcde # abcd
+abcde > abcd
+abcde >= abcd
+
+char-array <-> char-array
+abcde # vwxyz
+abcde < vwxyz
+abcde <= vwxyz
+
+***************************************
+string <-> char-array
+abcde is { = <= >=  } abcde
+
+string <-> char-array
+abcde is { # > >=  } abcd
+
+char-array <-> string
+abcd is { # < <=  } abcde
+
+char-array <-> string
+ab is { # < <=  } xy
+
+***************************************
+char-array <-> char
+ab is { # < <=  } c
+
+char-array <-> char
+ab is { # > >=  } A
+
+char <-> char-array
+3 is { # < <=  } vw
+
+***************************************
+empty-string <-> char-array
+'' is { # < <=  } vw
+
+char-array <-> empty-string
+xyz is { # > >=  } ""
+

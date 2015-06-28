@@ -1,0 +1,12 @@
+MODULE InclExcl;
+VAR se:BITSET;
+    in:SHORTINT; 
+    li:LONGINT; 
+BEGIN (* InclExcl *)
+ INCL(se,5); 
+ INCL(se,in); 
+ INCL(se,li); 
+ EXCL(se,6); 
+ EXCL(se,in); 
+ EXCL(se,li); 
+END InclExcl.

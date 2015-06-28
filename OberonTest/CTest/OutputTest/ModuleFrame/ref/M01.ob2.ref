@@ -1,0 +1,43 @@
+Compiling M01 (M01.ob2) 
+Linking M01
+	.comm	M01$G,8
+
+#------------------------------------------------------------------------------
+# TDesc for module globals
+	.text
+M01$N:
+	.asciz	"M01"
+	.align	2,144
+	.long	M01$N
+	.long	0
+	.long	_NILPROC
+	.globl	M01$D
+M01$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+#------------------------------------------------------------------------------
+# module init proc
+# TSPACE = 0
+M01$I$N:
+	.asciz	"M01$I"
+	.align	2,144
+	.long	M01$I$N
+	.long	0
+	.long	_NILPROC
+M01$I$D:
+	movl	(%ebx),%ebx
+	jmp	-4(%ebx)
+
+	.align	2,144
+	.globl	M01$I
+M01$I:
+	pushl	%ebp
+	movl	%esp,%ebp
+	pushl	$M01$I$D
+	subl	$L0,%esp
+
+	leave
+	ret
+L0=	0
+

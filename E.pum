@@ -1,0 +1,1140 @@
+/********************************************************************************************************************************/
+/*** E.pum / Entry related functions & predicates                                                                             ***/
+/********************************************************************************************************************************/
+TRAFO E TREE OB PUBLIC
+
+ /*** Declaration related functions ***/
+
+ DefineConstEntry                      /* Completes the still TOBEDECLARED constant entry, returns that entry                   */
+ DefineTypeEntry                       /* Completes the still TOBEDECLARED type entry, solves also existing forward types       */
+ DefineVarEntry                        /* Completes the still TOBEDECLARED variable entry, returns that entry                   */
+ ChooseProcedureEntry                  /* Selects the appropriate procedure entry                                               */
+ DefineProcedureEntry                  /* Completes the still TOBEDECLARED procedure entry or the forward procedure entry       */
+
+ /*** Symbol table search functions ***/
+
+ Lookup                                /* Searches in an entire symbol table for a specific entry; Nothing found --> ErrorEntry */
+ Lookup0                               /* Searches only until the scope border is reached                                       */
+ LookupExtern                          /* Searches via a server entry                                                           */
+ LookupForward                         /* Searches locally only for a forward type entry; Nothing found --> mtEntry             */
+
+ /*** Primitive predicates ***/
+
+ IsUndeclared
+ IsNotToBeDeclared
+ IsGenuineEmptyEntry
+ IsErrorEntry
+ IsForeignEntry
+ IsExportedEntry
+ IsExportedInheritedProc
+ IsExternEntry
+ IsWritableEntry
+ IsServerEntry
+ IsNotServerEntry
+ ServerHasExistingTable
+ IsTypeEntry
+ IsNotTypeEntry
+ IsVarEntry
+ IsVarParamEntry
+ IsProcedureEntry
+ IsBoundProcEntry
+ IsForwardProcEntry
+ IsReceiverEntry
+ IsVisibleBoundProcEntry
+
+ /*** Selector functions ***/
+
+ DeclStatusOfEntry
+ IdentOfEntry
+ TypeOfEntry
+ LabelOfEntry
+ AddressOfVarEntry
+ TypeOfTypeEntry
+ SizeOfTypeEntry
+ TypeOfVarEntry                        /* ... variable, record field or bound procedure                                         */
+ SignatureOfProcEntry
+ ReceiverTypeOfBoundProc
+ BoundProcEntryOfBoundProc
+ LabelOfRedefinedBoundProc
+ ExprValueOfEntry                      /* Value of an entry when used in an expression                                          */
+ PosOfForwardEntry                     /* (Forward type entry)                                                                  */
+ LevelOfProcEntry 
+ LevelsOfEnv
+
+ /*** Functions which search unresolved items and emit an appropriate error message ***/
+
+ CheckUnresolvedForwardPointers
+ CheckUnresolvedForwardProcs
+ CheckUnresolvedForwardBoundProcs
+
+ /*** Miscellaneous functions ***/
+
+ ForwardProcOnly                       /* Filters forward procedure entries; Others --> ErrorEntry                              */
+ MaxExportMode                         /* "Maximum" function over two export modes                                              */
+ ApplyPointerBaseIdent                 /* Realizes the handling of a POINTER TO <ident>                                         */
+ EntryWithed                           /* Handles the changing of the static type of the "withed" variable                      */
+ SetLaccess                            /* Sets Laccess-flag of a VarEntry                                                       */
+ InclEnvLevel                          /* Includes a specific level to a level set                                              */
+
+/********************************************************************************************************************************/
+IMPORT{ IMPORT  Idents      ,
+                OT          ,
+                POS         ,
+                Tree        ;
+
+        TYPE    tIdent      = Idents.tIdent  ;                      (* These types are re-declared due to the fact that         *)
+                tAddress    = OB.tAddress    ;                      (* qualidents are illegal in a puma specification.          *)
+                tDeclStatus = OB.tDeclStatus ; 
+                tExportMode = OB.tExportMode ;                      
+                tLabel      = OB.tLabel      ; 
+                tLevel      = OB.tLevel      ;
+                tParMode    = OB.tParMode    ;
+                tSize       = OB.tSize       ;
+                tPosition   = POS.tPosition  ; }
+
+GLOBAL{ IMPORT  ERR         ,
+                Idents      ,
+                LAB         ,
+                O           ,
+                OT          ,
+                POS         ,
+                T           ; }
+
+/********************************************************************************************************************************/
+/* UNEXPORTED: */
+PROCEDURE LinkTypeToEntry ( type:TypeReprs , entry:Entries )        /* called from DefineTypeEntry, DefineProcedureEntry        */
+                                                                    /* and ApplyPointerBaseIdent                                */
+ /* type  =: */ TypeRepr(f:Entries,..)
+,/* entry =: */ _                     ? {IF f=OB.cNonameEntry THEN f:=entry END; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION DefineConstEntry ( entry : Entries
+                          , level : tLevel
+                          , ident : tIdent
+                          , type  : TypeReprs
+                          , value : ValueReprs ) Entries
+
+ /* entry        =: */ ConstEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ {ident}
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ {level}
+                       ,/* declStatus    =: */ d
+                       ,/* typeRepr      =: */ t
+                       ,/* value         =: */ v
+                       ,/* label         =: */ _)
+,/* level        =: */ ..
+                       RETURN entry ?
+                       { IF d=OB.TOBEDECLARED
+                            THEN d := OB.DECLARED;
+                                 t := type;
+                                 v := value;
+                         END; (* IF *)
+                       };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION DefineTypeEntry ( table        : Entries                      /* ... gets returned identically                         */
+                         , entry        : Entries                      /* The entry to be declared                              */
+                         , forwardEntry : Entries                      /* An already existing entry with same name as the above */
+                         , level        : tLevel                       /* Level of the declaration                              */
+                         , ident        : tIdent                       /* Identifier to be declared                             */
+                         , type         : TypeReprs )                  /* Type to be declared                                   */
+                         Entries                                       /* Always the table gets returned                        */
+
+/*---------------------------------------------------------------------------*/
+ /* table        =: */ _                                               /* If a foward type entry exists...                      */
+,/* entry        =: */ TypeEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ {ident}
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ {level}
+                       ,/* declStatus    =: */ d
+                       ,/* typeRepr      =: */ t)
+,/* forwardEntry =: */ TypeEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ _
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ _
+                       ,/* declStatus    =: */ _
+                       ,/* typeRepr      =: */ tf:ForwardTypeRepr)
+,/* level        =: */ ..
+                       RETURN table ?
+                       { tf := type;                                   /* ... solve it ...                                      */
+                         IF d=OB.TOBEDECLARED
+                            THEN d := OB.DECLARED;                     /* ... and define the actual type entry.                 */
+                                 t := type;
+                                 LinkTypeToEntry(t,entry);
+                         END;
+                       };.
+
+/*---------------------------------------------------------------------------*/
+ /* table        =: */ _                                               /* No forward type entry exists:                         */
+,/* entry        =: */ TypeEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ {ident}
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ {level}
+                       ,/* declStatus    =: */ d
+                       ,/* typeRepr      =: */ t)
+,/* forwardEntry =: */ ..
+                       RETURN table ?
+                       { IF d=OB.TOBEDECLARED
+                            THEN d := OB.DECLARED;                    /* Define the actual type entry!                         */
+                                 t := type;
+                                 LinkTypeToEntry(t,entry);
+                         END;
+                       };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION DefineVarEntry ( table   : Entries                            /* ... gets returned identically                         */
+                        , entry   : Entries                            /* The entry to be declared                              */
+                        , level   : tLevel                             /* Level of the declaration                              */
+                        , ident   : tIdent                             /* Identifier to be declared                             */
+                        , type    : TypeReprs                          /* Type of the variable                                  */
+                        , addr    : tAddress 
+                        , refMode : tParMode )
+                        Entries                                        /* Always the table gets returned                        */
+
+ /* Table        =: */ _
+,/* Entry        =: */ VarEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ {ident}
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ {level}
+                       ,/* declStatus    =: */ d
+                       ,/* typeRepr      =: */ t
+                       ,/* isParam       =: */ _
+                       ,/* isReceiverPar =: */ _
+                       ,/* parMode       =: */ _
+                       ,/* address       =: */ a
+                       ,/* refMode       =: */ r
+                       ,/* isWithed      =: */ _
+                       ,/* isLaccessed   =: */ _)
+,/* Level        =: */ ..
+                       RETURN table ?
+                       { IF d=OB.TOBEDECLARED
+                            THEN d := OB.DECLARED;
+                                 t := type;
+                                 a := addr;     
+                                 r := refMode;
+                         END;
+                       };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ChooseProcedureEntry ( table        : Entries
+                              , entry        : Entries
+                              , forwardEntry : Entries ) Entries
+
+ /* table        =: */ _                                          /* A forward procedure entry exists:                          */
+,/* entry        =: */ _
+,/* forwardEntry =: */ ProcedureEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ _
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ _
+                       ,/* declStatus    =: */ _
+                       ,/* typeRepr      =: */ _
+                       ,/* complete      =: */ {FALSE}
+                       ,/* position      =: */ ..)
+                       RETURN table ?.                            /* Forget entry. The entry to be used is reachable via table! */
+
+..                     RETURN entry ?.                            /* No forward procedure entry exists: entry must be used!     */
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION DefineProcedureEntry ( table        : Entries
+                              , entry        : Entries
+                              , forwardEntry : Entries
+                              , level        : tLevel
+                              , ident        : tIdent
+                              , exportMode   : tExportMode
+                              , label        : tLabel
+                              , type         : TypeReprs 
+                              , env          : Environment ) Entries
+
+/*---------------------------------------------------------------------------*/
+ /* table        =: */ _                                                               /* A forward procedure entry exists:     */
+,/* entry        =: */ _
+,/* forwardEntry =: */ ProcedureEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ _
+                       ,/* exportMode    =: */ e
+                       ,/* level         =: */ _
+                       ,/* declStatus    =: */ _
+                       ,/* typeRepr      =: */ _
+                       ,/* complete      =: */ c
+                       ,/* position      =: */ _
+                       ,/* label         =: */ l
+                       ,/* namePath      =: */ _
+                       ,/* env           =: */ v)
+,/* level        =: */ ..
+                       RETURN table ?
+                       { IF ~c THEN 
+                            c := TRUE;                                                 /* Complete it!                          */
+                            IF (e#OB.PUBLIC) & (exportMode=OB.PUBLIC) THEN l:=label; END;
+                            e := MaxExportMode(e,exportMode);                          /* !MaxExportMode                        */
+                            v := env;
+                         END;
+                       };.
+
+/*---------------------------------------------------------------------------*/
+ /* table        =: */ _                                                               /* No forward procedure entry exists:    */
+,/* entry        =: */ ProcedureEntry
+                       (/* prevEntry     =: */ _
+                       ,/* module        =: */ _
+                       ,/* ident         =: */ {ident}
+                       ,/* exportMode    =: */ _
+                       ,/* level         =: */ {level}
+                       ,/* declStatus    =: */ d
+                       ,/* typeRepr      =: */ t
+                       ,/* complete      =: */ _
+                       ,/* position      =: */ _
+                       ,/* label         =: */ _
+                       ,/* namePath      =: */ _
+                       ,/* env           =: */ v)
+,/* forwardEntry =: */ ..
+                       RETURN table ?
+                       { IF d=OB.TOBEDECLARED THEN 
+                            d := OB.DECLARED;                                          /* Define the actual procedure entry!    */
+                            t := type;
+                            LinkTypeToEntry(t,entry);
+                            v := env;
+                         END;
+                       };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION Lookup ( Entries , Ident : tIdent ) Entries
+
+ NIL                             , _ RETURN {OB.cErrorEntry}    ?.
+ e:DataEntry (_   ,_,{Ident},..) , _ RETURN e                   ?.
+ DataEntry   (prev,..          ) , _ RETURN Lookup(prev,Ident)  ?.
+ Entry       (prev,..          ) , _ RETURN Lookup(prev,Ident)  ?.
+ ..                                  RETURN {OB.cErrorEntry}    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION Lookup0 ( Entries , Ident : tIdent ) Entries
+
+ NIL                             , _ RETURN {OB.cErrorEntry}    ?.
+ e:DataEntry (_   ,_,{Ident},..) , _ RETURN e                   ?.
+ DataEntry   (prev,..          ) , _ RETURN Lookup0(prev,Ident) ?.
+ ..                                  RETURN {OB.cErrorEntry}    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LookupExtern ( Entries , Ident : tIdent ) Entries
+
+ ServerEntry(_,_,_,_,_,_,table,_),_  RETURN Lookup(table,Ident) ?.
+ ..                                  RETURN {OB.cErrorEntry}    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LookupForward ( entry : Entries
+                       , ident : tIdent ) Entries
+
+ TypeEntry
+ (/* prevEntry   =: */ _
+ ,/* module      =: */ _
+ ,/* ident       =: */ {ident}
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ ForwardTypeRepr
+ )                          , _        RETURN entry                     ?.
+
+ DataEntry(prev:Entries,..) , _        RETURN LookupForward(prev,ident) ?.
+
+ ..                                    RETURN {OB.cmtEntry}             ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsUndeclared ( Table:Entries , Ident : tIdent )
+
+ /* Table =: */ DataEntry
+                (/* prevEntry   =: */ _
+                ,/* module      =: */ _
+                ,/* ident       =: */ {Ident}
+                ,/* exportMode  =: */ ..)
+,/* Ident =: */ _                         ? FAIL; .
+
+ /* Table =: */ DataEntry
+                (/* prevEntry   =: */ prev
+                ,/* module      =: */ ..)
+,/* Ident =: */ _                         ? { RETURN IsUndeclared(prev,Ident); };.
+
+                ..                        ?.
+
+PREDICATE IsNotToBeDeclared ( Entries )
+DataEntry(_,_,_,_,_,{OB.TOBEDECLARED}) ? FAIL; .
+.. ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsGenuineEmptyEntry ( Entries )
+ mtEntry ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsErrorEntry ( Entries )
+ ErrorEntry ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsForeignEntry ( Entries )
+ DataEntry(_,ModuleEntry(_,_,isForeign),..) ? (isForeign);.
+ 
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsExportedEntry ( Entries )
+ DataEntry(_,_,_,{OB.PRIVATE},..) ? FAIL; .
+ _                                ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsExportedInheritedProc ( Entries )
+
+ InheritedProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* boundProcEntry =: */ BoundProcEntry
+                          (/* prevEntry   =: */ _
+                          ,/* module      =: */ _
+                          ,/* ident       =: */ _
+                          ,/* exportMode  =: */ exportMode
+                          ,/* level       =: */ ..)
+ ) ? {RETURN (exportMode#OB.PRIVATE)}; .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsExternEntry ( Entries , Module:ModuleEntry )
+ DataEntry(_,ModuleEntry(i1,..),..),ModuleEntry(i2,..) ? {RETURN (i1#i2)}; .
+ ..                                                    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsWritableEntry ( Entries )
+ DataEntry(_,_,_,{OB.READONLY},..) ? FAIL; .
+ _                                 ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsServerEntry ( Entries )
+ ErrorEntry  ?.
+ ServerEntry ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsNotServerEntry ( Entries )
+ ServerEntry ? FAIL; .
+ _           ?       .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE ServerHasExistingTable ( Entries )
+
+ ServerEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* serverTable   =: */ ErrorEntry
+ ,/* serverId      =: */ _) ? FAIL; .
+
+ _                          ?       .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsTypeEntry ( Entries )
+ ErrorEntry ?.
+ TypeEntry  ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsNotTypeEntry ( Entries )
+ TypeEntry ? FAIL; .
+ _         ?       .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsVarEntry ( Entries )
+ ErrorEntry ?.
+ VarEntry   ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsVarParamEntry ( Entries )
+ ErrorEntry                 ?.
+
+ VarEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ _
+ ,/* isParam       =: */ {TRUE}
+ ,/* isReceiverPar =: */ _
+ ,/* parMode       =: */ {OB.REFPAR}
+ ,/* address       =: */ ..) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsProcedureEntry ( Entries )
+ ErrorEntry     ?.
+ ProcedureEntry ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsBoundProcEntry ( Entries )
+ ErrorEntry         ?.
+ BoundProcEntry     ?.
+ InheritedProcEntry ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsForwardProcEntry ( Entries )
+
+ ProcedureEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ _
+ ,/* complete      =: */ {FALSE}
+ ,/* position      =: */ ..)     ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsReceiverEntry ( Entries )
+
+ VarEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ _
+ ,/* isParam       =: */ _
+ ,/* isReceiverPar =: */ {TRUE}
+ ,/* parMode       =: */ ..)    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PREDICATE IsVisibleBoundProcEntry ( Module:ModuleEntry , Entries )
+
+ _
+,BoundProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ module
+ ,/* ident          =: */ ident
+ ,/* exportMode     =: */ exportMode
+ ,/* level          =: */ ..)
+                          ? { RETURN (module = Module)
+                                  OR (exportMode # OB.PRIVATE)
+                            }; .
+
+ _
+,InheritedProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* boundProcEntry =: */ boundProcEntry)
+                          ? IsVisibleBoundProcEntry(Module,boundProcEntry); .
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION DeclStatusOfEntry ( Entries ) tDeclStatus
+
+ DataEntry (_,_,_,_,_,declStatus)      RETURN declStatus          ?.
+ _                                     RETURN {OB.UNDECLARED}     ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION IdentOfEntry ( Entries ) tIdent
+
+ ModuleEntry(ident,..)     RETURN ident            ?.
+ DataEntry  (_,_,ident,..) RETURN ident            ?.
+ _                         RETURN {Idents.NoIdent} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION TypeOfEntry ( Entries ) TypeReprs
+
+ ConstEntry    (_,_,_,_,_,_         ,  type,_,_) RETURN type                ?.
+ TypeEntry     (_,_,_,_,_,declStatus,  type    ) RETURN type                ? /*(declStatus#OB.TOBEDECLARED);*/.
+ VarEntry      (_,_,_,_,_,_         ,  type,.. ) RETURN type                ?.
+ ProcedureEntry(_,_,_,_,_,_         ,  type,.. ) RETURN type                ?.
+ BoundProcEntry(_,_,_,_,_,_         ,_,type,.. ) RETURN type                ?.
+ _                                               RETURN {OB.cErrorTypeRepr} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LabelOfEntry ( Entries ) tLabel
+
+ ConstEntry    (_,_,_,_,_,_,_,_    ,label   ) RETURN label    ?.
+ ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,..) RETURN label    ?.
+ BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,..) RETURN label    ?.
+ _                                            RETURN {LAB.MT} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION AddressOfVarEntry ( Entries ) tAddress
+
+ VarEntry(_,_,_,_,_,_,_,_,_,_,address,_,_,_) RETURN address ?.
+ _                                           RETURN 0       ?. 
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION TypeOfTypeEntry ( Entries ) TypeReprs
+
+ TypeEntry(_,_,_,_,_,_,type)           RETURN type                ?.
+ _                                     RETURN {OB.cErrorTypeRepr} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION SizeOfTypeEntry ( Entries ) tSize
+
+ TypeEntry(_,_,_,_,_,_,TypeRepr(_,size,..)) RETURN size ?.
+ _                                          RETURN 0    ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION TypeOfVarEntry ( Entries ) TypeReprs
+
+ VarEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* typeRepr       =: */ type
+ ,/* isParam        =: */ ..)    RETURN type                  ?.
+
+ BoundProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* receiverSig    =: */ _
+ ,/* typeRepr       =: */ type
+ ,/* complete       =: */ ..)    RETURN type                  ?.
+
+ InheritedProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* boundProcEntry =: */ entry) RETURN TypeOfVarEntry(entry) ?.
+
+ _                               RETURN {OB.cErrorTypeRepr}   ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION SignatureOfProcEntry ( Entries ) SignatureRepr
+
+ ProcedureEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ ProcedureTypeRepr
+                         (/* entry           =: */ _
+                         ,/* size            =: */ _
+                         ,/* typeBlocklists  =: */ _
+                         ,/* isInTDescList   =: */ _
+                         ,/* label           =: */ _
+                         ,/* signatureRepr   =: */ sig
+                         ,/* resultType      =: */ ..)
+ ,/* complete      =: */ ..)                           RETURN sig                  ?.
+ 
+ _                                                     RETURN {OB.cErrorSignature} ?. 
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ReceiverTypeOfBoundProc ( Entries ) TypeReprs
+
+ BoundProcEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* receiverSig   =: */ Signature
+                         (/* next     =: */ _
+                         ,/* VarEntry =: */ VarEntry
+                                            (/* prevEntry     =: */ _
+                                            ,/* module        =: */ _
+                                            ,/* ident         =: */ _
+                                            ,/* exportMode    =: */ _
+                                            ,/* level         =: */ _
+                                            ,/* declStatus    =: */ _
+                                            ,/* typeRepr      =: */ type
+                                            ,/* isParam       =: */ ..))
+ ,/* typeRepr      =: */ ..)                                             RETURN type                ?.
+
+ _                                                                       RETURN {OB.cErrorTypeRepr} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION BoundProcEntryOfBoundProc ( Entries ) Entries
+
+ e:BoundProcEntry                           RETURN e ?.
+ 
+ InheritedProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* boundProcEntry =: */ e:BoundProcEntry) RETURN e ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LabelOfRedefinedBoundProc ( Entries ) tLabel
+
+ BoundProcEntry
+ (/* prevEntry	   =: */ _
+ ,/* module	   =: */ _
+ ,/* ident	   =: */ _
+ ,/* exportMode	   =: */ _
+ ,/* level	   =: */ _
+ ,/* declStatus	   =: */ _
+ ,/* receiverSig   =: */ _
+ ,/* typeRepr	   =: */ _
+ ,/* complete	   =: */ _
+ ,/* position	   =: */ _
+ ,/* label	   =: */ _
+ ,/* namePath	   =: */ _
+ ,/* redefinedProc =: */ redefinedProc 
+ ,/* procNum       =: */ _
+ ,/* env           =: */ _) RETURN LabelOfEntry(redefinedProc) ?.
+ 
+ InheritedProcEntry
+ (/* prevEntry      =: */ _
+ ,/* module         =: */ _
+ ,/* ident          =: */ _
+ ,/* exportMode     =: */ _
+ ,/* level          =: */ _
+ ,/* declStatus     =: */ _
+ ,/* boundProcEntry =: */ BoundProcEntry
+                          (/* prevEntry     =: */ _
+                          ,/* module        =: */ _
+                          ,/* ident         =: */ _
+                          ,/* exportMode    =: */ _
+                          ,/* level         =: */ _
+                          ,/* declStatus    =: */ _
+                          ,/* receiverSig   =: */ _
+                          ,/* typeRepr      =: */ _
+                          ,/* complete      =: */ _
+                          ,/* position      =: */ _
+                          ,/* label         =: */ _
+                          ,/* namePath      =: */ _
+                          ,/* redefinedProc =: */ redefinedProc 
+                          ,/* procNum       =: */ _
+                          ,/* env           =: */ _)) RETURN LabelOfEntry(redefinedProc) ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ExprValueOfEntry ( Entries ) ValueReprs
+
+ ConstEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ _
+ ,/* value         =: */ v
+ ,/* label         =: */ _)   RETURN v                    ?.
+
+ ProcedureEntry               RETURN {OB.cProcedureValue} ?.
+
+ _                            RETURN {OB.cmtValue       } ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE PosOfForwardEntry ( Entries => tPosition )
+
+ TypeEntry
+ (/* prevEntry   =: */ _
+ ,/* module      =: */ _
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ ForwardTypeRepr
+                       (/* entry          =: */ _
+                       ,/* size           =: */ _
+                       ,/* typeBlocklists =: */ _
+                       ,/* isInTDescList  =: */ _
+                       ,/* label          =: */ _
+                       ,/* pos            =: */ pos)
+ )                                                   => pos              ?.
+                                        
+ _                                                   => {POS.NoPosition} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LevelOfProcEntry ( Entries ) tLevel
+
+ ProcedureEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ level
+ ,/* declStatus    =: */ ..) RETURN level          ?.
+ 
+ _                           RETURN OB.MODULELEVEL ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION LevelsOfEnv ( OB ) BITSET
+
+ Environment(_,levels) RETURN levels       ?.
+ _                     RETURN OB.ALLLEVELS ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION CheckUnresolvedForwardPointers ( Table:Entries ) Entries
+
+ TypeEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ _
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ ForwardTypeRepr(_,_,_,_,_,pos)) RETURN Table ?
+                                                       { prev:=CheckUnresolvedForwardPointers(prev);
+                                                         ERR.MsgPos(ERR.MsgUnresolvedForwardType,pos);
+                                                       };.
+
+ DataEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ ..)                             RETURN Table ?
+                                                       { prev:=CheckUnresolvedForwardPointers(prev); };.
+                                                       
+ ..                                                    RETURN Table ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION CheckUnresolvedForwardProcs ( table:Entries ) Entries
+
+ ProcedureEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ _
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ _
+ ,/* complete    =: */ {FALSE}
+ ,/* position    =: */ pos
+ ,/* label       =: */ ..)     RETURN table ?
+                               { prev:=CheckUnresolvedForwardProcs(prev);
+                                 ERR.MsgPos(ERR.MsgUnresolvedForwardProc,pos);
+                               };.
+
+ BoundProcEntry                                                                /* CheckUnresolvedForwardProcs is also used      */
+ (/* prevEntry   =: */ prev                                                    /* by CheckUnresolvedForwardBoundProcs...        */
+ ,/* module      =: */ _
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* receiverSig =: */ _
+ ,/* typeRepr    =: */ _
+ ,/* complete    =: */ {FALSE}
+ ,/* position    =: */ pos
+ ,/* label       =: */ ..)     RETURN table ?
+                               { prev:=CheckUnresolvedForwardProcs(prev);
+                                 ERR.MsgPos(ERR.MsgUnresolvedForwardProc,pos);
+                               };.
+
+ DataEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ ..)     RETURN table ?
+                               { prev:=CheckUnresolvedForwardProcs(prev); };.
+
+ ..                            RETURN table ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION CheckUnresolvedForwardBoundProcs ( table:Entries ) Entries
+
+ TypeEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ _
+ ,/* ident       =: */ _
+ ,/* exportMode  =: */ _
+ ,/* level       =: */ _
+ ,/* declStatus  =: */ _
+ ,/* typeRepr    =: */ RecordTypeRepr
+                       (/* entry           =: */ _
+                       ,/* size            =: */ _
+                       ,/* typeBlocklists  =: */ _
+                       ,/* isInTDescList   =: */ _
+                       ,/* label           =: */ _
+                       ,/* extLevel        =: */ _
+                       ,/* baseTypeRepr    =: */ _
+                       ,/* extTypeReprList =: */ _
+                       ,/* fields          =: */ fields
+                       ,/* nofBoundProcs   =: */ _)
+ )                                                       RETURN table ?
+                                                         { prev:=CheckUnresolvedForwardBoundProcs(prev);
+                                                           fields:=CheckUnresolvedForwardProcs(fields);
+                                                         };.
+
+ DataEntry
+ (/* prevEntry   =: */ prev
+ ,/* module      =: */ ..)                               RETURN table ?
+                                                         { prev:=CheckUnresolvedForwardBoundProcs(prev); };.
+
+ ..                                                      RETURN table ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ForwardProcOnly ( entry:Entries ) Entries
+
+/* entry =: */ ProcedureEntry
+               (/* prevEntry   =: */ _
+               ,/* module      =: */ _
+               ,/* ident       =: */ _
+               ,/* exportMode  =: */ _
+               ,/* level       =: */ _
+               ,/* declStatus  =: */ _
+               ,/* typeRepr    =: */ _
+               ,/* complete    =: */ {FALSE}
+               ,/* position    =: */ ..)     RETURN entry            ?.
+
+/* entry =: */ ..                            RETURN {OB.cErrorEntry} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION MaxExportMode ( tExportMode , tExportMode ) tExportMode
+
+ {OB.PUBLIC  },_            RETURN {OB.PUBLIC  } ?.
+ _           ,{OB.PUBLIC  } RETURN {OB.PUBLIC  } ?.
+ {OB.READONLY},_            RETURN {OB.READONLY} ?.
+ _           ,{OB.READONLY} RETURN {OB.READONLY} ?.
+ ..                         RETURN {OB.PRIVATE } ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION ApplyPointerBaseIdent (  ForwardPBaseIsOkIn : BOOLEAN           /* Flags the legality of still undeclared pointer base */
+                               ,  Entry              : Entries           /* Entry of the pointer base identifier                */
+                               ,  TableIn            : Entries           /* Table of the current scope                          */
+                               ,  LevelIn            : tLevel            /* Current level                                       */
+                               ,  ModuleIn           : ModuleEntry       /* Current module                                      */
+                               ,  Ident              : tIdent            /* The identifier of the pointer base                  */
+                               ,  Position           : tPosition         /* The position of the pointer base identifier         */
+                               => TableOut           : Entries )         /* The probably extended table                         */
+                               Entries                                   /* Returns the pointer base type entry                 */
+ LOCAL{VAR e,t:OB.tOB;}
+
+/*---------------------------------------------------------------------------*/
+ /* ForwardPBaseIsOkIn =: */ {TRUE}                                      /* Forward is allowed & entry doesn't exist:           */
+,/* Entry              =: */ ErrorEntry
+,/* TableIn            =: */ ..
+ /* TableOut        */ =>    {e}                                         /* Extend the table ...                                */
+                             RETURN {e} ?                                /* ... and return the new created type entry.          */
+                             { t := OB.mForwardTypeRepr
+                                    (/* entry          := */ OB.cNonameEntry
+                                    ,/* size           := */ 0
+                                    ,/* typeBlocklists := */ OB.mTypeBlocklists(NIL,NIL)
+                                    ,/* isInTDescList  := */ FALSE
+                                    ,/* label          := */ LAB.MT
+                                    ,/* position       := */ Position);
+                               e := OB.mTypeEntry    
+                                    (/* prevEntry      := */ TableIn
+                                    ,/* module         := */ ModuleIn
+                                    ,/* ident          := */ Ident
+                                    ,/* exportMode     := */ OB.PRIVATE
+                                    ,/* level          := */ LevelIn
+                                    ,/* declStatus     := */ OB.FORWARDDECLARED
+                                    ,/* typeRepr       := */ t);
+                               LinkTypeToEntry(t,e);
+                             };.
+
+/*---------------------------------------------------------------------------*/
+ /* ForwardPBaseIsOkIn =: */ {TRUE}                                      /* Forward is allowed & entry is already forwarded:    */
+,/* Entry              =: */ TypeEntry
+                             (/* prevEntry   */ _
+                             ,/* module      */ _
+                             ,/* ident       */ _
+                             ,/* exportMode  */ _
+                             ,/* level       */ _
+                             ,/* declStatus  */ {OB.FORWARDDECLARED}
+                             ,/* typeRepr    */ ForwardTypeRepr)
+,/* TableIn            =: */ ..
+ /* TableOut        */ =>    {TableIn}                                   /* this entry is it!                                   */
+                             RETURN {Entry} ?.
+
+/*---------------------------------------------------------------------------*/
+ /* ForwardPBaseIsOkIn =: */ _                                           /* Recursive type application                          */
+,/* Entry              =: */ TypeEntry
+                             (/* prevEntry   */ _
+                             ,/* module      */ _
+                             ,/* ident       */ _
+                             ,/* exportMode  */ _
+                             ,/* level       */ _
+                             ,/* declStatus  */ {OB.TOBEDECLARED}
+                             ,/* typeRepr    */ _)
+,/* TableIn            =: */ ..
+ /* TableOut        */ =>    {TableIn}
+                             RETURN {Entry} ?.
+
+/*---------------------------------------------------------------------------*/
+ /* ForwardPBaseIsOkIn =: */ _                                           /* Common case: applied type is already normally       */
+,/* Entry              =: */ TypeEntry                                   /* declared...                                         */
+                             (/* prevEntry   */ _
+                             ,/* module      */ _
+                             ,/* ident       */ _
+                             ,/* exportMode  */ _
+                             ,/* level       */ _
+                             ,/* declStatus  */ {OB.DECLARED}
+                             ,/* typeRepr    */ _)
+,/* TableIn            =: */ ..
+ /* TableOut        */ =>    {TableIn}
+                             RETURN {Entry} ?.
+
+/*---------------------------------------------------------------------------*/
+ /* ForwardPBaseIsOkIn =: */ ..                                          /* Error case...                                       */
+ /* TableOut        */ =>    {TableIn}
+                             RETURN {OB.cErrorEntry} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+/* UNEXPORTED: */
+FUNCTION GetServerTable ( Table : Entries , RefId : tIdent ) Entries                                 /* called from EntryWithed */
+
+ /* Table =: */ ServerEntry
+                (/* prevEntry     =: */ _
+                ,/* module        =: */ _
+                ,/* ident         =: */ {RefId}
+                ,/* exportMode    =: */ _
+                ,/* level         =: */ _
+                ,/* declStatus    =: */ _
+                ,/* serverTable   =: */ serverTable
+                ,/* serverId      =: */ _)
+,/* RefId =: */ _                                   RETURN serverTable ?.
+
+DataEntry(_,_,{RefId},..),_ RETURN {OB.cmtEntry} ?.
+
+ /* Table =: */ Entry(prev)
+,/* RefId =: */ _                                   RETURN GetServerTable(prev,RefId) ?.
+
+                ..                                  RETURN {OB.cmtEntry} ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+FUNCTION EntryWithed                                                                                         /* !WithedVariable */
+                     ( module        : ModuleEntry                              /* The current module                           */
+                     , qualification : tIdent                                   /* Qualification of the variable to be 'withed' */
+                     , table         : Entries                                  /* Current table                                */
+                     , variable      : Entries                                  /* Variable to be 'withed'                      */
+                     , type          : TypeReprs )                              /* Type to 'with' the variable                  */
+                     Entries                                                    /* A extended table gets returned               */
+
+/*---------------------------------------------------------------------------*/ /* First case: variable is local in current     */
+ /* module        =: */ _                                                       /* module --> The table gets extended by the    */
+,/* qualification =: */ _                                                       /* variable with the 'with type.                */
+,/* table         =: */ _
+,/* variable      =: */ VarEntry
+                        (/* prevEntry     =: */ _
+                        ,/* module        =: */ {module}
+                        ,/* ident         =: */ ident
+                        ,/* exportMode    =: */ exportMode
+                        ,/* level         =: */ level
+                        ,/* declStatus    =: */ declStatus
+                        ,/* typeRepr      =: */ typerepr
+                        ,/* isParam       =: */ isParam
+                        ,/* isReceiverPar =: */ isReceiverPar
+                        ,/* parMode       =: */ parMode
+                        ,/* address       =: */ address
+                        ,/* refMode       =: */ refMode
+                        ,/* isWithed      =: */ _
+                        ,/* isLaccessed   =: */ isLaccessed)
+,/* type          =: */ _
+                 RETURN
+                        VarEntry
+                        (/* prevEntry     := */ table
+                        ,/* module        := */ module     
+                        ,/* ident         := */ ident
+                        ,/* exportMode    := */ exportMode
+                        ,/* level         := */ level
+                        ,/* declStatus    := */ declStatus
+                        ,/* typeRepr      := */ type
+                        ,/* isParam       := */ isParam
+                        ,/* isReceiverPar := */ isReceiverPar
+                        ,/* parMode       := */ parMode
+                        ,/* address       := */ address
+                        ,/* refMode       := */ refMode
+                        ,/* isWithed      := */ TRUE
+                        ,/* isLaccessed   := */ isLaccessed)
+                        ?.
+
+/*---------------------------------------------------------------------------*//* Second case: variable is extern               */
+ /* module        =: */ _                                                      /* --> The table gets extended by a server       */
+,/* qualification =: */ _                                                      /* entry which table is extended by the variable */
+,/* table         =: */ _                                                      /* with the 'with' type.                         */
+,/* variable      =: */ VarEntry
+                        (/* prevEntry     =: */ _
+                        ,/* module        =: */ server  
+                        ,/* ident         =: */ ident
+                        ,/* exportMode    =: */ exportMode
+                        ,/* level         =: */ level
+                        ,/* declStatus    =: */ declStatus
+                        ,/* typeRepr      =: */ typerepr
+                        ,/* isParam       =: */ isParam
+                        ,/* isReceiverPar =: */ isReceiverPar
+                        ,/* parMode       =: */ parMode
+                        ,/* address       =: */ address
+                        ,/* refMode       =: */ refMode
+                        ,/* isWithed      =: */ _
+                        ,/* isLaccessed   =: */ isLaccessed)
+,/* type          =: */ _
+                 RETURN
+                        ServerEntry
+                        (/* prevEntry     := */ table
+                        ,/* module        := */ module      
+                        ,/* ident         := */ qualification
+                        ,/* exportMode    := */ {OB.PRIVATE}
+                        ,/* level         := */ {OB.MODULELEVEL}
+                        ,/* declStatus    := */ {OB.DECLARED}
+                        ,/* serverTable   := */ VarEntry
+                                                (/* prevEntry     := */ GetServerTable(table,qualification)
+                                                ,/* module        := */ server  
+                                                ,/* ident         := */ ident
+                                                ,/* exportMode    := */ exportMode
+                                                ,/* level         := */ level
+                                                ,/* declStatus    := */ declStatus
+                                                ,/* typeRepr      := */ type
+                                                ,/* isParam       := */ isParam
+                                                ,/* isReceiverPar := */ isReceiverPar
+                                                ,/* parMode       := */ parMode
+                                                ,/* address       := */ address
+                                                ,/* refMode       := */ refMode
+                                                ,/* isWithed      := */ TRUE
+                                                ,/* isLaccessed   =: */ isLaccessed)
+                        ,/* serverId      := */ serverId)
+                        ?.
+
+/*---------------------------------------------------------------------------*/
+..                      RETURN table ?.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE SetLaccess ( Entries )
+
+ VarEntry
+ (/* prevEntry     =: */ _
+ ,/* module        =: */ _
+ ,/* ident         =: */ _
+ ,/* exportMode    =: */ _
+ ,/* level         =: */ _
+ ,/* declStatus    =: */ _
+ ,/* typeRepr      =: */ _
+ ,/* isParam       =: */ _
+ ,/* isReceiverPar =: */ _
+ ,/* parMode       =: */ _
+ ,/* address       =: */ _
+ ,/* refMode       =: */ _
+ ,/* isWithed      =: */ _
+ ,/* isLaccessed   =: */ isLaccessed) ?{ isLaccessed:=TRUE; };.
+
+/*------------------------------------------------------------------------------------------------------------------------------*/
+PROCEDURE InclEnvLevel ( OB , level:tLevel )
+
+ Environment
+ (/* entry         =: */ _
+ ,/* callDstLevels =: */ ls ),_ ? ((0<=level) & (level<=31)); 
+                                  { INCL(ls,level); };.
+
+/********************************************************************************************************************************/
+/*** END E.pum                                                                                                                ***/
+/********************************************************************************************************************************/
+
+

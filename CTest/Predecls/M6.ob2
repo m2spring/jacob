@@ -1,0 +1,3 @@
+MODULE M6;
+BEGIN (* M6 *)
+END M6.

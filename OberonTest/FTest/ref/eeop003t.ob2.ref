@@ -1,0 +1,35 @@
+Compiling eeop003t
+'BOUND' P
+-------------------------------------------------------------------------------
+r   RECEIVER  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eeop003t
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+                f   VAR       CHAR
+                i   VAR       INTEGER
+                r   VAR       REAL
+                P   BOUND     VAR r:T0()
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+                f   VAR       CHAR
+                i   VAR       INTEGER
+                r   VAR       REAL
+                P   INHERITED VAR r:T0()
+               END
+               (-->T2)
+
+T2   TYPE      RECORD(T1)
+                f   VAR       CHAR
+                i   VAR       INTEGER
+                r   VAR       REAL
+                P   INHERITED VAR r:T0()
+               END
+r0   VAR       T0
+r1   VAR       T1
+r2   VAR       T2
+-------------------------------------------------------------------------------
+

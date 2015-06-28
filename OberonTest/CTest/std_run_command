@@ -1,0 +1,29 @@
+#
+dir=`pwd`
+
+rm $dir/out/* 2>/dev/null
+rm $dir/differences 2>/dev/null
+rm $dir/*.s $dir/*.o $dir/*.lst 2>/dev/null
+#--- executables loeschen
+for i in *
+do
+ if [ -x $i -a ! -d $i ]
+  then rm $i
+ fi
+done
+#---
+
+for i in *.ob2 
+do
+   oc -it $i >temp
+   name=`basename $i .ob2`
+   if [ -x $name ]
+   then 
+     $name >$dir/out/$i.out
+     rm temp
+   else
+     mv temp $dir/out/$i.out
+     echo "Compiler Error: No executable created!" >>$dir/out/$i.out
+   fi
+done
+

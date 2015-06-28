@@ -1,0 +1,30 @@
+Compiling eswi001f
+'PROCEDURE' P
+-------------------------------------------------------------------------------
+r   VALPARAM  T0
+-------------------------------------------------------------------------------
+
+'MODULE' eswi001f
+-------------------------------------------------------------------------------
+T0   TYPE      RECORD
+                s   VAR       SET
+               END
+               (-->T1)
+
+T1   TYPE      RECORD(T0)
+                s   VAR       SET
+                i   VAR       INTEGER
+               END
+               (-->T2)
+
+T2   TYPE      RECORD(T1)
+                s   VAR       SET
+                i   VAR       INTEGER
+                b   VAR       BOOLEAN
+               END
+p    VAR       POINTER TO T2
+P    PROCEDURE (r:T0)
+-------------------------------------------------------------------------------
+
+eswi001f.ob2: 26,10: Guard not applicable
+eswi001f.ob2: 34,10: Guard not applicable

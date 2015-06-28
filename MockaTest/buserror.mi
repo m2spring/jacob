@@ -1,0 +1,23 @@
+MODULE buserror;
+IMPORT O, SYSTEM;
+TYPE T=RECORD
+        CASE :CARDINAL OF
+        |0: in: INTEGER;
+        |1: li: LONGINT;
+        |2: re: REAL;
+        |3: lr: LONGREAL;
+        END;
+       END;
+VAR buff: ARRAY [0..99] OF CHAR;
+    p: POINTER TO T;
+BEGIN
+ p:=SYSTEM.ADR(buff[4]);
+ O.StrLn("INTEGER"); 
+ p^.in:=1;
+ O.StrLn("LONGINT");
+ p^.li:=1;
+ O.StrLn("REAL");
+ p^.re:=1.0;
+ O.StrLn("LONGREAL");
+ p^.lr:=1.0;
+END buserror.

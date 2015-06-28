@@ -1,0 +1,57 @@
+Compiling eptb001t
+'BOUND' Basisproc
+-------------------------------------------------------------------------------
+r   RECEIVER  Basistyp
+-------------------------------------------------------------------------------
+
+'BOUND' BoundTo1proc
+-------------------------------------------------------------------------------
+r   RECEIVER  Ableitung1
+-------------------------------------------------------------------------------
+
+'BOUND' BoundTo2proc
+-------------------------------------------------------------------------------
+r   RECEIVER  Ableitung2
+-------------------------------------------------------------------------------
+
+'BOUND' TestPreRedef
+-------------------------------------------------------------------------------
+p   RECEIVER  PtrAbleitung2
+-------------------------------------------------------------------------------
+
+'BOUND' TestPreRedef
+-------------------------------------------------------------------------------
+p   RECEIVER  PtrAbleitung1
+-------------------------------------------------------------------------------
+
+'BOUND' TestPreRedef
+-------------------------------------------------------------------------------
+p   RECEIVER  PtrBasistyp
+-------------------------------------------------------------------------------
+
+'MODULE' eptb001t
+-------------------------------------------------------------------------------
+Basistyp        TYPE      RECORD
+                           Basisproc      BOUND     VAR r:Basistyp()
+                           TestPreRedef   BOUND     p:PtrBasistyp()
+                          END
+                          (-->Ableitung1)
+
+Ableitung1      TYPE      RECORD(Basistyp)
+                           Basisproc      INHERITED VAR r:Basistyp()
+                           BoundTo1proc   BOUND     VAR r:Ableitung1()
+                           TestPreRedef   BOUND     p:PtrAbleitung1()
+                          END
+                          (-->Ableitung2)
+
+Ableitung2      TYPE      RECORD(Ableitung1)
+                           Basisproc      INHERITED VAR r:Basistyp()
+                           BoundTo1proc   INHERITED VAR r:Ableitung1()
+                           BoundTo2proc   BOUND     VAR r:Ableitung2()
+                           TestPreRedef   BOUND     p:PtrAbleitung2()
+                          END
+PtrBasistyp     TYPE      POINTER TO Basistyp
+PtrAbleitung1   TYPE      POINTER TO Ableitung1
+PtrAbleitung2   TYPE      POINTER TO Ableitung2
+-------------------------------------------------------------------------------
+

@@ -1,0 +1,17 @@
+MODULE FParam;
+
+VAR re:REAL; lr:LONGREAL;
+
+PROCEDURE PR(r:REAL);
+BEGIN (* PR *)	   
+END PR;
+
+PROCEDURE PL(l:LONGREAL);
+BEGIN (* PL *)
+END PL;
+
+BEGIN (* FParam *)
+ PR(re+1.0); 	       
+ PL(lr+1.0); 
+ lr:=lr+lr; 
+END FParam.
