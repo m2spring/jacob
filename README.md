@@ -131,13 +131,12 @@ As future work we plan:
 
 ## Changes from Version 0.1 to 0.1.1
 
-* Small bug fix: Changed /lib/elf/ld-linux.so.1 to /lib/ld-linux.so.1
-
 ## Changes from Version 0 to 0.1
 
 * Jacob runs now as ELF executable and produces ELF output.
-* External modules (former "foreign" modules):
+  * External modules (former "foreign" modules):
   * Changed syntax (with respect to the Oakwood Guidelines):
+ 
     <pre>
         Module      = MODULE ident ';' 
                       [ImportList] 
