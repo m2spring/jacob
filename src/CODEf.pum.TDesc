@@ -4,7 +4,7 @@
 PROCEDURE GlobalTDesc ( ptrBl:Blocklists )
 LOCAL{ VAR nLab,dLab:LAB.T; }
 
- .. ?{
+ .. :- {
     IF ARG.OptionCommentsInAsm THEN ASM.SepLine; ASM.CmtLnS('TDesc for module globals'); END;
     
     nLab:=LAB.AppS(FIL.ActP^.Modulename,'$N'); 
@@ -30,10 +30,10 @@ LOCAL{ VAR nLab,dLab:LAB.T; }
 /********************************************************************************************************************************/
 PROCEDURE NamePath ( NamePaths )
              
- IdentNamePath      (prev:NamePaths,id) ?{ NamePath(prev); ASM.WrId(id ); };.
- SelectNamePath     (prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('.' ); };.
- IndexNamePath      (prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('[]'); };.
- DereferenceNamePath(prev:NamePaths   ) ?{ NamePath(prev); ASM.WrS('^' ); };.
+ IdentNamePath      (prev:NamePaths,id) :- { NamePath(prev); ASM.WrId(id ); };.
+ SelectNamePath     (prev:NamePaths   ) :- { NamePath(prev); ASM.WrS('.' ); };.
+ IndexNamePath      (prev:NamePaths   ) :- { NamePath(prev); ASM.WrS('[]'); };.
+ DereferenceNamePath(prev:NamePaths   ) :- { NamePath(prev); ASM.WrS('^' ); };.
 
 /*END NamePath */
 
@@ -41,7 +41,7 @@ PROCEDURE NamePath ( NamePaths )
 PROCEDURE LocalTDesc ( entry:Entries , ptrBl:Blocklists )
 
  BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,namePath:NamePaths,..),.. ;
- ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,namePath:NamePaths,_ ),.. ? LocalTDesc1(label,namePath,ptrBl);.
+ ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,namePath:NamePaths,_ ),.. :- LocalTDesc1(label,namePath,ptrBl);.
 
 /*END LocalTDesc */
 
@@ -49,7 +49,7 @@ PROCEDURE LocalTDesc ( entry:Entries , ptrBl:Blocklists )
 PROCEDURE LocalTDesc1 ( label:tLabel , namePath:NamePaths , ptrBl:Blocklists )
 LOCAL{ VAR nLab,dLab:LAB.T; }
 
- ..?{
+ .. :- {
     IF ARG.OptionCommentsInAsm THEN ASM.CmtLnS('TDesc for proc locals'); END;
     
     nLab:=LAB.AppS(label,'$N'); 
@@ -79,14 +79,14 @@ LOCAL{ VAR nLab,dLab:LAB.T; }
 /********************************************************************************************************************************/
 PROCEDURE TDescList ( TDescList )
 
- TDescList(l:TDescElems)?{ TDescElems(l); };.
+ TDescList(l:TDescElems) :- { TDescElems(l); };.
 
 /*END TDescList */
 
 /********************************************************************************************************************************/
 PROCEDURE TDescElems ( TDescElems )
 
- TDescElem(prev:TDescElems,namePath:NamePaths,t:TypeReprs)?{
+ TDescElem(prev:TDescElems,namePath:NamePaths,t:TypeReprs) :- {
     TDescElems(prev); 
     
     IF ARG.OptionCommentsInAsm THEN 
@@ -103,7 +103,7 @@ PROCEDURE TDescElems ( TDescElems )
 PROCEDURE TDesc ( type:TypeReprs , name:NamePaths )
 LOCAL{ VAR label,dLab,iLab:LAB.T; i,n,ofs,odim,size,num:LONGINT; t:OB.tOB; save_edi:BOOLEAN; ptrBl,prcBl:OB.tOB; }
 
- TypeRepr(entry,typesize,..),_ ?{
+ TypeRepr(entry,typesize,..),_ :- {
 
     label:=T.LabelOfTypeRepr(type); 
 
@@ -202,12 +202,12 @@ LOCAL{ VAR label,dLab,iLab:LAB.T; i,n,ofs,odim,size,num:LONGINT; t:OB.tOB; save_
 PROCEDURE EnterProcsIntoTab ( Entries )
 
  entry:BoundProcEntry(prev,..); 
- InheritedProcEntry(prev,_,_,_,_,_,entry:BoundProcEntry)?{
+ InheritedProcEntry(prev,_,_,_,_,_,entry:BoundProcEntry) :- {
     EnterProcsIntoTab(prev); 
     EnterProcsIntoTab1(entry);
  };.
     
- DataEntry(prev:Entries,..)?{
+ DataEntry(prev:Entries,..) :- {
     EnterProcsIntoTab(prev); 
  };.
 
@@ -216,7 +216,7 @@ PROCEDURE EnterProcsIntoTab ( Entries )
 /********************************************************************************************************************************/
 PROCEDURE EnterProcsIntoTab1 ( entry:Entries )
 
- BoundProcEntry(prev,_,_,_,_,_,_,_,_,_,_,_,_,procNum,_) ?{  
+ BoundProcEntry(prev,_,_,_,_,_,_,_,_,_,_,_,_,procNum,_) :- {  
     IF (0<=procNum) & (procNum<ProcTabSize)
     &  (ProcTab^[procNum]=NIL) THEN 
        ProcTab^[procNum]:=entry; 
@@ -230,7 +230,7 @@ PROCEDURE EnterProcsIntoTab1 ( entry:Entries )
 /********************************************************************************************************************************/
 PROCEDURE CodeBlocklists ( bl:Blocklists )
 
- Blocklist(_,subl,ofs,count,incr,_) ? (count<0); {
+ Blocklist(_,subl,ofs,count,incr,_) :- CONDITION (count<0); {
     ASM.LongI(-2); 
     ASM.LongI(ADR.ArrayOfsFromODim(-count)); 
     ASM.LongI(incr); 
@@ -238,7 +238,7 @@ PROCEDURE CodeBlocklists ( bl:Blocklists )
     ASM.LongI(-1); 
  };.
 
- .. ?{
+ .. :- {
     CodeFixedBls(bl,0); 
     ASM.LongI(-1); 
  };.
@@ -248,7 +248,7 @@ PROCEDURE CodeBlocklists ( bl:Blocklists )
 /********************************************************************************************************************************/
 PROCEDURE CodeGlobalBlocklists ( bl:Blocklists )
 
- .. ?{
+ .. :- {
     CodeFixedBls(bl,-4); 
     ASM.LongI(-1); 
  };.
@@ -258,7 +258,7 @@ PROCEDURE CodeGlobalBlocklists ( bl:Blocklists )
 /********************************************************************************************************************************/
 PROCEDURE CodeLocalBlocklists ( bl:Blocklists )
 
- .. ?{
+ .. :- {
     CodeFixedBls(bl,0); 
     ASM.LongI(-1); 
     CodeOpenBls(bl); 
@@ -269,7 +269,7 @@ PROCEDURE CodeLocalBlocklists ( bl:Blocklists )
 /********************************************************************************************************************************/
 PROCEDURE CodeOpenBls ( bl:Blocklists )
 
- Blocklist(prev,subl,ofs,count,incr,_) ? (count<0); {
+ Blocklist(prev,subl,ofs,count,incr,_) :- CONDITION (count<0); {
     CodeOpenBls(prev); 
     ASM.LongI(-2); 
     ASM.LongI(ofs); 
@@ -278,7 +278,7 @@ PROCEDURE CodeOpenBls ( bl:Blocklists )
     ASM.LongI(-1); 
  };.
 
- Blocklist(prev,..) ?{
+ Blocklist(prev,..) :- {
     CodeOpenBls(prev); 
  };.
 
@@ -288,12 +288,12 @@ PROCEDURE CodeOpenBls ( bl:Blocklists )
 PROCEDURE CodeFixedBls ( bl:Blocklists , base:LONGINT )
 LOCAL{ VAR ii:LONGINT; }
 
- Blocklist(prev,NoBlocklist,ofs,count,incr,_),_ ?{
+ Blocklist(prev,NoBlocklist,ofs,count,incr,_),_ :- {
     CodeFixedBls(prev,base); 
     FOR ii:=0 TO count-1 DO ASM.LongI(base+ofs+ii*incr); END;
  };.
 
- Blocklist(prev,subl,ofs,count,incr,_),_ ?{
+ Blocklist(prev,subl,ofs,count,incr,_),_ :- {
     CodeFixedBls(prev,base); 
     FOR ii:=0 TO count-1 DO CodeFixedBls(subl,base+ofs+ii*incr); END;
  };.
