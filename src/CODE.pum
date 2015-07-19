@@ -77,30 +77,30 @@ BEGIN{  FOR rel:=MIN(RelOperRange) TO MAX(RelOperRange) DO RelTab[rel]:=ASM.NoRe
 
 /********************************************************************************************************************************/
 PREDICATE IsEmptyNode ( Tree )
- NIL             ?.
- mtImport        ?.
- mtDeclUnit      ?.
- mtDecl          ?.
- mtProc          ?.
- mtFPSection     ?.
- mtParId         ?.
- mtType          ?.
- mtArrayExprList ?.
- mtFieldList     ?.
- mtIdentList     ?.
- mtQualident     ?.
- mtStmt          ?.
- mtCase          ?.
- mtExpr          ?.
+ NIL             :- .
+ mtImport        :- .
+ mtDeclUnit      :- .
+ mtDecl          :- .
+ mtProc          :- .
+ mtFPSection     :- .
+ mtParId         :- .
+ mtType          :- .
+ mtArrayExprList :- .
+ mtFieldList     :- .
+ mtIdentList     :- .
+ mtQualident     :- .
+ mtStmt          :- .
+ mtCase          :- .
+ mtExpr          :- .
 
 /********************************************************************************************************************************/
 PREDICATE IsProperProcedure ( Procs )
- ProcDecl     (_,  _,FormalPars(_,mtType),_,_,_,_,_,_,_,_,_) ?.
- BoundProcDecl(_,_,_,FormalPars(_,mtType),_,_,_,_,_,_,_,_,_) ?. 
+ ProcDecl     (_,  _,FormalPars(_,mtType),_,_,_,_,_,_,_,_,_) :- .
+ BoundProcDecl(_,_,_,FormalPars(_,mtType),_,_,_,_,_,_,_,_,_) :- . 
 
 /********************************************************************************************************************************/
 PROCEDURE Coder ()
- ?{
+ :- {
     CodeModule(FIL.ActP^.TreeRoot);
  };.
 
@@ -108,7 +108,7 @@ PROCEDURE Coder ()
 PROCEDURE CodeModule ( Module )
 LOCAL{ VAR dummy,ptrBl:OB.tOB; fTempLabel:OB.tLabel; }
 
- Module(_,_,_,library,_,decls:DeclSection,stmts:Stmts,_,_,gSpace,tSpace,globals,tdesclist,_)?{ TRACE(CodeModule); 
+ Module(_,_,_,library,_,decls:DeclSection,stmts:Stmts,_,_,gSpace,tSpace,globals,tdesclist,_) :- { TRACE(CodeModule); 
     Target.Module(FIL.ActP^.SourceDir^,FIL.ActP^.Modulename^,gSpace); 
    
     IF ARG.OptionCommentsInAsm THEN CMT.Locals(globals); ASM.Ln; END;
@@ -147,31 +147,31 @@ LOCAL{ VAR dummy,ptrBl:OB.tOB; fTempLabel:OB.tLabel; }
 /********************************************************************************************************************************/
 PROCEDURE CodeDecls ( Tree ) 
 
- DeclSection(d:DeclUnits,p:Procs)? CodeDecls(d); CodeProcs(p);.
- DeclUnit   (n:DeclUnits,d:Decls)? CodeDecls(d); CodeDecls(n);.
- ConstDecl  (n:Decls,_,_,e      )? CodeConstValue({e}); CodeDecls(n);.
- Decl       (n:Decls            )? CodeDecls(n);.
+ DeclSection(d:DeclUnits,p:Procs) :-  CodeDecls(d); CodeProcs(p);.
+ DeclUnit   (n:DeclUnits,d:Decls) :-  CodeDecls(d); CodeDecls(n);.
+ ConstDecl  (n:Decls,_,_,e      ) :-  CodeConstValue({e}); CodeDecls(n);.
+ Decl       (n:Decls            ) :-  CodeDecls(n);.
  
 /*END CodeDecls */
 
 /********************************************************************************************************************************/
 PROCEDURE CodeProcs ( proc:Procs )
 
- ProcDecl        (next:Procs,_,_,_,_,_,_,_,  e,_,_,_)?{ CodeProc(e,proc,(* isBoundProc := *) FALSE); CodeProcs(next); };.
- BoundProcDecl   (next:Procs,_,_,_,_,_,_,_,_,e,_,_,_)?{ CodeProc(e,proc,(* isBoundProc := *) TRUE ); CodeProcs(next); };.
+ ProcDecl        (next:Procs,_,_,_,_,_,_,_,  e,_,_,_) :- { CodeProc(e,proc,(* isBoundProc := *) FALSE); CodeProcs(next); };.
+ BoundProcDecl   (next:Procs,_,_,_,_,_,_,_,_,e,_,_,_) :- { CodeProc(e,proc,(* isBoundProc := *) TRUE ); CodeProcs(next); };.
 
  ForwardDecl     (next:Procs,_,_                    );
- BoundForwardDecl(next:Procs,_,_,_                  )?{                                              CodeProcs(next); };.
+ BoundForwardDecl(next:Procs,_,_,_                  ) :- {                                              CodeProcs(next); };.
 
 /*END CodeProcs */
 
 /********************************************************************************************************************************/
 PROCEDURE DumpNamePath ( NamePaths )
              
- IdentNamePath      (prev:NamePaths,id) ?{ DumpNamePath(prev); O.Ident(id  ); };.
- SelectNamePath     (prev:NamePaths   ) ?{ DumpNamePath(prev); O.Str  ('.' ); };.
- IndexNamePath      (prev:NamePaths   ) ?{ DumpNamePath(prev); O.Str  ('[]'); };.
- DereferenceNamePath(prev:NamePaths   ) ?{ DumpNamePath(prev); O.Str  ('^' ); };.
+ IdentNamePath      (prev:NamePaths,id) :- { DumpNamePath(prev); O.Ident(id  ); };.
+ SelectNamePath     (prev:NamePaths   ) :- { DumpNamePath(prev); O.Str  ('.' ); };.
+ IndexNamePath      (prev:NamePaths   ) :- { DumpNamePath(prev); O.Str  ('[]'); };.
+ DereferenceNamePath(prev:NamePaths   ) :- { DumpNamePath(prev); O.Str  ('^' ); };.
 
 /*END DumpNamePath */
 
@@ -179,7 +179,7 @@ PROCEDURE DumpNamePath ( NamePaths )
 PROCEDURE DumpNamePathOfEntry ( Entries )
 
  BoundProcEntry(_,_,_,_,_,_,_,_,_,_,_,np:NamePaths,..) ;
- ProcedureEntry(_,_,_,_,_,_,_,_,_  ,_,np:NamePaths,_ ) ? DumpNamePath(np);.
+ ProcedureEntry(_,_,_,_,_,_,_,_,_  ,_,np:NamePaths,_ ) :-  DumpNamePath(np);.
 
 /*END DumpNamePathOfEntry */
 
@@ -189,7 +189,7 @@ LOCAL{ VAR dummy:OB.tOB; procLabel,fTempLabel:OB.tLabel; idOfLocalSub:ASM.tOperI
 
  DataEntry(_,_,_,exportMode,level,_),ProcDecl     (_,_,_,  decls:DeclSection,stmts:Stmts,_,_,_,_,lSpace,tSpace,locals),_;
  DataEntry(_,_,_,exportMode,level,_),BoundProcDecl(_,_,_,_,decls:DeclSection,stmts:Stmts,_,_,_,_,lSpace,tSpace,locals),_
- ?{ TRACE(CodeProc); 
+ :- { TRACE(CodeProc); 
     CodeDecls(decls);
 
     procLabel:=E.LabelOfEntry(entry); 
@@ -246,15 +246,15 @@ LOCAL{ VAR dummy:OB.tOB; procLabel,fTempLabel:OB.tLabel; idOfLocalSub:ASM.tOperI
 /********************************************************************************************************************************/
 PROCEDURE CodeConstValue (Entries )
 
- ConstEntry(_,_,_,exportMode,_,_,_,StringValue(v),label)?{ TRACE(CodeConstValue.String); 
+ ConstEntry(_,_,_,exportMode,_,_,_,StringValue(v),label) :- { TRACE(CodeConstValue.String); 
     CV.NamedString(v,label,(exportMode#OB.PRIVATE)); 
  };.
 
- ConstEntry(_,_,_,exportMode,_,_,_,RealValue(v),label)?{ TRACE(CodeConstValue.Real); 
+ ConstEntry(_,_,_,exportMode,_,_,_,RealValue(v),label) :- { TRACE(CodeConstValue.Real); 
     CV.NamedReal(v,label,(exportMode#OB.PRIVATE)); 
  };.
 
- ConstEntry(_,_,_,exportMode,_,_,_,LongrealValue(v),label)?{ TRACE(CodeConstValue.Longreal); 
+ ConstEntry(_,_,_,exportMode,_,_,_,LongrealValue(v),label) :- { TRACE(CodeConstValue.Longreal); 
     CV.NamedLongreal(v,label,(exportMode#OB.PRIVATE)); 
  };.
 
@@ -264,26 +264,26 @@ PROCEDURE CodeConstValue (Entries )
 PROCEDURE CodeValue ( ValueReprs , TypeReprs , Coercion => DCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; }
 
- BooleanValue (v) ,_               ,_                => {dcode} ?{ Cons.BooleanConst (v,dcode); };.
- CharValue    (v) ,_               ,_                => {dcode} ?{ Cons.CharConst    (v,dcode); };.
- SetValue     (v) ,_               ,_                => {dcode} ?{ Cons.SetConst     (v,dcode); };.
- IntegerValue (v) ,_               ,Shortint2Integer => {dcode} ?{ Cons.IntegerConst (v,dcode); };.
- IntegerValue (v) ,_               ,Shortint2Longint => {dcode} ?{ Cons.LongintConst (v,dcode); };.
- IntegerValue (v) ,_               ,Integer2Longint  => {dcode} ?{ Cons.LongintConst (v,dcode); };.
- IntegerValue (v) ,ShortintTypeRepr,_                => {dcode} ?{ Cons.ShortintConst(v,dcode); };.
- IntegerValue (v) ,IntegerTypeRepr ,_                => {dcode} ?{ Cons.IntegerConst (v,dcode); };.
- IntegerValue (v) ,_               ,_                => {dcode} ?{ Cons.LongintConst (v,dcode); };.
- NilValue         ,_               ,_                => {dcode} ?{ Cons.LongintConst (0,dcode); };.
- NilPointerValue  ,_               ,_                => {dcode} ?{ Cons.LongintConst (0,dcode); };.
+ BooleanValue (v) ,_               ,_                => {dcode} :- { Cons.BooleanConst (v,dcode); };.
+ CharValue    (v) ,_               ,_                => {dcode} :- { Cons.CharConst    (v,dcode); };.
+ SetValue     (v) ,_               ,_                => {dcode} :- { Cons.SetConst     (v,dcode); };.
+ IntegerValue (v) ,_               ,Shortint2Integer => {dcode} :- { Cons.IntegerConst (v,dcode); };.
+ IntegerValue (v) ,_               ,Shortint2Longint => {dcode} :- { Cons.LongintConst (v,dcode); };.
+ IntegerValue (v) ,_               ,Integer2Longint  => {dcode} :- { Cons.LongintConst (v,dcode); };.
+ IntegerValue (v) ,ShortintTypeRepr,_                => {dcode} :- { Cons.ShortintConst(v,dcode); };.
+ IntegerValue (v) ,IntegerTypeRepr ,_                => {dcode} :- { Cons.IntegerConst (v,dcode); };.
+ IntegerValue (v) ,_               ,_                => {dcode} :- { Cons.LongintConst (v,dcode); };.
+ NilValue         ,_               ,_                => {dcode} :- { Cons.LongintConst (0,dcode); };.
+ NilPointerValue  ,_               ,_                => {dcode} :- { Cons.LongintConst (0,dcode); };.
 
- RealValue    (v) ,_               ,_                => {dcode} ?{ Cons.GlobalVariable(CV.Real(v),0,Idents.NoIdent,acode); 
-                                                                   Cons.FloatContentOf(s,acode,dcode); };.
- LongrealValue(v) ,_               ,_                => {dcode} ?{ Cons.GlobalVariable(CV.Longreal(v),0,Idents.NoIdent,acode); 
-                                                                   Cons.FloatContentOf(l,acode,dcode); };.
- StringValue  (v) ,_               ,_                => {dcode} ?{ Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
-                                                                   Cons.AddressOf(acode,dcode); };.
- NilProcedureValue,_               ,_                => {dcode} ?{ Cons.GlobalVariable(LAB.NILPROC,0,Idents.NoIdent,acode); 
-                                                                   Cons.AddressOf(acode,dcode); };.
+ RealValue    (v) ,_               ,_                => {dcode} :- { Cons.GlobalVariable(CV.Real(v),0,Idents.NoIdent,acode); 
+                                                                     Cons.FloatContentOf(s,acode,dcode); };.
+ LongrealValue(v) ,_               ,_                => {dcode} :- { Cons.GlobalVariable(CV.Longreal(v),0,Idents.NoIdent,acode); 
+                                                                     Cons.FloatContentOf(l,acode,dcode); };.
+ StringValue  (v) ,_               ,_                => {dcode} :- { Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
+                                                                     Cons.AddressOf(acode,dcode); };.
+ NilProcedureValue,_               ,_                => {dcode} :- { Cons.GlobalVariable(LAB.NILPROC,0,Idents.NoIdent,acode); 
+                                                                     Cons.AddressOf(acode,dcode); };.
 
  .. => NIL ?{ ERR.Fatal('CODE.CodeValue: failed'); };.
 

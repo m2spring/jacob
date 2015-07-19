@@ -45,12 +45,12 @@ BEGIN{  Ident_CASEFAULT := UTI.IdentOf('_CASEFAULT');
 /********************************************************************************************************************************/
 /*$1*/
 FUNCTION GetTablePREDECL () Entries
- .. RETURN {TablePREDECL} ? {IF TablePREDECL=NIL THEN BuildTables; END; };.
+ .. RETURN {TablePREDECL} :- {IF TablePREDECL=NIL THEN BuildTables; END; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION GetTableSYSTEM () Entries
- .. RETURN {TableSYSTEM} ? {IF TableSYSTEM=NIL THEN BuildTables; END; };.
+ .. RETURN {TableSYSTEM} :- {IF TableSYSTEM=NIL THEN BuildTables; END; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bC ( n:tName , t:TypeReprs , v:ValueReprs ) Entries
@@ -64,7 +64,7 @@ FUNCTION bC ( n:tName , t:TypeReprs , v:ValueReprs ) Entries
            ,/* declStatus  := */ {OB.DECLARED}
            ,/* typeRepr    := */ t
            ,/* value       := */ v
-           ,/* label       := */ {LAB.MT}) ?.
+           ,/* label       := */ {LAB.MT}) :- .
                               
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bI ( n:tName , val:LONGINT ) Entries
@@ -78,7 +78,7 @@ FUNCTION bI ( n:tName , val:LONGINT ) Entries
            ,/* declStatus  := */ {OB.DECLARED}
            ,/* typeRepr    := */ {T.MinimalIntegerType(val)}
            ,/* value       := */ IntegerValue({val})
-           ,/* label       := */ {LAB.MT}) ?.
+           ,/* label       := */ {LAB.MT}) :- .
                               
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bT ( n:tName , t:TypeReprs ) Entries
@@ -90,12 +90,12 @@ FUNCTION bT ( n:tName , t:TypeReprs ) Entries
            ,/* exportMode  := */ {OB.PUBLIC}
            ,/* level       := */ 0
            ,/* declStatus  := */ {OB.DECLARED}
-           ,/* typeRepr    := */ t) ?.
+           ,/* typeRepr    := */ t) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bP ( n:tName , kind:SHORTCARD ) Entries
 
- .. RETURN {bP1(UTI.IdentOf(n),OB.MakeOB(kind))} ?.
+ .. RETURN {bP1(UTI.IdentOf(n),OB.MakeOB(kind))} :- .
 
 FUNCTION bP1 ( i:tIdent , t:PreDeclProcTypeRepr ) Entries
 
@@ -120,14 +120,14 @@ FUNCTION bP1 ( i:tIdent , t:PreDeclProcTypeRepr ) Entries
         ,/* position       := */ _
         ,/* label          := */ {LAB.MT}
         ,/* namePath       := */ {OB.cmtEntry}
-        ,/* env            := */ NIL)? { entry          := OB.cNonameEntry;
-                                         size           := OT.SIZEoPROCEDURE;
-                                         typeBlocklists := OB.cmtTypeBlocklist; 
-                                         isInTDescList  := FALSE; 
-                                         label          := LAB.MT; 
-                                         signatureRepr  := OB.cGenericSignature;
-                                         resultType     := OB.cmtTypeRepr; 
-                                         paramSpace     := 0; };.
+        ,/* env            := */ NIL) :- { entry          := OB.cNonameEntry;
+                                           size           := OT.SIZEoPROCEDURE;
+                                           typeBlocklists := OB.cmtTypeBlocklist; 
+                                           isInTDescList  := FALSE; 
+                                           label          := LAB.MT; 
+                                           signatureRepr  := OB.cGenericSignature;
+                                           resultType     := OB.cmtTypeRepr; 
+                                           paramSpace     := 0; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE EnterPRE ( entry:Entries )
@@ -139,22 +139,22 @@ PROCEDURE EnterPRE ( entry:Entries )
  ,/* exportMode  =: */ exportMode
  ,/* level       =: */ _
  ,/* declStatus  =: */ _
- ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) ? { prev         := TablePREDECL; 
-                                                     module       := OB.cPredeclModuleEntry; 
-                                                     exportMode   := OB.PRIVATE; 
-                                                     entryOfType  := entry; 
-                                                     TablePREDECL := entry; };.
+ ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) :- { prev         := TablePREDECL; 
+                                                      module       := OB.cPredeclModuleEntry; 
+                                                      exportMode   := OB.PRIVATE; 
+                                                      entryOfType  := entry; 
+                                                      TablePREDECL := entry; };.
  DataEntry
  (/* prevEntry   =: */ prev
  ,/* module      =: */ module     
  ,/* ident       =: */ _
  ,/* exportMode  =: */ exportMode
- ,/* level       =: */ ..)                       ? { prev         := TablePREDECL; 
-                                                     module       := OB.cPredeclModuleEntry;
-                                                     exportMode   := OB.PRIVATE; ; 
-                                                     TablePREDECL := entry; };.
+ ,/* level       =: */ ..)                       :- { prev         := TablePREDECL; 
+                                                      module       := OB.cPredeclModuleEntry;
+                                                      exportMode   := OB.PRIVATE; ; 
+                                                      TablePREDECL := entry; };.
 
- ..                                              ? { ERR.Fatal('PR.EnterPRE'); };.
+ ..                                              :- { ERR.Fatal('PR.EnterPRE'); };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE EnterSYS ( entry:Entries )
@@ -166,18 +166,18 @@ PROCEDURE EnterSYS ( entry:Entries )
  ,/* exportMode  =: */ _
  ,/* level       =: */ _
  ,/* declStatus  =: */ _
- ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) ? { prev         := TableSYSTEM; 
-                                                     module       := OB.cSystemModuleEntry; 
-                                                     entryOfType  := entry; 
-                                                     TableSYSTEM  := entry; };.
+ ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) :- { prev         := TableSYSTEM; 
+                                                      module       := OB.cSystemModuleEntry; 
+                                                      entryOfType  := entry; 
+                                                      TableSYSTEM  := entry; };.
  DataEntry
  (/* prevEntry   =: */ prev
  ,/* module      =: */ module     
- ,/* ident       =: */ ..)                       ? { prev         := TableSYSTEM; 
-                                                     module       := OB.cSystemModuleEntry;
-                                                     TableSYSTEM  := entry; };.
+ ,/* ident       =: */ ..)                       :- { prev         := TableSYSTEM; 
+                                                      module       := OB.cSystemModuleEntry;
+                                                      TableSYSTEM  := entry; };.
 
- ..                                              ? { ERR.Fatal('PR.EnterSYS'); };.
+ ..                                              :- { ERR.Fatal('PR.EnterSYS'); };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE DefLabel ( entry:Entries , label:tLabel )
@@ -193,7 +193,7 @@ PROCEDURE DefLabel ( entry:Entries , label:tLabel )
  ,/* complete      := */ _
  ,/* position      := */ _
  ,/* label         := */ l
- ,/* namePath      := */ ..),_ ? l:=label;.
+ ,/* namePath      := */ ..),_ :- l:=label;.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE DefEmptySignature ( Entries )
@@ -214,11 +214,11 @@ PROCEDURE DefEmptySignature ( Entries )
                           ,/* signatureRepr  =: */ signatureRepr
                           ,/* resultType     =: */ _
                           ,/* paramSpace     =: */ _) 
- ,/* complete       := */ ..) ?{ signatureRepr:=OB.cmtSignature; };.
+ ,/* complete       := */ ..) :- { signatureRepr:=OB.cmtSignature; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE BuildTables ()
- ..?{
+ .. :- {
 
  (*** runtime library procedures ***)
 
