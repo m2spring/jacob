@@ -35,66 +35,66 @@ GLOBAL{ IMPORT ADR, ASM, Idents, LAB, OT, PR, STR, T, UTI;
 /********************************************************************************************************************************/
 /*$1*/
 PREDICATE IsEmpty ( OB )
- NIL            ?.
- mtObject       ?.
- mtEntry        ?.
- mtTypeReprList ?.
- mtTypeRepr     ?.
- mtSignature    ?.
- mtValue        ?.
- mtLabelRange   ?.
+ NIL            :- .
+ mtObject       :- .
+ mtEntry        :- .
+ mtTypeReprList :- .
+ mtTypeRepr     :- .
+ mtSignature    :- .
+ mtValue        :- .
+ mtLabelRange   :- .
 
 /********************************************************************************************************************************/
 /*$1*/
 PREDICATE IsEmptyNode ( Tree )
- mtImport        ?.
- mtDeclUnit      ?.
- mtDecl          ?.
- mtProc          ?.
- mtFPSection     ?.
- mtParId         ?.
- mtType          ?.
- mtArrayExprList ?.
- mtFieldList     ?.
- mtIdentList     ?.
- mtStmt          ?.
- NoStmts         ?.
- mtCase          ?.
- mtCaseLabel     ?.
- mtGuardedStmt   ?.
- mtExpr          ?.
- mtElement       ?.
- mtDesignor      ?.
- mtDesignation   ?.
- mtExprList      ?.
- mtNewExprList   ?.
- mtSysAsmExprList?.
+ mtImport         :- .
+ mtDeclUnit       :- .
+ mtDecl           :- .
+ mtProc           :- .
+ mtFPSection      :- .
+ mtParId          :- .
+ mtType           :- .
+ mtArrayExprList  :- .
+ mtFieldList      :- .
+ mtIdentList      :- .
+ mtStmt           :- .
+ NoStmts          :- .
+ mtCase           :- .
+ mtCaseLabel      :- .
+ mtGuardedStmt    :- .
+ mtExpr           :- .
+ mtElement        :- .
+ mtDesignor       :- .
+ mtDesignation    :- .
+ mtExprList       :- .
+ mtNewExprList    :- .
+ mtSysAsmExprList :- .
 
 /********************************************************************************************************************************/
 /*$1*/
 PREDICATE IsPredeclArgumenting ( Tree )
- PredeclArgumenting ?.
- Importing(_,_,_,_,PredeclArgumenting,..) ?.
+ PredeclArgumenting :- .
+ Importing(_,_,_,_,PredeclArgumenting,..) :- .
 
 /********************************************************************************************************************************/
 /*$1*/
 PREDICATE IsInt1Value ( ValueReprs )
- IntegerValue(v) ? {RETURN (v=1)}; .
- _               ? FAIL;           .
+ IntegerValue(v) :-  {RETURN (v=1)}; .
+ _               :-  FAIL;           .
 
 /********************************************************************************************************************************/
 /*$1*/
 PROCEDURE Trace( Entries , stage:LONGINT ) 
 
- BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,..),_;
- ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,..),_? 
+ BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,..),_ ;
+ ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,..),_ :-  
     Trace1(label,stage); .
 
 /*$1*/
 PROCEDURE Trace1 ( label:tLabel , stage:LONGINT )
 LOCAL{ VAR lab:LAB.T; s:ARRAY [0..50] OF CHAR; }
 
- ..?{
+ .. :- {
     ASM.Data;
 
     ASM.Label(LAB.New(lab)); 
@@ -117,48 +117,48 @@ LOCAL{ VAR lab:LAB.T; s:ARRAY [0..50] OF CHAR; }
 PROCEDURE Cmt ( t:Tree )
 LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
 
- UnqualifiedIdent(_,ident)?{
+ UnqualifiedIdent(_,ident) :- {
     ASM.CmtId(ident); 
  };.
  
- QualifiedIdent(_,serverId,ident,_)?{
+ QualifiedIdent(_,serverId,ident,_) :- {
     ASM.CmtId(serverId); ASM.CmtS('.'); ASM.CmtId(ident); 
  };.
  
- AssignStmt(_,designator:Designator,expr:Exprs,coerce)?{
+ AssignStmt(_,designator:Designator,expr:Exprs,coerce) :- {
     ASM.CmtLnS('	'); Cmt(designator); ASM.CmtS(':='); CmtExpr(NotNilCoerce(coerce),expr,NOBRACKETS); ASM.CmtS(';'); 
  };.
 
- CallStmt(_,designator:Designator)?{
+ CallStmt(_,designator:Designator) :- {
     ASM.CmtLnS('	'); Cmt(designator); ASM.CmtS(';'); 
  };.
 
- IfStmt(_,expr:Exprs,then:Stmts,else:Stmts)?{
+ IfStmt(_,expr:Exprs,then:Stmts,else:Stmts) :- {
     ASM.CmtLnS('	'); ASM.CmtS('IF '); Cmt(expr); 
  };.
 
- CaseStmt(_,expr:Exprs,cases:Cases,else:Stmts,_)?{
+ CaseStmt(_,expr:Exprs,cases:Cases,else:Stmts,_) :- {
     ASM.CmtLnS('	'); ASM.CmtS('CASE '); Cmt(expr); ASM.CmtS(' OF'); 
  };.
 
- Case(_,labels:CaseLabels,stmts:Stmts)?{
+ Case(_,labels:CaseLabels,stmts:Stmts) :- {
     ASM.CmtLnS('	'); ASM.CmtS('|'); Cmt(labels); ASM.CmtS(':'); 
  };.
- CaseLabel(next:CaseLabels,expr1:ConstExpr,expr2:ConstExpr(_,expr))?{
+ CaseLabel(next:CaseLabels,expr1:ConstExpr,expr2:ConstExpr(_,expr)) :- {
     Cmt(expr1);
     IF ~IsEmptyNode(expr) THEN ASM.CmtS('..'); Cmt(expr2); END;
     IF ~IsEmptyNode(next) THEN ASM.CmtS(',' ); Cmt(next);  END;
  };.
 
- WhileStmt(_,expr:Exprs,stmts:Stmts)?{
+ WhileStmt(_,expr:Exprs,stmts:Stmts) :- {
     ASM.CmtLnS('	WHILE '); Cmt(expr); ASM.CmtS(' DO'); 
  };.
 
- RepeatStmt(_,stmts:Stmts,expr:Exprs)?{
+ RepeatStmt(_,stmts:Stmts,expr:Exprs) :- {
     ASM.CmtLnS('	REPEAT ... UNTIL '); Cmt(expr); ASM.CmtS(';'); 
  };.
 
- ForStmt(_,ident,_,from:Exprs,to:Exprs,by:ConstExpr(_,Exprs(_,_,byVal)),stmts:Stmts,_,_,tempOfs,fromCoerce,toCoerce)?{
+ ForStmt(_,ident,_,from:Exprs,to:Exprs,by:ConstExpr(_,Exprs(_,_,byVal)),stmts:Stmts,_,_,tempOfs,fromCoerce,toCoerce) :- {
     ASM.CmtLnS('	FOR '); ASM.CmtId(ident); ASM.CmtS(':=');
     CmtExpr(NotNilCoerce(fromCoerce),from,NOBRACKETS);
     ASM.CmtS(' TO ');
@@ -172,22 +172,22 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     ASM.CmtS(')'); 
  };.
 
- LoopStmt(_,stmts:Stmts,_)?{
+ LoopStmt(_,stmts:Stmts,_) :- {
     ASM.CmtLnS('	LOOP'); 
  };.
 
- GuardedStmt(_,guard:Guard,stmts:Stmts,_)?{
+ GuardedStmt(_,guard:Guard,stmts:Stmts,_) :- {
     ASM.CmtLnS('	WITH '); Cmt(guard); ASM.CmtS(' DO'); 
  };.
- Guard(var:Qualidents,_,type:Qualidents,_,_)?{
+ Guard(var:Qualidents,_,type:Qualidents,_,_) :- {
     Cmt(var); ASM.CmtS(':'); Cmt(type);
  };.
 
- ExitStmt?{
+ ExitStmt :- {
     ASM.CmtLnS('	EXIT;'); 
  };.
 
- ReturnStmt(_,_,expr:Exprs,coerce)?{
+ ReturnStmt(_,_,expr:Exprs,coerce) :- {
     ASM.CmtLnS('	RETURN');
     IF ~IsEmptyNode(expr) THEN 
        ASM.CmtS(' ');
@@ -195,128 +195,128 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     END;
  };.
 
- ConstExpr(_,expr:Exprs)?{
+ ConstExpr(_,expr:Exprs) :- {
     Cmt(expr);
  };.
 
- NegateExpr(_,_,_,expr:Exprs)?{
+ NegateExpr(_,_,_,expr:Exprs) :- {
     ASM.CmtS('-'); CmtExpr(OB.cmtCoercion,expr,BRACKETS);
  };.
 
- IdentityExpr(_,_,_,expr:Exprs)?{
+ IdentityExpr(_,_,_,expr:Exprs) :- {
     ASM.CmtS('+'); CmtExpr(OB.cmtCoercion,expr,BRACKETS);
  };.
 
- NotExpr(_,_,_,expr:Exprs)?{
+ NotExpr(_,_,_,expr:Exprs) :- {
     ASM.CmtS('~'); CmtExpr(OB.cmtCoercion,expr,BRACKETS);
  };.
 
- DyExpr(_,_,_,oper:DyOperator(_,_,coerce1,coerce2),expr1:Exprs,expr2:Exprs)?{
+ DyExpr(_,_,_,oper:DyOperator(_,_,coerce1,coerce2),expr1:Exprs,expr2:Exprs) :- {
     CmtExpr(NotNilCoerce(coerce1),expr1,BRACKETS);
     Cmt(oper);
     CmtExpr(NotNilCoerce(coerce2),expr2,BRACKETS);
  };.
 
- IsExpr(_,_,_,designator:Designator,_,typeId:Qualidents,_)?{
+ IsExpr(_,_,_,designator:Designator,_,typeId:Qualidents,_) :- {
     Cmt(designator);
     ASM.CmtS(' IS ');
     Cmt(typeId);
  };.
 
- SetExpr(_,_,_,elements:Elements,_)?{
+ SetExpr(_,_,_,elements:Elements,_) :- {
     ASM.CmtS('{'); Cmt(elements); ASM.CmtS('}');
  };.
 
- Element(next:Elements,expr1:Exprs,expr2:Exprs)?{
+ Element(next:Elements,expr1:Exprs,expr2:Exprs) :- {
     Cmt(expr1);
     IF ~IsEmptyNode(expr2) THEN ASM.CmtS('..'); Cmt(expr2); END;
     IF ~IsEmptyNode(next)  THEN ASM.CmtS(',' ); Cmt(next);  END;
  };.
 
- DesignExpr(_,_,_,designator:Designator,_)?{
+ DesignExpr(_,_,_,designator:Designator,_) :- {
     Cmt(designator);
  };.
 
- IntConst(_,_,_,val)?{
+ IntConst(_,_,_,val) :- {
     ASM.CmtI(val);
  };.
 
- SetConst(_,_,_,val)?{
+ SetConst(_,_,_,val) :- {
     OT.oSET2ARR(val,arr); ASM.CmtS(arr); 
  };.
 
- RealConst(_,_,_,val)?{
+ RealConst(_,_,_,val) :- {
     OT.oREAL2ARR(val,arr); ASM.CmtS(arr); 
  };.
 
- LongrealConst(_,_,_,val)?{
+ LongrealConst(_,_,_,val) :- {
     OT.oLONGREAL2ARR(val,arr); ASM.CmtS(arr); 
  };.
 
- CharConst(_,_,_,val)?{
+ CharConst(_,_,_,val) :- {
     OT.oCHAR2ARR(val,arr); ASM.CmtS(arr); 
  };.
 
- StringConst(_,_,_,val)?{
+ StringConst(_,_,_,val) :- {
     OT.oSTRING2ARR(val,arr); ASM.CmtS(arr); 
  };.
 
- NilConst?{
+ NilConst :- {
     ASM.CmtS('NIL');
  };.
 
- EqualOper        ?{ ASM.CmtS('='    );};.
- UnequalOper      ?{ ASM.CmtS('#'    );};.
- LessOper         ?{ ASM.CmtS('<'    );};.
- LessEqualOper    ?{ ASM.CmtS('<='   );};.
- GreaterOper      ?{ ASM.CmtS('>'    );};.
- GreaterEqualOper ?{ ASM.CmtS('>='   );};.
- InOper           ?{ ASM.CmtS(' IN ' );};.
- PlusOper         ?{ ASM.CmtS('+'    );};.
- MinusOper        ?{ ASM.CmtS('-'    );};.
- MultOper         ?{ ASM.CmtS('*'    );};.
- RDivOper         ?{ ASM.CmtS('/'    );};.
- DivOper          ?{ ASM.CmtS(' DIV ');};.
- ModOper          ?{ ASM.CmtS(' MOD ');};.
- OrOper           ?{ ASM.CmtS(' OR ' );};.
- AndOper          ?{ ASM.CmtS(' & '  );};.
+ EqualOper        :- { ASM.CmtS('='    );};.
+ UnequalOper      :- { ASM.CmtS('#'    );};.
+ LessOper         :- { ASM.CmtS('<'    );};.
+ LessEqualOper    :- { ASM.CmtS('<='   );};.
+ GreaterOper      :- { ASM.CmtS('>'    );};.
+ GreaterEqualOper :- { ASM.CmtS('>='   );};.
+ InOper           :- { ASM.CmtS(' IN ' );};.
+ PlusOper         :- { ASM.CmtS('+'    );};.
+ MinusOper        :- { ASM.CmtS('-'    );};.
+ MultOper         :- { ASM.CmtS('*'    );};.
+ RDivOper         :- { ASM.CmtS('/'    );};.
+ DivOper          :- { ASM.CmtS(' DIV ');};.
+ ModOper          :- { ASM.CmtS(' MOD ');};.
+ OrOper           :- { ASM.CmtS(' OR ' );};.
+ AndOper          :- { ASM.CmtS(' & '  );};.
 
- Designator(ident,_,_,designations:Designations,..)?{
+ Designator(ident,_,_,designations:Designations,..) :- {
     IF ~IsPredeclArgumenting(designations) THEN ASM.CmtId(ident); END;
     Cmt(designations);
  };.
 
- Importing(_,_,_,_,next:Designations,ident,..)?{
+ Importing(_,_,_,_,next:Designations,ident,..) :- {
     IF ~IsPredeclArgumenting(next) THEN ASM.CmtS('.'); ASM.CmtId(ident); END;
     Cmt(next);
  };.
 
- Selecting(_,_,_,_,next:Designations,ident,..)?{
+ Selecting(_,_,_,_,next:Designations,ident,..) :- {
     ASM.CmtS('.'); ASM.CmtId(ident); Cmt(next);
  };.
 
- Indexing(_,_,_,_,next:Designations,_,expr:Exprs,..)?{
+ Indexing(_,_,_,_,next:Designations,_,expr:Exprs,..) :- {
     ASM.CmtS('['); Cmt(expr); ASM.CmtS(']'); Cmt(next);
  };.
 
  Dereferencing(_,_,_,_,next:Designations,_);
- Supering     (_,_,_,_,next:Designations,_)?{
+ Supering     (_,_,_,_,next:Designations,_) :- {
     ASM.CmtS('^'); Cmt(next);
  };.             
  
  Argumenting(_,_,_,_,next:Designations,_,args:ExprLists ,_,_);
- Guarding   (_,_,_,_,next:Designations,_,args:Qualidents,_,_)?{
+ Guarding   (_,_,_,_,next:Designations,_,args:Qualidents,_,_) :- {
     ASM.CmtS('('); Cmt(args); ASM.CmtS(')'); Cmt(next); 
  };.
 
- PredeclArgumenting1(_,_,_,_,next:Designations,_,expr:Exprs,_)?{
+ PredeclArgumenting1(_,_,_,_,next:Designations,_,expr:Exprs,_) :- {
     CmtPredecl(t);
     ASM.CmtS('(');
     CmtExpr(OB.cmtCoercion,expr,NOBRACKETS);
     ASM.CmtS(')');
     Cmt(next);
  };.
- PredeclArgumenting2(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,_,coerce1,coerce2)?{
+ PredeclArgumenting2(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,_,coerce1,coerce2) :- {
     CmtPredecl(t);
     ASM.CmtS('(');
     CmtExpr(NotNilCoerce(coerce1),expr1,NOBRACKETS);
@@ -325,7 +325,7 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     ASM.CmtS(')');
     Cmt(next);
  };.
- PredeclArgumenting2Opt(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,_,coerce1,coerce2)?{
+ PredeclArgumenting2Opt(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,_,coerce1,coerce2) :- {
     CmtPredecl(t);
     ASM.CmtS('(');
     CmtExpr(NotNilCoerce(coerce1),expr1,NOBRACKETS);
@@ -335,7 +335,7 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     ASM.CmtS(')');
     Cmt(next);
  };.
- PredeclArgumenting3(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,expr3:Exprs,_,coerce3)?{
+ PredeclArgumenting3(_,_,_,_,next:Designations,_,expr1:Exprs,expr2:Exprs,expr3:Exprs,_,coerce3) :- {
     CmtPredecl(t);
     ASM.CmtS('(');
     CmtExpr(OB.cmtCoercion,expr1,NOBRACKETS);
@@ -346,7 +346,7 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     ASM.CmtS(')');
     Cmt(next);
  };.
- SysValArgumenting(_,_,_,_,next:Designations,_,qualident:Qualidents,_,expr:Exprs,_,tempOfs)?{
+ SysValArgumenting(_,_,_,_,next:Designations,_,qualident:Qualidents,_,expr:Exprs,_,tempOfs) :- {
     CmtPredecl(t);
     ASM.CmtS('(');
     Cmt(qualident);
@@ -357,30 +357,30 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
     ASM.CmtS(')');
     Cmt(next);
  };.
- TypeArgumenting(_,_,_,_,next:Designations,_,qualident:Qualidents,_)?{
+ TypeArgumenting(_,_,_,_,next:Designations,_,qualident:Qualidents,_) :- {
     CmtPredecl(t); ASM.CmtS('('); Cmt(qualident); ASM.CmtS(')'); Cmt(next);
  };.
- NewArgumenting(_,_,_,_,next:Designations,_,expr:Exprs,newExprList:NewExprLists)?{
+ NewArgumenting(_,_,_,_,next:Designations,_,expr:Exprs,newExprList:NewExprLists) :- {
     CmtPredecl(t); ASM.CmtS('('); Cmt(expr);
     IF ~IsEmptyNode(newExprList) THEN ASM.CmtS(','); Cmt(newExprList); END;
     ASM.CmtS(')');
     Cmt(next);
  };.
- SysAsmArgumenting(_,_,_,_,next:Designations,_,sysAsmExprList:SysAsmExprLists)?{
+ SysAsmArgumenting(_,_,_,_,next:Designations,_,sysAsmExprList:SysAsmExprLists) :- {
     CmtPredecl(t); ASM.CmtS('('); Cmt(sysAsmExprList); ASM.CmtS(')'); Cmt(next);
  };.
 
- ExprList(next:ExprLists,expr:Exprs,coerce)?{
+ ExprList(next:ExprLists,expr:Exprs,coerce) :- {
     CmtExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
     IF ~IsEmptyNode(next) THEN ASM.CmtS(','); Cmt(next); END;
  };.
 
- NewExprList(next:NewExprLists,expr:Exprs,coerce)?{
+ NewExprList(next:NewExprLists,expr:Exprs,coerce) :- {
     CmtExpr(NotNilCoerce(coerce),expr,NOBRACKETS);
     IF ~IsEmptyNode(next) THEN ASM.CmtS(','); Cmt(next); END;
  };.
 
- SysAsmExprList(next:SysAsmExprLists,expr:Exprs)?{
+ SysAsmExprList(next:SysAsmExprLists,expr:Exprs) :- {
     Cmt(expr); 
     IF ~IsEmptyNode(next) THEN ASM.CmtS(','); Cmt(next); END;
  };.
@@ -398,31 +398,31 @@ LOCAL{ VAR arr:ARRAY [0..100] OF CHAR; }
  Integer2Real     ,IntConst     (_,_,_,v),_ ;
  Integer2Longreal ,IntConst     (_,_,_,v),_ ;
  Longint2Real     ,IntConst     (_,_,_,v),_ ;
- Longint2Longreal ,IntConst     (_,_,_,v),_ ?{ ASM.CmtI(v); };.
+ Longint2Longreal ,IntConst     (_,_,_,v),_ :- { ASM.CmtI(v); };.
  
- Real2Longreal    ,LongrealConst(_,_,_,v),_ ?{ OT.oLONGREAL2ARR(v,arr); ASM.CmtS(arr); };.
+ Real2Longreal    ,LongrealConst(_,_,_,v),_ :- { OT.oLONGREAL2ARR(v,arr); ASM.CmtS(arr); };.
 
- Shortint2Integer ,..?{ ASM.CmtS('$SI_IN('); Cmt(expr); ASM.CmtS(')'); };.
- Shortint2Longint ,..?{ ASM.CmtS('$SI_LI('); Cmt(expr); ASM.CmtS(')'); };.
- Shortint2Real    ,..?{ ASM.CmtS('$SI_RE('); Cmt(expr); ASM.CmtS(')'); };.
- Shortint2Longreal,..?{ ASM.CmtS('$SI_LR('); Cmt(expr); ASM.CmtS(')'); };.
- Integer2Longint  ,..?{ ASM.CmtS('$IN_LI('); Cmt(expr); ASM.CmtS(')'); };.
- Integer2Real     ,..?{ ASM.CmtS('$IN_RE('); Cmt(expr); ASM.CmtS(')'); };.
- Integer2Longreal ,..?{ ASM.CmtS('$IN_LR('); Cmt(expr); ASM.CmtS(')'); };.
- Longint2Real     ,..?{ ASM.CmtS('$LI_RE('); Cmt(expr); ASM.CmtS(')'); };.
- Longint2Longreal ,..?{ ASM.CmtS('$LI_LR('); Cmt(expr); ASM.CmtS(')'); };.
- Real2Longreal    ,..?{ ASM.CmtS('$RE_LR('); Cmt(expr); ASM.CmtS(')'); };.
- Char2String      ,..?{ ASM.CmtS('$CH_ST('); Cmt(expr); ASM.CmtS(')'); };.
+ Shortint2Integer ,.. :- { ASM.CmtS('$SI_IN('); Cmt(expr); ASM.CmtS(')'); };.
+ Shortint2Longint ,.. :- { ASM.CmtS('$SI_LI('); Cmt(expr); ASM.CmtS(')'); };.
+ Shortint2Real    ,.. :- { ASM.CmtS('$SI_RE('); Cmt(expr); ASM.CmtS(')'); };.
+ Shortint2Longreal,.. :- { ASM.CmtS('$SI_LR('); Cmt(expr); ASM.CmtS(')'); };.
+ Integer2Longint  ,.. :- { ASM.CmtS('$IN_LI('); Cmt(expr); ASM.CmtS(')'); };.
+ Integer2Real     ,.. :- { ASM.CmtS('$IN_RE('); Cmt(expr); ASM.CmtS(')'); };.
+ Integer2Longreal ,.. :- { ASM.CmtS('$IN_LR('); Cmt(expr); ASM.CmtS(')'); };.
+ Longint2Real     ,.. :- { ASM.CmtS('$LI_RE('); Cmt(expr); ASM.CmtS(')'); };.
+ Longint2Longreal ,.. :- { ASM.CmtS('$LI_LR('); Cmt(expr); ASM.CmtS(')'); };.
+ Real2Longreal    ,.. :- { ASM.CmtS('$RE_LR('); Cmt(expr); ASM.CmtS(')'); };.
+ Char2String      ,.. :- { ASM.CmtS('$CH_ST('); Cmt(expr); ASM.CmtS(')'); };.
 
- _,SetExpr      ,_?{ Cmt(expr); };.
- _,DesignExpr   ,_?{ Cmt(expr); };.
- _,IntConst     ,_?{ Cmt(expr); };.
- _,RealConst    ,_?{ Cmt(expr); };.
- _,LongrealConst,_?{ Cmt(expr); };.
- _,CharConst    ,_?{ Cmt(expr); };.
- _,StringConst  ,_?{ Cmt(expr); };.
- _,NilConst     ,_?{ Cmt(expr); };.
- .. ?{
+ _,SetExpr      ,_ :- { Cmt(expr); };.
+ _,DesignExpr   ,_ :- { Cmt(expr); };.
+ _,IntConst     ,_ :- { Cmt(expr); };.
+ _,RealConst    ,_ :- { Cmt(expr); };.
+ _,LongrealConst,_ :- { Cmt(expr); };.
+ _,CharConst    ,_ :- { Cmt(expr); };.
+ _,StringConst  ,_ :- { Cmt(expr); };.
+ _,NilConst     ,_ :- { Cmt(expr); };.
+ .. :- {
     IF brackets THEN ASM.CmtS('('); END;
     Cmt(expr);
     IF brackets THEN ASM.CmtS(')'); END;
@@ -431,45 +431,45 @@ LOCAL{ VAR arr:ARRAY [0..100] OF CHAR; }
 /********************************************************************************************************************************/
 /*$1*/
 PROCEDURE CmtPredecl ( Tree )
- AbsArgumenting       ?{ ASM.CmtS('ABS'          ); };.
- AshArgumenting       ?{ ASM.CmtS('ASH'          ); };.
- CapArgumenting       ?{ ASM.CmtS('CAP'          ); };.
- ChrArgumenting       ?{ ASM.CmtS('CHR'          ); };.
- EntierArgumenting    ?{ ASM.CmtS('ENTIER'       ); };.
- LenArgumenting       ?{ ASM.CmtS('LEN'          ); };.
- LongArgumenting      ?{ ASM.CmtS('LONG'         ); };.
- MaxArgumenting       ?{ ASM.CmtS('MAX'          ); };.
- MinArgumenting       ?{ ASM.CmtS('MIN'          ); };.
- OddArgumenting       ?{ ASM.CmtS('ODD'          ); };.
- OrdArgumenting       ?{ ASM.CmtS('ORD'          ); };.
- ShortArgumenting     ?{ ASM.CmtS('SHORT'        ); };.
- SizeArgumenting      ?{ ASM.CmtS('SIZE'         ); };.
+ AbsArgumenting       :- { ASM.CmtS('ABS'          ); };.
+ AshArgumenting       :- { ASM.CmtS('ASH'          ); };.
+ CapArgumenting       :- { ASM.CmtS('CAP'          ); };.
+ ChrArgumenting       :- { ASM.CmtS('CHR'          ); };.
+ EntierArgumenting    :- { ASM.CmtS('ENTIER'       ); };.
+ LenArgumenting       :- { ASM.CmtS('LEN'          ); };.
+ LongArgumenting      :- { ASM.CmtS('LONG'         ); };.
+ MaxArgumenting       :- { ASM.CmtS('MAX'          ); };.
+ MinArgumenting       :- { ASM.CmtS('MIN'          ); };.
+ OddArgumenting       :- { ASM.CmtS('ODD'          ); };.
+ OrdArgumenting       :- { ASM.CmtS('ORD'          ); };.
+ ShortArgumenting     :- { ASM.CmtS('SHORT'        ); };.
+ SizeArgumenting      :- { ASM.CmtS('SIZE'         ); };.
 
- AssertArgumenting    ?{ ASM.CmtS('ASSERT'       ); };.
- CopyArgumenting      ?{ ASM.CmtS('COPY'         ); };.
- DecArgumenting       ?{ ASM.CmtS('DEC'          ); };.
- ExclArgumenting      ?{ ASM.CmtS('EXCL'         ); };.
- HaltArgumenting      ?{ ASM.CmtS('HALT'         ); };.
- IncArgumenting       ?{ ASM.CmtS('INC'          ); };.
- InclArgumenting      ?{ ASM.CmtS('INCL'         ); };.
- NewArgumenting       ?{ ASM.CmtS('NEW'          ); };.
+ AssertArgumenting    :- { ASM.CmtS('ASSERT'       ); };.
+ CopyArgumenting      :- { ASM.CmtS('COPY'         ); };.
+ DecArgumenting       :- { ASM.CmtS('DEC'          ); };.
+ ExclArgumenting      :- { ASM.CmtS('EXCL'         ); };.
+ HaltArgumenting      :- { ASM.CmtS('HALT'         ); };.
+ IncArgumenting       :- { ASM.CmtS('INC'          ); };.
+ InclArgumenting      :- { ASM.CmtS('INCL'         ); };.
+ NewArgumenting       :- { ASM.CmtS('NEW'          ); };.
 
- SysAdrArgumenting    ?{ ASM.CmtS('SYSTEM.ADR'   ); };.
- SysBitArgumenting    ?{ ASM.CmtS('SYSTEM.BIT'   ); };.
- SysCcArgumenting     ?{ ASM.CmtS('SYSTEM.CC'    ); };.
- SysLshArgumenting    ?{ ASM.CmtS('SYSTEM.LSH'   ); };.
- SysRotArgumenting    ?{ ASM.CmtS('SYSTEM.ROT'   ); };.
- SysValArgumenting    ?{ ASM.CmtS('SYSTEM.VAL'   ); };.
+ SysAdrArgumenting    :- { ASM.CmtS('SYSTEM.ADR'   ); };.
+ SysBitArgumenting    :- { ASM.CmtS('SYSTEM.BIT'   ); };.
+ SysCcArgumenting     :- { ASM.CmtS('SYSTEM.CC'    ); };.
+ SysLshArgumenting    :- { ASM.CmtS('SYSTEM.LSH'   ); };.
+ SysRotArgumenting    :- { ASM.CmtS('SYSTEM.ROT'   ); };.
+ SysValArgumenting    :- { ASM.CmtS('SYSTEM.VAL'   ); };.
 
- SysGetArgumenting    ?{ ASM.CmtS('SYSTEM.GET'   ); };.
- SysPutArgumenting    ?{ ASM.CmtS('SYSTEM.PUT'   ); };.
- SysGetregArgumenting ?{ ASM.CmtS('SYSTEM.GETREG'); };.
- SysPutregArgumenting ?{ ASM.CmtS('SYSTEM.PUTREG'); };.
- SysMoveArgumenting   ?{ ASM.CmtS('SYSTEM.MOVE'  ); };.
- SysNewArgumenting    ?{ ASM.CmtS('SYSTEM.NEW'   ); };.
- SysAsmArgumenting    ?{ ASM.CmtS('SYSTEM.ASM'   ); };.
+ SysGetArgumenting    :- { ASM.CmtS('SYSTEM.GET'   ); };.
+ SysPutArgumenting    :- { ASM.CmtS('SYSTEM.PUT'   ); };.
+ SysGetregArgumenting :- { ASM.CmtS('SYSTEM.GETREG'); };.
+ SysPutregArgumenting :- { ASM.CmtS('SYSTEM.PUTREG'); };.
+ SysMoveArgumenting   :- { ASM.CmtS('SYSTEM.MOVE'  ); };.
+ SysNewArgumenting    :- { ASM.CmtS('SYSTEM.NEW'   ); };.
+ SysAsmArgumenting    :- { ASM.CmtS('SYSTEM.ASM'   ); };.
 
- _                    ?{ ASM.CmtS('$PREDECL?'    ); };.
+ _                    :- { ASM.CmtS('$PREDECL?'    ); };.
 
 /********************************************************************************************************************************/
 /*$1*/
@@ -479,7 +479,7 @@ PROCEDURE Procedure ( Entries , Procs )
  (_,_,ident,exportMode,level,_
  ,ProcedureTypeRepr(_,_,_,_,_,signature:SignatureRepr,result:TypeReprs,_)
  ,_,_,_,_,env)
-,ProcDecl(_,_,_,_,_,_,_,_,_,localSpace,tempSpace,locals)?{
+,ProcDecl(_,_,_,_,_,_,_,_,_,localSpace,tempSpace,locals) :- {
     Procedure1(ident,exportMode,level,OB.cmtSignature,signature,result,localSpace,tempSpace,locals,env);
  };.
 
@@ -487,7 +487,7 @@ PROCEDURE Procedure ( Entries , Procs )
  (_,_,ident,exportMode,_,_,receiverSig:SignatureRepr
  ,ProcedureTypeRepr(_,_,_,_,_,signature:SignatureRepr,result:TypeReprs,_)
  ,_,_,_,_,_,_,env)
-,BoundProcDecl(_,_,_,_,_,_,_,_,_,_,localSpace,tempSpace,locals)?{
+,BoundProcDecl(_,_,_,_,_,_,_,_,_,_,localSpace,tempSpace,locals) :- {
     Procedure1(ident,exportMode,0,receiverSig,signature,result,localSpace,tempSpace,locals,env);
  };.
 
@@ -503,7 +503,7 @@ PROCEDURE Procedure1 ( id     : tIdent
                      , tspace : tSize
                      , locals : Entries
                      , env    : Environment )
- ..?{
+ .. :- {
     ASM.SepLine;
 
     Parameters(sig);
@@ -532,7 +532,7 @@ PROCEDURE Procedure1 ( id     : tIdent
 PROCEDURE DstLevel ( Environment )
 LOCAL{ VAR i:INTEGER; f:BOOLEAN; }
 
- Environment(_,callDstLevel) ?{
+ Environment(_,callDstLevel) :- {
     ASM.WrS(" --> {"); 
     f:=FALSE; 
     FOR i:=0 TO 31 DO
@@ -549,7 +549,7 @@ LOCAL{ VAR i:INTEGER; f:BOOLEAN; }
 PROCEDURE Parameters ( OB )
 LOCAL{ VAR ofs:LONGINT; s:ARRAY [0..30] OF CHAR; }
 
- Signature(next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type:TypeReprs,_,_,parMode,addr,refMode,_,isLaccessed))?{
+ Signature(next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type:TypeReprs,_,_,parMode,addr,refMode,_,isLaccessed)) :- {
     Parameters(next);
 
     ofs:=ADR.LenOfsFromOpenParamType(type); 
@@ -593,7 +593,7 @@ LOCAL{ VAR ofs:LONGINT; s:ARRAY [0..30] OF CHAR; }
 PROCEDURE Lens ( type:TypeReprs , ident:tIdent , dim:LONGINT , ofs:LONGINT )
 LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
 
- ArrayTypeRepr(_,_,_,_,_,len,elemType),.. ?(len=OB.OPENARRAYLEN);{
+ ArrayTypeRepr(_,_,_,_,_,len,elemType),.. :- CONDITION (len=OB.OPENARRAYLEN);{
     Lens(elemType,ident,dim+1,ofs+4); 
 
     ASM.WrS('# '); 
@@ -609,7 +609,7 @@ LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
 PROCEDURE Locals ( OB )
 LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
 
- VarEntry(prev:Entries,_,ident,_,_,_,type:TypeReprs,isParam,isReceiverPar,parMode,addr,refMode,_,isLaccessed)?{
+ VarEntry(prev:Entries,_,ident,_,_,_,type:TypeReprs,isParam,isReceiverPar,parMode,addr,refMode,_,isLaccessed) :- {
     Locals(prev);
 
     IF ~isParam & ~isReceiverPar THEN 
@@ -621,7 +621,7 @@ LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
     END;
  };.
 
- DataEntry (prev:Entries,..) ?{
+ DataEntry (prev:Entries,..) :- {
     Locals(prev);
  };.
 
@@ -629,7 +629,7 @@ LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
 /*$1*/
 PROCEDURE Signature ( OB )
 
- Signature(next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type,_,_,parMode,..))?{
+ Signature(next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type,_,_,parMode,..)) :- {
     IF parMode=OB.REFPAR THEN ASM.WrS('VAR '); END;
 
     ASM.WrId(ident); ASM.WrS(':');
@@ -642,55 +642,55 @@ PROCEDURE Signature ( OB )
 /*$1*/
 PROCEDURE Type ( OB )
 
- mtTypeRepr    ?{ ASM.WrS('<EmptyType>'); };.
- ErrorTypeRepr ?{ ASM.WrS('<ErrorType>'); };.
+ mtTypeRepr    :- { ASM.WrS('<EmptyType>'); };.
+ ErrorTypeRepr :- { ASM.WrS('<ErrorType>'); };.
 
- TypeRepr(TypeEntry(_,ModuleEntry(mIdent,..),ident,_,level,..),size,..)?{
+ TypeRepr(TypeEntry(_,ModuleEntry(mIdent,..),ident,_,level,..),size,..) :- {
     IF (mIdent#Idents.NoIdent) & (mIdent#PR.IdentPREDECL) THEN 
        ASM.WrId(mIdent); ASM.WrS('.');
     END;
     ASM.WrId(ident);
  };.
 
- ForwardTypeRepr    ?{ ASM.WrS('<Forward>'); };.
- CharStringTypeRepr ?{ ASM.WrS('<Char>');    };.
- StringTypeRepr     ?{ ASM.WrS('<String>');  };.
+ ForwardTypeRepr    :- { ASM.WrS('<Forward>'); };.
+ CharStringTypeRepr :- { ASM.WrS('<Char>');    };.
+ StringTypeRepr     :- { ASM.WrS('<String>');  };.
 
- ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr:TypeReprs)?{
+ ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr:TypeReprs) :- {
     ASM.WrS('ARRAY ');
     IF len>0 THEN ASM.WrI(len); ASM.WrS(' '); END;
     ASM.WrS('OF '); Type(elemTypeRepr);
  };.
 
- RecordTypeRepr(_,_,_,_,_,_,_,_,fields:Entries,_)?{
+ RecordTypeRepr(_,_,_,_,_,_,_,_,fields:Entries,_) :- {
     ASM.WrS('RECORD...');
  };.
 
- PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type:TypeReprs))?{
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type:TypeReprs)) :- {
     ASM.WrS('POINTER TO '); Type(type);
  };.
 
- PointerTypeRepr ?{ ASM.WrS('POINTER TO ?'); };.
+ PointerTypeRepr :- { ASM.WrS('POINTER TO ?'); };.
 
- ProcedureTypeRepr(_,_,_,_,_,sig:SignatureRepr,result:TypeReprs,_)?{
+ ProcedureTypeRepr(_,_,_,_,_,sig:SignatureRepr,result:TypeReprs,_) :- {
     ASM.WrS('PROCEDURE('); Signature(sig); ASM.WrS(')');
     IF ~IsEmpty(result) THEN ASM.WrS(':'); Type(result); END;
  };.
 
- _ ?{ ASM.WrS('?TypeRepr'); };.
+ _ :- { ASM.WrS('?TypeRepr'); };.
 
 /********************************************************************************************************************************/
 /*$1*/
 PROCEDURE ExportMode ( em:tExportMode )
 
- {OB.PUBLIC  } ?{ ASM.WrS('*'); };.
- {OB.READONLY} ?{ ASM.WrS('-'); };.
+ {OB.PUBLIC  } :- { ASM.WrS('*'); };.
+ {OB.READONLY} :- { ASM.WrS('-'); };.
 
 /********************************************************************************************************************************/
 /*$1*/
 PROCEDURE CmtBlocklist ( bl:Blocklists )
 
- Blocklist(prev,..) ?{
+ Blocklist(prev,..) :- {
     CmtBlocklist(prev); 
     ASM.WrS('# '); 
     CmtBl(bl); 
@@ -700,7 +700,7 @@ PROCEDURE CmtBlocklist ( bl:Blocklists )
 /*$1*/
 PROCEDURE CmtBl ( bl:Blocklists )
  
- Blocklist(prev,subl,ofs,count,incr,height) ?{
+ Blocklist(prev,subl,ofs,count,incr,height) :- {
     ASM.WrS('('); ASM.WrI(ofs); 
     ASM.WrS(','); ASM.WrI(count); 
     ASM.WrS(','); ASM.WrI(incr); 
@@ -710,7 +710,7 @@ PROCEDURE CmtBl ( bl:Blocklists )
     ASM.WrS(')'); 
  };.
  
- _ ?{
+ _ :- {
     ASM.WrS('-'); 
  };.
 

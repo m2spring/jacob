@@ -4,8 +4,8 @@
 /*$1*/
 PROCEDURE LoadEaxWithInitVal ( isPtr:BOOLEAN )
 
- _ ? (isPtr); { ASM.CS2( xor,l  ,  R(eax),R(eax)             ); };.
- _ ?          { ASM.CS2( lea,l  ,  ASM.L(LAB.NILPROC),R(eax) ); };.
+ _ :- CONDITION (isPtr); { ASM.CS2( xor,l  ,  R(eax),R(eax)             ); };.
+ _ :-                    { ASM.CS2( lea,l  ,  ASM.L(LAB.NILPROC),R(eax) ); };.
 
 /*END LoadEaxWithInitVal */
 
@@ -13,7 +13,7 @@ PROCEDURE LoadEaxWithInitVal ( isPtr:BOOLEAN )
 /*$1*/
 PROCEDURE VarInitializing ( bl:Blocklists , isGlobal:BOOLEAN , isPtr:BOOLEAN )
 
- Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. ? (count=1); {
+ Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. :- CONDITION (count=1); {
     IF ARG.OptionCommentsInAsm THEN 
        IF isPtr THEN ASM.CmtLnS('	pointer'); ELSE ASM.CmtLnS('	proc'); END;
        ASM.CmtS(' variable init code'); 
@@ -24,7 +24,7 @@ PROCEDURE VarInitializing ( bl:Blocklists , isGlobal:BOOLEAN , isPtr:BOOLEAN )
     ASM.Ln; 
  };.
 
- Blocklist,.. ?{
+ Blocklist,.. :- {
     IF ARG.OptionCommentsInAsm THEN 
        IF isPtr THEN ASM.CmtLnS('	pointer'); ELSE ASM.CmtLnS('	proc'); END;
        ASM.CmtS(' variable init code'); 
@@ -42,23 +42,23 @@ PROCEDURE VarInitializing ( bl:Blocklists , isGlobal:BOOLEAN , isPtr:BOOLEAN )
 PROCEDURE TypeInitializing ( bl:Blocklists , isPtr:BOOLEAN )
 LOCAL{ VAR incrSub,dontcare:LONGINT; lab:tLabel; tmp:ASM.tReg; }
 
- NoBlocklist,.. ?.
+ NoBlocklist,.. :- .
  
- Blocklist(_,_,_,count,_,_),.. ? (count<1); {
+ Blocklist(_,_,_,count,_,_),.. :- CONDITION (count<1); {
     OpenTypeInitializing(bl,isPtr); 
  };.
 
- Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. ? (count=1); {
+ Blocklist(NoBlocklist,NoBlocklist,ofs,count,_,_),.. :- CONDITION (count=1); {
     IF isPtr THEN ASM.CS2( mov,l  ,  i(0),oB(ofs,edi)            ); 
              ELSE ASM.CS2( mov,l  ,  iL(LAB.NILPROC),oB(ofs,edi) ); END;
  };.
 
- Blocklist(_,_,_,count,_,_),.. ? (count>0); {
+ Blocklist(_,_,_,count,_,_),.. :- CONDITION (count>0); {
     LoadEaxWithInitVal(isPtr); 
     SubVarInit(bl,dontcare); 
  };.                                     
  
- .. ?{ ERR.Fatal('CODEf.TypeInitializing: failed'); };.
+ .. :- { ERR.Fatal('CODEf.TypeInitializing: failed'); };.
 
 /*END TypeInitializing */
 
@@ -67,7 +67,7 @@ LOCAL{ VAR incrSub,dontcare:LONGINT; lab:tLabel; tmp:ASM.tReg; }
 PROCEDURE OpenTypeInitializing ( bl:Blocklists , isPtr:BOOLEAN )
 LOCAL{ VAR height,incrSub:LONGINT; lab:tLabel; tmp:ASM.tReg; }
 
- Blocklist(NoBlocklist,subl:Blocklist(_,_,_,_,_,h),_,count,incr,_),.. ?{
+ Blocklist(NoBlocklist,subl:Blocklist(_,_,_,_,_,h),_,count,incr,_),.. :- {
     LoadEaxWithInitVal(isPtr); 
 
     height:=h+1; 
@@ -97,7 +97,7 @@ PROCEDURE VarInit ( bl:Blocklists , isGlobal:BOOLEAN , base:LONGINT )
 LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; tmp:ASM.tReg; }
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,_,ofs,count,_,_),.. ? (count=1); {
+ Blocklist(prev:Blocklists,_,ofs,count,_,_),.. :- CONDITION (count=1); {
     VarInit(prev,isGlobal,base); 
     
     IF isGlobal THEN ASM.CS2( mov,l  ,  R(eax),oG(base+ofs)     ); 
@@ -105,7 +105,7 @@ LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; tmp:ASM.tReg; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. ?{
+ Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. :- {
     VarInit(prev,isGlobal,base); 
     
     IF count<=LIM.BlocklistLoopUnrollingThreshold THEN 
@@ -132,7 +132,7 @@ LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; tmp:ASM.tReg; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. ?{
+ Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. :- {
     VarInit(prev,isGlobal,base); 
     
     IF isGlobal THEN ASM.CS2      ( lea,l  ,  oG(base+ofs),R(edi)     ); 
@@ -166,14 +166,14 @@ PROCEDURE SubVarInit ( bl:Blocklists => incrOut:LONGINT )
 LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; op2:ASM.tOp; tmp:ASM.tReg; }
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,_,ofs,count,_,_),.. => incrOut ? (count=1); {
+ Blocklist(prev:Blocklists,_,ofs,count,_,_),.. => incrOut :- CONDITION (count=1); {
     SubVarInit(prev,incrOut); 
     
     ASM.CS2( mov,l  ,  R(eax),oB(ofs-incrOut,edi) ); 
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. => incrOut ?{
+ Blocklist(prev:Blocklists,NoBlocklist,ofs,count,incr,_),.. => incrOut :- {
     SubVarInit(prev,incrOut); 
     
     IF count<=LIM.BlocklistLoopUnrollingThreshold THEN 
@@ -197,7 +197,7 @@ LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; op2:ASM.tOp; tmp:ASM.tReg; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. => incrOut ?{
+ Blocklist(prev:Blocklists,subl:Blocklists,ofs,count,incr,height),.. => incrOut :- {
     SubVarInit(prev,incrOut); 
     
     IF ofs-incrOut#0 THEN ASM.CS2 ( add,l  ,  i(ofs-incrOut),R(edi)  ); END;
@@ -224,7 +224,7 @@ LOCAL{ VAR ii,incrSub:LONGINT; lab:LAB.T; op2:ASM.tOp; tmp:ASM.tReg; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- .. => 0 ?.
+ .. => 0 :- .
 
 /*END SubVarInit */
 

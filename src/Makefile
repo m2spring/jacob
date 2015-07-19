@@ -42,7 +42,7 @@ Jacob:		DatePatch \
 		IR.md       IR.mi \
 		LAB.md      LAB.mi \
 		LIM.md      LIM.mi \
-                MySysLib.md MySysLib.mi \
+		MySysLib.md MySysLib.mi \
 		NDP.md      NDP.mi \
 		O.md        O.mi \
 		OB.md       OB.mi \
@@ -66,7 +66,7 @@ Jacob:		DatePatch \
 		echo p Jacob | mc -nog -nogc -index -range -info -noblip
 
 DatePatch:
-		sh bin/PatchJacobDate
+		sh ../bin/PatchJacobDate
 
 StorageTest:	StorageTest.c Storage.h Storage.c
 		gcc -O2 -fdollars-in-identifiers -o StorageTest StorageTest.c Storage.c && chmod 770 StorageTest
@@ -122,7 +122,7 @@ UTIS-elf.s:	UTIS.c UTIS.h
 #--- Temporary files ----------------------------------------------------------
 
 %.md:			%.mi
-	
+   
 # Watch the leading \t in the line above :-)
 
 Scanner.mi:	oberon.rex
@@ -131,7 +131,7 @@ Scanner.mi:	oberon.rex
 oberon.aecp:	oberon.ast oberon.eva oberon.che oberon.pre
 	    	cat oberon.ast oberon.eva oberon.che oberon.pre >$@
 
-Tree.mi:    	oberon.aecp
+Tree.md Tree.mi:    	oberon.aecp
 	    	ast -mdiF7 oberon.aecp
 
 Tree.TS:	oberon.ast
@@ -141,47 +141,47 @@ Tree.TS:	oberon.ast
 CoderTree.TS:	oberon.ast
 		echo VIEW CoderTree | cat - oberon.ast | ast -47
 
-Parser.mi:	oberon.lal
-		lalr -b -d oberon.lal
+Parser.md Parser.mi:	oberon.lal
+		lark -b -d oberon.lal
 
-Eval.mi:	oberon.aecp
+Eval.md Eval.mi:	oberon.aecp
 		ag -A7 oberon.aecp
 
-OB.mi:		OB.ast
+OB.md OB.mi:		OB.ast
 		ast -mdi=7 OB.ast
 
 OB.TS:		OB.ast
 		ast -47 OB.ast
 
-TT.mi:		TT.pum OB.TS Tree.TS POS.md
+TT.md TT.mi:		TT.pum OB.TS Tree.TS POS.md
 		puma -dinmp7 TT.pum
 
-E.mi:		E.pum OB.TS ERR.md OT.md POS.md Tree.md
+E.md E.mi:		E.pum OB.TS ERR.md OT.md POS.md Tree.md
 		puma -dinp7 E.pum
 
-SI.mi:		SI.pum OB.TS OT.md POS.md Tree.md V.md
+SI.md SI.mi:		SI.pum OB.TS OT.md POS.md Tree.md V.md
 		puma -dinp7 SI.pum
 
-T.mi:		T.pum OB.TS ADR.md BL.md Target.md E.md ERR.md LIM.md O.md OT.md \
+T.md T.mi:		T.pum OB.TS ADR.md BL.md Target.md E.md ERR.md LIM.md O.md OT.md \
 		POS.md SI.md UTI.md V.md
 		puma -dinp7 T.pum
 
-V.mi:		V.pum OB.TS OT.md PR.md
+V.md V.mi:		V.pum OB.TS OT.md PR.md
 		puma -dinp7 V.pum
 
-PR.mi:		PR.pum OB.TS ERR.md OT.md POS.md UTI.md
+PR.md PR.mi:		PR.pum OB.TS ERR.md OT.md POS.md UTI.md
 		puma -dinp7 PR.pum
 
-CO.mi:		CO.pum OB.TS OT.md
+CO.md CO.mi:		CO.pum OB.TS OT.md
 		puma -dinp7 CO.pum
 
-ADR.mi:		ADR.pum OB.TS
+ADR.md ADR.mi:		ADR.pum OB.TS
 		puma -dinp7 ADR.pum
 
-BL.mi:		BL.pum OB.TS ADR.md LIM.md UTI.md
+BL.md BL.mi:		BL.pum OB.TS ADR.md LIM.md UTI.md
 		puma -dinp7 BL.pum
 
-CMT.mi:		CMT.pum OB.TS CoderTree.TS
+CMT.md CMT.mi:		CMT.pum OB.TS CoderTree.TS
 		puma -dinp7 CMT.pum
 
 CODE.tmp:	CODE.pum OB.TS CoderTree.TS \
@@ -190,20 +190,20 @@ CODE.tmp:	CODE.pum OB.TS CoderTree.TS \
 		ADR.md ARG.md BL.md Target.md Cons.md
 		cpp -P -C CODE.pum CODE.tmp
 
-CODE.mi:	CODE.tmp OB.TS CoderTree.TS ADR.md ARG.md BL.md Target.md Cons.md \
+CODE.md CODE.mi:	CODE.tmp OB.TS CoderTree.TS ADR.md ARG.md BL.md Target.md Cons.md \
 		E.md ERR.md FIL.md LIM.md O.md PR.md SI.md STR.md T.md UTI.md V.md
 		puma -dinp7 CODE.tmp
 
 CODEf.tmp:	CODEf.pum CODEf.pum.Init CODEf.pum.TDesc
 		cpp -P -C CODEf.pum CODEf.tmp
 
-CODEf.mi:	CODEf.tmp OB.TS CoderTree.TS 
+CODEf.md CODEf.mi:	CODEf.tmp OB.TS CoderTree.TS 
 		puma -dinp7 CODEf.tmp
 
-TD.mi:		TD.pum CoderTree.TS ED.md UTI.md
+TD.md TD.mi:		TD.pum CoderTree.TS ED.md UTI.md
 		puma -dinpk7 TD.pum
 
-OD.mi:		OD.pum OB.TS ARG.md BL.md ED.md Tree.md O.md OT.md \
+OD.md OD.mi:		OD.pum OB.TS ARG.md BL.md ED.md Tree.md O.md OT.md \
 		PR.md STR.md T.md UTI.md
 		puma -dinp7 OD.pum
 
@@ -211,7 +211,7 @@ oberon.cgd.tmp:	oberon.cgd oberon.cgd.min oberon.cgd.opt \
 		oberon.cgd.floats.min oberon.cgd.floats.opt
 		cpp -P -C oberon.cgd oberon.cgd.tmp
 
-Cons.mi:	oberon.cgd.tmp
+Cons.md Cons.mi:	oberon.cgd.tmp
 		beg oberon.cgd.tmp && EmitPatch && touch Cons.mi
 
 #------------------------------------------------------------------------------

@@ -167,38 +167,40 @@ GLOBAL{ IMPORT ADR         ,
 /********************************************************************************************************************************/
 /*$1*/
 FUNCTION EntryOfType ( typeRepr:TypeReprs ) Entries
- TypeRepr(entry:Entries,..)                            RETURN entry                             ?.
- _                                                     RETURN {OB.cErrorEntry}                  ?.
+ TypeRepr(entry:Entries,..)                            RETURN entry                             :- .
+ _                                                     RETURN {OB.cErrorEntry}                  :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION SizeOfType ( TypeReprs ) tSize    
- TypeRepr(_,s,..)                                      RETURN s                                 ?.
- _                                                     RETURN 0                                 ?.
+ TypeRepr(_,s,..)                                      RETURN s                                 :- .
+ _                                                     RETURN 0                                 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LenOfArrayType ( TypeReprs ) oLONGINT
- ArrayTypeRepr(_,_,_,_,_,len,_)                        RETURN len                               ?.
- _                                                     RETURN 0                                 ?.
+ ArrayTypeRepr(_,_,_,_,_,len,_)                        RETURN len                               :- .
+ _                                                     RETURN 0                                 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION DimOfArrayType ( TypeReprs ) oLONGINT
- ArrayTypeRepr(_,_,_,_,_,_,elemType)                   RETURN 1+DimOfArrayType(elemType)        ?.
- _                                                     RETURN 0                                 ?.
+ ArrayTypeRepr(_,_,_,_,_,_,elemType)                   RETURN 1+DimOfArrayType(elemType)        :- .
+ _                                                     RETURN 0                                 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION OpenDimOfArrayType ( TypeReprs ) oLONGINT
- ArrayTypeRepr(_,_,_,_,_,len,elemType)                 RETURN 1+OpenDimOfArrayType(elemType)    ? (len=OB.OPENARRAYLEN);.
- _                                                     RETURN 0                                 ?.
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)                 RETURN 1+OpenDimOfArrayType(elemType)    :- CONDITION
+                                                                                                   (len=OB.OPENARRAYLEN);.
+ _                                                     RETURN 0                                 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ElemSizeOfOpenArrayType ( t:TypeReprs ) tSize
- ArrayTypeRepr(_,_,_,_,_,len,elemType)                 RETURN ElemSizeOfOpenArrayType(elemType) ? (len=OB.OPENARRAYLEN);.
- _                                                     RETURN SizeOfType(t)                     ?.
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)                 RETURN ElemSizeOfOpenArrayType(elemType) :- CONDITION
+                                                                                                   (len=OB.OPENARRAYLEN);.
+ _                                                     RETURN SizeOfType(t)                     :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -206,21 +208,21 @@ FUNCTION OpenDimAndElemSizeOfArrayType ( t:TypeReprs => LONGINT , LONGINT ) BOOL
 LOCAL{ VAR f:BOOLEAN; odim,esize:LONGINT; }
 
  ArrayTypeRepr(_,_,_,_,_,len,elemType)                 => {odim+1},{esize}
-                                                       RETURN TRUE  ? (len=OB.OPENARRAYLEN); 
-                                                                      {f:=OpenDimAndElemSizeOfArrayType(elemType,odim,esize);};.
+                                                       RETURN TRUE  :- CONDITION (len=OB.OPENARRAYLEN); 
+                                                                       {f:=OpenDimAndElemSizeOfArrayType(elemType,odim,esize);};.
  TypeRepr(_,size,..)                                   => 0,{size}
-                                                       RETURN FALSE ?.
+                                                       RETURN FALSE :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ExtLevelOfType ( TypeReprs ) tLevel
- RecordTypeRepr (_,_,_,_,_,extLevel,..)                RETURN extLevel                          ?.
- _                                                     RETURN 0                                 ?.
+ RecordTypeRepr (_,_,_,_,_,extLevel,..)                RETURN extLevel                          :- .
+ _                                                     RETURN 0                                 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ReceiverRecordTypeOfType ( TypeReprs ) TypeReprs
- type:RecordTypeRepr                                                  RETURN type ?.
+ type:RecordTypeRepr                                                  RETURN type :- .
 
  PointerTypeRepr
  (/* entry           =: */ _
@@ -236,9 +238,9 @@ FUNCTION ReceiverRecordTypeOfType ( TypeReprs ) TypeReprs
                            ,/* level       =: */ _
                            ,/* declStatus  =: */ _
                            ,/* typeRepr    =: */ type:RecordTypeRepr)
- )                                                                    RETURN type ?.
+ )                                                                    RETURN type :- .
 
- _                                                                    RETURN {OB.cErrorTypeRepr} ?.
+ _                                                                    RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -258,9 +260,9 @@ FUNCTION BaseTypeOfPointerType ( TypeReprs ) TypeReprs
                            ,/* level       =: */ _
                            ,/* declStatus  =: */ _
                            ,/* typeRepr    =: */ type)
- )                                                     RETURN type                ?.
+ )                                                     RETURN type                :- .
 
- _                                                     RETURN {OB.cErrorTypeRepr} ?.
+ _                                                     RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -273,9 +275,9 @@ FUNCTION ElemTypeOfArrayType ( t:TypeReprs ) TypeReprs
  ,/* isInTDescList   =: */ _
  ,/* label           =: */ _
  ,/* len             =: */ _
- ,/* elemTypeRepr    =: */ elemType) RETURN ElemTypeOfArrayType(elemType) ?.
+ ,/* elemTypeRepr    =: */ elemType) RETURN ElemTypeOfArrayType(elemType) :- .
 
- _                                   RETURN t                             ?.
+ _                                   RETURN t                             :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -289,7 +291,7 @@ FUNCTION RecordBaseTypeOfType ( TypeReprs ) TypeReprs
  ,/* label           =: */ _
  ,/* extLevel        =: */ _
  ,/* baseTypeRepr    =: */ type
- ,/* extTypeReprList =: */ ..)                         RETURN type                       ?.
+ ,/* extTypeReprList =: */ ..)                         RETURN type                       :- .
 
  PointerTypeRepr
  (/* entry           =: */ _
@@ -305,9 +307,9 @@ FUNCTION RecordBaseTypeOfType ( TypeReprs ) TypeReprs
                            ,/* level       =: */ _
                            ,/* declStatus  =: */ _
                            ,/* typeRepr    =: */ type)
- )                                                     RETURN RecordBaseTypeOfType(type) ?.
+ )                                                     RETURN RecordBaseTypeOfType(type) :- .
 
- _                                                     RETURN {OB.cErrorTypeRepr}        ?.
+ _                                                     RETURN {OB.cErrorTypeRepr}        :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -323,15 +325,15 @@ FUNCTION FieldsOfRecordType ( TypeReprs ) Entries
  ,/* baseTypeRepr    =: */ _
  ,/* extTypeReprList =: */ _
  ,/* fields          =: */ fields
- ,/* nofBoundProcs   =: */ _)      RETURN fields             ?.
+ ,/* nofBoundProcs   =: */ _)      RETURN fields        :- .
 
- _                                 RETURN {OB.cmtEntry} ?.
+ _                                 RETURN {OB.cmtEntry} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION EmptyTypeToErrorType ( typeRepr:TypeReprs ) TypeReprs
- mtTypeRepr RETURN {OB.cErrorTypeRepr} ?.
- _          RETURN typeRepr            ?.
+ mtTypeRepr RETURN {OB.cErrorTypeRepr} :- .
+ _          RETURN typeRepr            :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -347,9 +349,9 @@ FUNCTION NumberOfBoundProcsOfType ( TypeReprs ) LONGINT
  ,/* baseTypeRepr    =: */ _
  ,/* extTypeReprList =: */ _
  ,/* fields          =: */ _
- ,/* nofBoundProcs   =: */ n) RETURN n ?.
+ ,/* nofBoundProcs   =: */ n) RETURN n :- .
  
- _                            RETURN 0 ?.
+ _                            RETURN 0 :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -371,12 +373,12 @@ FUNCTION CopyArrayTypeRepr ( typeFragment    : TypeReprs
  ,/* label           =: */ _
  ,/* len             =: */ lenC
  ,/* elemTypeRepr    =: */ elemTypeReprC)
-                           RETURN typeFragment ?{ sizeF         := sizeC         ;
-                                                  lenF          := lenC          ;
-                                                  elemTypeReprF := elemTypeReprC ;
-                                                };.
+                           RETURN typeFragment :- { sizeF         := sizeC         ;
+                                                    lenF          := lenC          ;
+                                                    elemTypeReprF := elemTypeReprC ;
+                                                  };.
 
- ..                        RETURN typeConstructed ?.
+ ..                        RETURN typeConstructed :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -390,9 +392,9 @@ FUNCTION CompleteOpenArrayTypeRepr ( type         : TypeReprs
  ,/* label           =: */ _
  ,/* len             =: */ l
  ,/* elemTypeRepr    =: */ e)
-,..                        RETURN type ?{ e:=elemTypeRepr; };.
+,..                        RETURN type :- { e:=elemTypeRepr; };.
 
- ..                        RETURN type ?.
+ ..                        RETURN type :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -413,15 +415,15 @@ FUNCTION CompleteRecordTypeRepr ( type            : TypeReprs
  ,/* extTypeReprList =: */ rl
  ,/* fields          =: */ f
  ,/* nofBoundProcs   =: */ n)
-,..                        RETURN type ?{ sz := size;
-                                          el := extLevel;
-                                          bt := baseTypeRepr;
-                                          rl := extTypeReprList;
-                                          f  := fields;
-                                          n  := 0;
-                                        };.
+,..                        RETURN type :- { sz := size;
+                                            el := extLevel;
+                                            bt := baseTypeRepr;
+                                            rl := extTypeReprList;
+                                            f  := fields;
+                                            n  := 0;
+                                          };.
 
- ..                        RETURN type ?.
+ ..                        RETURN type :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -434,9 +436,9 @@ FUNCTION CompletePointerTypeRepr ( type          : TypeReprs
  ,/* isInTDescList   =: */ _
  ,/* label           =: */ _
  ,/* baseTypeEntry   =: */ b)
-,..                        RETURN type ?{ b := baseTypeEntry };.
+,..                        RETURN type :- { b := baseTypeEntry };.
 
- ..                        RETURN type ?.
+ ..                        RETURN type :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -453,317 +455,317 @@ FUNCTION CompleteProcedureTypeRepr ( type          : TypeReprs
  ,/* signatureRepr   =: */ s
  ,/* resultType      =: */ r
  ,/* paramSpace      =: */ p)
-,..                        RETURN type ?{ s := signatureRepr ;
-                                          r := resultType    ;
-                                          p := paramSpace    ; 
-                                        };.
+,..                        RETURN type :- { s := signatureRepr ;
+                                            r := resultType    ;
+                                            p := paramSpace    ; 
+                                          };.
 
- ..                        RETURN type ?.
+ ..                        RETURN type :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsGenuineEmptyType ( TypeReprs )
- mtTypeRepr ?.
+ mtTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsEmptyType ( TypeReprs )
- ErrorTypeRepr ?.
- mtTypeRepr    ?.
+ ErrorTypeRepr :- .
+ mtTypeRepr    :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsErrorType ( TypeReprs )
- ErrorTypeRepr ?.
+ ErrorTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsBooleanType ( TypeReprs )
- ErrorTypeRepr   ?.
- BooleanTypeRepr ?.
+ ErrorTypeRepr   :- .
+ BooleanTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsCharType ( TypeReprs )
- ErrorTypeRepr      ?.
- CharStringTypeRepr ?.                                                                                     /* !CharEqualString1 */
- CharTypeRepr       ?.
+ ErrorTypeRepr      :- .
+ CharStringTypeRepr :- .                                                                                   /* !CharEqualString1 */
+ CharTypeRepr       :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsSetType ( TypeReprs )
- ErrorTypeRepr ?.
- SetTypeRepr   ?.
+ ErrorTypeRepr :- .
+ SetTypeRepr   :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsShortintType ( TypeReprs )
- ErrorTypeRepr    ?.
- ShortintTypeRepr ?.
+ ErrorTypeRepr    :- .
+ ShortintTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsLongintType ( TypeReprs )
- ErrorTypeRepr   ?.
- LongintTypeRepr ?.
+ ErrorTypeRepr   :- .
+ LongintTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsArrayType ( TypeReprs )
- ErrorTypeRepr ?.
- ArrayTypeRepr ?.
+ ErrorTypeRepr :- .
+ ArrayTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsCharArrayType ( TypeReprs )
- ErrorTypeRepr                           ?.
- ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) ?.
+ ErrorTypeRepr                           :- .
+ ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsStringOrCharArrayType ( TypeReprs )
- ErrorTypeRepr                           ?.
- CharStringTypeRepr                      ?.
- StringTypeRepr                          ?.
- ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) ?.
+ ErrorTypeRepr                           :- .
+ CharStringTypeRepr                      :- .
+ StringTypeRepr                          :- .
+ ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsRecordType ( TypeReprs )
- ErrorTypeRepr  ?.
- RecordTypeRepr ?.
+ ErrorTypeRepr  :- .
+ RecordTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsPointerType ( TypeReprs )
- ErrorTypeRepr   ?.
- PointerTypeRepr ?.
+ ErrorTypeRepr   :- .
+ PointerTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsPointerOrArrayOfPointerType ( TypeReprs )
- ErrorTypeRepr                       ?.
- PointerTypeRepr                     ?.
- ArrayTypeRepr(_,_,_,_,_,_,elemType) ? IsPointerOrArrayOfPointerType(elemType);.
+ ErrorTypeRepr                       :- .
+ PointerTypeRepr                     :- .
+ ArrayTypeRepr(_,_,_,_,_,_,elemType) :- CONDITION IsPointerOrArrayOfPointerType(elemType);.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsPtrToRecOrArrOfPtrToRec ( TypeReprs )
- ErrorTypeRepr                                                       ?.
- PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr,..)) ?.
- ArrayTypeRepr(_,_,_,_,_,_,elemType)                                 ? IsPtrToRecOrArrOfPtrToRec(elemType);.
+ ErrorTypeRepr                                                       :- .
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr,..)) :- .
+ ArrayTypeRepr(_,_,_,_,_,_,elemType)                                 :- CONDITION IsPtrToRecOrArrOfPtrToRec(elemType);.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsPointerToRecordType ( TypeReprs )
- ErrorTypeRepr                                                       ?.
- PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr,..)) ?.
+ ErrorTypeRepr                                                       :- .
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,RecordTypeRepr,..)) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsProcedureType ( TypeReprs )
- ErrorTypeRepr     ?.
- ProcedureTypeRepr ?.
+ ErrorTypeRepr     :- .
+ ProcedureTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsOpenArrayType ( TypeReprs )
- ErrorTypeRepr                ?.
- ArrayTypeRepr(_,_,_,_,_,n,_) ? {RETURN (n=OB.OPENARRAYLEN);}; .
+ ErrorTypeRepr                :- .
+ ArrayTypeRepr(_,_,_,_,_,n,_) :-  {RETURN (n=OB.OPENARRAYLEN);}; .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsNotOpenArrayType ( TypeReprs )
- ArrayTypeRepr(_,_,_,_,_,n,_) ? {RETURN (n#OB.OPENARRAYLEN);}; .
- _                            ?                                .
+ ArrayTypeRepr(_,_,_,_,_,n,_) :-  {RETURN (n#OB.OPENARRAYLEN);}; .
+ _                            :-                                 .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE HasPointerSubType ( t:TypeReprs )
- _ ? ({~BL.IsEmptyBlocklist(BL.PtrBlocklistOfType(t))});.
+ _ :- CONDITION ({~BL.IsEmptyBlocklist(BL.PtrBlocklistOfType(t))});.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsIntegerType ( TypeReprs )
- ErrorTypeRepr    ?.
- ShortintTypeRepr ?.                                                                                           /* !IntegerTypes */
- IntegerTypeRepr  ?.
- LongintTypeRepr  ?.
+ ErrorTypeRepr    :- .
+ ShortintTypeRepr :- .                                                                                         /* !IntegerTypes */
+ IntegerTypeRepr  :- .
+ LongintTypeRepr  :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsRealType ( TypeReprs )
- ErrorTypeRepr    ?.
- RealTypeRepr     ?.                                                                                              /* !RealTypes */
- LongrealTypeRepr ?.
+ ErrorTypeRepr    :- .
+ RealTypeRepr     :- .                                                                                            /* !RealTypes */
+ LongrealTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsNumericType ( t:TypeReprs )
- _ ? IsIntegerType(t); .                                                                                       /* !NumericTypes */
- _ ? IsRealType   (t); .
+ _ :- CONDITION IsIntegerType(t); .                                                                            /* !NumericTypes */
+ _ :- CONDITION IsRealType   (t); .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsShortType ( TypeReprs )
- ErrorTypeRepr    ?.
- ShortintTypeRepr ?.                                                                                            /* !PredeclLong */
- IntegerTypeRepr  ?.
- RealTypeRepr     ?.
+ ErrorTypeRepr    :- .
+ ShortintTypeRepr :- .                                                                                          /* !PredeclLong */
+ IntegerTypeRepr  :- .
+ RealTypeRepr     :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsLongType ( TypeReprs )
- ErrorTypeRepr    ?.
- IntegerTypeRepr  ?.                                                                                           /* !PredeclShort */
- LongintTypeRepr  ?.
- LongrealTypeRepr ?.
+ ErrorTypeRepr    :- .
+ IntegerTypeRepr  :- .                                                                                         /* !PredeclShort */
+ LongintTypeRepr  :- .
+ LongrealTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsBasicType ( TypeReprs )
- ErrorTypeRepr      ?.
- BooleanTypeRepr    ?.                                                                                           /* !BasicTypes */
- CharTypeRepr       ?.
- CharStringTypeRepr ?.
- ShortintTypeRepr   ?.
- IntegerTypeRepr    ?.
- LongintTypeRepr    ?.
- RealTypeRepr       ?.
- LongrealTypeRepr   ?.
- SetTypeRepr        ?.
+ ErrorTypeRepr      :- .
+ BooleanTypeRepr    :- .                                                                                         /* !BasicTypes */
+ CharTypeRepr       :- .
+ CharStringTypeRepr :- .
+ ShortintTypeRepr   :- .
+ IntegerTypeRepr    :- .
+ LongintTypeRepr    :- .
+ RealTypeRepr       :- .
+ LongrealTypeRepr   :- .
+ SetTypeRepr        :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsShiftableType ( t:TypeReprs )
- ErrorTypeRepr    ?.
- _                ? IsIntegerType(t); .                                                                       /* !SysdeclLshRot */
- CharTypeRepr     ?.
- ByteTypeRepr     ?.
+ ErrorTypeRepr    :- .
+ _                :- CONDITION IsIntegerType(t); .                                                            /* !SysdeclLshRot */
+ CharTypeRepr     :- .
+ ByteTypeRepr     :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsRegisterableType ( t:TypeReprs )
- ErrorTypeRepr     ?.
- _                 ? IsBasicType(t); .                                                                    /* !RegisterableTypes */
- PointerTypeRepr   ?.
- ProcedureTypeRepr ?.
- ByteTypeRepr      ?.
- PtrTypeRepr       ?.
+ ErrorTypeRepr     :- .
+ _                 :- CONDITION IsBasicType(t); .                                                         /* !RegisterableTypes */
+ PointerTypeRepr   :- .
+ ProcedureTypeRepr :- .
+ ByteTypeRepr      :- .
+ PtrTypeRepr       :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsLegalPointerBaseType ( TypeReprs )
- ErrorTypeRepr   ?.
- ForwardTypeRepr ?.                                                                                             /* !ForwardType */
- ArrayTypeRepr   ?.                                                                                        /* !LegalPointerBase */
- RecordTypeRepr  ?.
+ ErrorTypeRepr   :- .
+ ForwardTypeRepr :- .                                                                                           /* !ForwardType */
+ ArrayTypeRepr   :- .                                                                                      /* !LegalPointerBase */
+ RecordTypeRepr  :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE AreSameTypes ( Ta:TypeReprs , Tb:TypeReprs )
 
  /* Ta =: */ ErrorTypeRepr
-,/* Tb =: */ _                                                    ?.
+,/* Tb =: */ _                                                    :- .
 
  /* Ta =: */ _
-,/* Tb =: */ ErrorTypeRepr                                        ?.
+,/* Tb =: */ ErrorTypeRepr                                        :- .
 
  /* Ta =: */ CharStringTypeRepr                                                                            /* !CharEqualString1 */
-,/* Tb =: */ CharTypeRepr                                         ?.
+,/* Tb =: */ CharTypeRepr                                         :- .
 
  /* Ta =: */ CharTypeRepr
-,/* Tb =: */ CharStringTypeRepr                                   ?.
+,/* Tb =: */ CharStringTypeRepr                                   :- .
 
- /* Ta =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs)                                                /* !SameType */
-,/* Tb =: */ _                                                    ? FAIL; .
+ /* Ta =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs)                                                  /* !SameType */
+,/* Tb =: */ _                                                    :- FAIL; .
 
  /* Ta =: */ _
-,/* Tb =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs) ? FAIL; .
+,/* Tb =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs) :- FAIL; .
                                  
-             ..                                                   ? (Ta=Tb); .
+             ..                                                   :- CONDITION (Ta=Tb); .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE AreEqualTypes ( Ta:TypeReprs , Tb:TypeReprs )
 
-             ..                                                      ? AreSameTypes(Ta,Tb); .                   /* !EqualType */
+             ..                                                      :- CONDITION AreSameTypes(Ta,Tb); .          /* !EqualType */
 
  /* Ta =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},Ea:TypeReprs)
-,/* Tb =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},Eb:TypeReprs) ? AreEqualTypes(Ea,Eb); .
+,/* Tb =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},Eb:TypeReprs) :- CONDITION AreEqualTypes(Ea,Eb); .
 
  /* Ta =: */ Pa:ProcedureTypeRepr
-,/* Tb =: */ Pb:ProcedureTypeRepr                                    ? HaveMatchingFormalPars(Pa,Pb); .
+,/* Tb =: */ Pb:ProcedureTypeRepr                                    :- CONDITION HaveMatchingFormalPars(Pa,Pb); .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsIncludedBy ( TypeReprs , TypeReprs )
- ErrorTypeRepr    , _                ?.
- _                , ErrorTypeRepr    ?.
+ ErrorTypeRepr    , _                :- .
+ _                , ErrorTypeRepr    :- .
 
- ShortintTypeRepr , ShortintTypeRepr ?.                                                                       /* !TypeInclusion */
- ShortintTypeRepr , IntegerTypeRepr  ?.
- ShortintTypeRepr , LongintTypeRepr  ?.
- ShortintTypeRepr , RealTypeRepr     ?.
- ShortintTypeRepr , LongrealTypeRepr ?.
+ ShortintTypeRepr , ShortintTypeRepr :- .                                                                     /* !TypeInclusion */
+ ShortintTypeRepr , IntegerTypeRepr  :- .
+ ShortintTypeRepr , LongintTypeRepr  :- .
+ ShortintTypeRepr , RealTypeRepr     :- .
+ ShortintTypeRepr , LongrealTypeRepr :- .
 
- IntegerTypeRepr  , IntegerTypeRepr  ?.
- IntegerTypeRepr  , LongintTypeRepr  ?.
- IntegerTypeRepr  , RealTypeRepr     ?.
- IntegerTypeRepr  , LongrealTypeRepr ?.
+ IntegerTypeRepr  , IntegerTypeRepr  :- .
+ IntegerTypeRepr  , LongintTypeRepr  :- .
+ IntegerTypeRepr  , RealTypeRepr     :- .
+ IntegerTypeRepr  , LongrealTypeRepr :- .
 
- LongintTypeRepr  , LongintTypeRepr  ?.
- LongintTypeRepr  , RealTypeRepr     ?.
- LongintTypeRepr  , LongrealTypeRepr ?.
+ LongintTypeRepr  , LongintTypeRepr  :- .
+ LongintTypeRepr  , RealTypeRepr     :- .
+ LongintTypeRepr  , LongrealTypeRepr :- .
 
- RealTypeRepr     , RealTypeRepr     ?.
- RealTypeRepr     , LongrealTypeRepr ?.
+ RealTypeRepr     , RealTypeRepr     :- .
+ RealTypeRepr     , LongrealTypeRepr :- .
 
- LongrealTypeRepr , LongrealTypeRepr ?.
+ LongrealTypeRepr , LongrealTypeRepr :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsExtensionOf ( Tb:TypeReprs , Ta:TypeReprs )
 
  /* Tb =: */ ErrorTypeRepr
-,/* Ta =: */ _                                                       ?.
+,/* Ta =: */ _                                                       :- .
 
  /* Tb =: */ _
-,/* Ta =: */ ErrorTypeRepr                                           ?.
+,/* Ta =: */ ErrorTypeRepr                                           :- .
 
  /* Tb =: */ RecordTypeRepr                                                                                   /* !TypeExtension */
-,/* Ta =: */ RecordTypeRepr                                          ? AreSameTypes(Ta,Tb); .
+,/* Ta =: */ RecordTypeRepr                                          :- CONDITION AreSameTypes(Ta,Tb); .
 
  /* Tb =: */ RecordTypeRepr(_,_,_,_,_,_,baseType,..)
-,/* Ta =: */ RecordTypeRepr                                          ? (baseType#Tb) 
-                                                                     & IsExtensionOf(baseType,Ta); .
+,/* Ta =: */ RecordTypeRepr                                          :- CONDITION (baseType#Tb) 
+                                                                                & IsExtensionOf(baseType,Ta); .
 
  /* Tb =: */ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,bBase))
-,/* Ta =: */ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,aBase)) ? IsExtensionOf(bBase,aBase); .
+,/* Ta =: */ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,aBase)) :- CONDITION IsExtensionOf(bBase,aBase); .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsAssignmentCompatible( Tv:TypeReprs , Te:TypeReprs , Ve:ValueReprs )
 
-             ..                                     ? AreSameTypes (Te,Tv); .                        /* !AssignmentCompatible */
-             ..                                     ? IsIncludedBy (Te,Tv); .
-             ..                                     ? IsExtensionOf(Te,Tv); .
+             ..                                     :-  AreSameTypes (Te,Tv); .                        /* !AssignmentCompatible */
+             ..                                     :-  IsIncludedBy (Te,Tv); .
+             ..                                     :-  IsExtensionOf(Te,Tv); .
 						    
  /* Tv =: */ PointerTypeRepr			    
 ,/* Te =: */ NilTypeRepr			    
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
 						    
  /* Tv =: */ ProcedureTypeRepr			    
 ,/* Te =: */ NilTypeRepr			    
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
 
- /* Tv =: */ ArrayTypeRepr(_,_,_,_,_,n,CharTypeRepr)                                                              /* !LenOf0X */
+ /* Tv =: */ ArrayTypeRepr(_,_,_,_,_,n,CharTypeRepr)                                                                /* !LenOf0X */
 ,/* Te =: */ CharStringTypeRepr
-,/* Ve =: */ _                                      ? { RETURN ((1<n) OR ((n=1) & V.IsNullChar(Ve))); };.
+,/* Ve =: */ _                                      :- { RETURN ((1<n) OR ((n=1) & V.IsNullChar(Ve))); };.
 
  /* Tv =: */ ArrayTypeRepr(_,_,_,_,_,n,CharTypeRepr)
 ,/* Te =: */ StringTypeRepr
-,/* Ve =: */ _                                      ? { RETURN (V.LengthOfString(Ve) < n); };.
+,/* Ve =: */ _                                      :- { RETURN (V.LengthOfString(Ve) < n); };.
 
  /* Tv =: */ ProcedureTypeRepr                                                                            /* !ProcAssignability */
 ,/* Te =: */ ProcedureTypeRepr
@@ -775,55 +777,55 @@ PREDICATE IsAssignmentCompatible( Tv:TypeReprs , Te:TypeReprs , Ve:ValueReprs )
                              ,/* level       =: */ level
                              ,/* declStatus  =: */ ..)
              ,/* size  =: */ ..)
-,/* Ve =: */ ProcedureValueRepr                     ? { RETURN (level = OB.MODULELEVEL)
-                                                             & HaveMatchingFormalPars(Tv,Te); };.
+,/* Ve =: */ ProcedureValueRepr                     :-  { RETURN (level = OB.MODULELEVEL)
+                                                               & HaveMatchingFormalPars(Tv,Te); };.
                                                       
  /* Tv =: */ ByteTypeRepr                                                                                    /* !ByteAssignment */
 ,/* Te =: */ CharTypeRepr                             
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
                                                       
  /* Tv =: */ ByteTypeRepr                             
 ,/* Te =: */ CharStringTypeRepr                       
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
                                                       
  /* Tv =: */ ByteTypeRepr                             
 ,/* Te =: */ ShortintTypeRepr                         
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
                                                       
  /* Tv =: */ PtrTypeRepr                                                                                      /* !PtrAssignment */
 ,/* Te =: */ PointerTypeRepr                          
-,/* Ve =: */ _                                      ?.
+,/* Ve =: */ _                                      :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsArrayCompatible ( Tf:TypeReprs , Ta:TypeReprs )
 
  /* Tf =: */ ErrorTypeRepr
-,/* Ta =: */ _                                                      ?.
+,/* Ta =: */ _                                                      :- .
 
  /* Tf =: */ _
-,/* Ta =: */ ErrorTypeRepr                                          ?.
+,/* Ta =: */ ErrorTypeRepr                                          :- .
 
-             ..                                                     ? AreSameTypes(Tf,Ta); .              /* !ArrayCompatible */
+             ..                                                     :- CONDITION AreSameTypes(Tf,Ta); .     /* !ArrayCompatible */
 
  /* Tf =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},Ef:TypeReprs)
-,/* Ta =: */ ArrayTypeRepr(_,_,_,_,_,_,Ea:TypeReprs)                ? IsArrayCompatible(Ef,Ea); .
+,/* Ta =: */ ArrayTypeRepr(_,_,_,_,_,_,Ea:TypeReprs)                :- CONDITION IsArrayCompatible(Ef,Ea); .
 
  /* Tf =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs)
-,/* Ta =: */ CharStringTypeRepr                                     ?.
+,/* Ta =: */ CharStringTypeRepr                                     :- .
 
  /* Tf =: */ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},TypeReprs)
-,/* Ta =: */ StringTypeRepr                                         ?.
+,/* Ta =: */ StringTypeRepr                                         :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE HaveMatchingFormalPars ( Pa:TypeReprs , Pb:TypeReprs )
 
  /* Pa =: */ ErrorTypeRepr
-,/* Pb =: */ _                                                ?.
+,/* Pb =: */ _                                                :- .
 
  /* Pa =: */ _
-,/* Pb =: */ ErrorTypeRepr                                    ?.
+,/* Pb =: */ ErrorTypeRepr                                    :- .
 
  /* Pa =: */ ProcedureTypeRepr                                                                          /* !MatchingFormalParms */
              (/* entry          =: */ _
@@ -842,7 +844,7 @@ PREDICATE HaveMatchingFormalPars ( Pa:TypeReprs , Pb:TypeReprs )
              ,/* label          =: */ _
              ,/* signatureRepr  =: */ signature2:SignatureRepr
              ,/* resultType     =: */ mtTypeRepr
-             ,/* paramSpace     =: */ _)                       ? {RETURN SI.AreMatchingSignatures(signature1,signature2)}; .
+             ,/* paramSpace     =: */ _)                       :- {RETURN SI.AreMatchingSignatures(signature1,signature2)}; .
                                 
  /* Pa =: */ ProcedureTypeRepr  
              (/* entry          =: */ _
@@ -861,145 +863,145 @@ PREDICATE HaveMatchingFormalPars ( Pa:TypeReprs , Pb:TypeReprs )
              ,/* label          =: */ _
              ,/* signatureRepr  =: */ signature2:SignatureRepr
              ,/* resultType     =: */ type2:TypeReprs
-             ,/* paramSpace     =: */ _)                       ? {RETURN SI.AreMatchingSignatures(signature1,signature2)
-                                                                       & AreSameTypes(type1,type2)
-                                                                 };.
+             ,/* paramSpace     =: */ _)                       :- {RETURN SI.AreMatchingSignatures(signature1,signature2)
+                                                                        & AreSameTypes(type1,type2)
+                                                                  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION SmallestIntegerTypeInclBoth ( TypeReprs , TypeReprs ) TypeReprs
- NIL              , _                RETURN {OB.cErrorTypeRepr   }?.
- _                , NIL              RETURN {OB.cErrorTypeRepr   }?.
+ NIL              , _                RETURN {OB.cErrorTypeRepr   } :- .
+ _                , NIL              RETURN {OB.cErrorTypeRepr   } :- .
 
- ShortintTypeRepr , ShortintTypeRepr RETURN {OB.cShortintTypeRepr}?.                                        /* !SmallestInteger */
- IntegerTypeRepr  , ShortintTypeRepr RETURN {OB.cIntegerTypeRepr }?.
- LongintTypeRepr  , ShortintTypeRepr RETURN {OB.cLongintTypeRepr }?.
-
- ShortintTypeRepr , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr }?.
- IntegerTypeRepr  , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr }?.
- LongintTypeRepr  , IntegerTypeRepr  RETURN {OB.cLongintTypeRepr }?.
-
- ShortintTypeRepr , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- IntegerTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- LongintTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
-
- ..                                  RETURN {OB.cErrorTypeRepr   }?.
+ ShortintTypeRepr , ShortintTypeRepr RETURN {OB.cShortintTypeRepr} :- .                                     /* !SmallestInteger */
+ IntegerTypeRepr  , ShortintTypeRepr RETURN {OB.cIntegerTypeRepr } :- .
+ LongintTypeRepr  , ShortintTypeRepr RETURN {OB.cLongintTypeRepr } :- .
+                                                                   
+ ShortintTypeRepr , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr } :- .
+ IntegerTypeRepr  , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr } :- .
+ LongintTypeRepr  , IntegerTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+                                                                   
+ ShortintTypeRepr , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ IntegerTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ LongintTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+                                                                   
+ ..                                  RETURN {OB.cErrorTypeRepr   } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION SetOrSmallestNumTypeInclBoth ( TypeReprs , TypeReprs ) TypeReprs
- NIL              , _                RETURN {OB.cErrorTypeRepr   }?.
- _                , NIL              RETURN {OB.cErrorTypeRepr   }?.
-
- SetTypeRepr      , SetTypeRepr      RETURN {OB.cSetTypeRepr     }?.                                        /* !SmallestNumeric */
-
- ShortintTypeRepr , ShortintTypeRepr RETURN {OB.cShortintTypeRepr}?.
- IntegerTypeRepr  , ShortintTypeRepr RETURN {OB.cIntegerTypeRepr }?.
- LongintTypeRepr  , ShortintTypeRepr RETURN {OB.cLongintTypeRepr }?.
- RealTypeRepr     , ShortintTypeRepr RETURN {OB.cRealTypeRepr    }?.
- LongrealTypeRepr , ShortintTypeRepr RETURN {OB.cLongrealTypeRepr}?.
-
- ShortintTypeRepr , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr }?.
- IntegerTypeRepr  , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr }?.
- LongintTypeRepr  , IntegerTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- RealTypeRepr     , IntegerTypeRepr  RETURN {OB.cRealTypeRepr    }?.
- LongrealTypeRepr , IntegerTypeRepr  RETURN {OB.cLongrealTypeRepr}?.
-
- ShortintTypeRepr , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- IntegerTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- LongintTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr }?.
- RealTypeRepr     , LongintTypeRepr  RETURN {OB.cRealTypeRepr    }?.
- LongrealTypeRepr , LongintTypeRepr  RETURN {OB.cLongrealTypeRepr}?.
-
- ShortintTypeRepr , RealTypeRepr     RETURN {OB.cRealTypeRepr    }?.
- IntegerTypeRepr  , RealTypeRepr     RETURN {OB.cRealTypeRepr    }?.
- LongintTypeRepr  , RealTypeRepr     RETURN {OB.cRealTypeRepr    }?.
- RealTypeRepr     , RealTypeRepr     RETURN {OB.cRealTypeRepr    }?.
- LongrealTypeRepr , RealTypeRepr     RETURN {OB.cLongrealTypeRepr}?.
-
- ShortintTypeRepr , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
- IntegerTypeRepr  , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
- LongintTypeRepr  , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
- RealTypeRepr     , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
- LongrealTypeRepr , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
-
- ..                                  RETURN {OB.cErrorTypeRepr   }?.
+ NIL              , _                RETURN {OB.cErrorTypeRepr   } :- .
+ _                , NIL              RETURN {OB.cErrorTypeRepr   } :- .
+                                                                   
+ SetTypeRepr      , SetTypeRepr      RETURN {OB.cSetTypeRepr     } :- .                                     /* !SmallestNumeric */
+                                                                   
+ ShortintTypeRepr , ShortintTypeRepr RETURN {OB.cShortintTypeRepr} :- .
+ IntegerTypeRepr  , ShortintTypeRepr RETURN {OB.cIntegerTypeRepr } :- .
+ LongintTypeRepr  , ShortintTypeRepr RETURN {OB.cLongintTypeRepr } :- .
+ RealTypeRepr     , ShortintTypeRepr RETURN {OB.cRealTypeRepr    } :- .
+ LongrealTypeRepr , ShortintTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+                                                                   
+ ShortintTypeRepr , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr } :- .
+ IntegerTypeRepr  , IntegerTypeRepr  RETURN {OB.cIntegerTypeRepr } :- .
+ LongintTypeRepr  , IntegerTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ RealTypeRepr     , IntegerTypeRepr  RETURN {OB.cRealTypeRepr    } :- .
+ LongrealTypeRepr , IntegerTypeRepr  RETURN {OB.cLongrealTypeRepr} :- .
+                                                                   
+ ShortintTypeRepr , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ IntegerTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ LongintTypeRepr  , LongintTypeRepr  RETURN {OB.cLongintTypeRepr } :- .
+ RealTypeRepr     , LongintTypeRepr  RETURN {OB.cRealTypeRepr    } :- .
+ LongrealTypeRepr , LongintTypeRepr  RETURN {OB.cLongrealTypeRepr} :- .
+                                                                   
+ ShortintTypeRepr , RealTypeRepr     RETURN {OB.cRealTypeRepr    } :- .
+ IntegerTypeRepr  , RealTypeRepr     RETURN {OB.cRealTypeRepr    } :- .
+ LongintTypeRepr  , RealTypeRepr     RETURN {OB.cRealTypeRepr    } :- .
+ RealTypeRepr     , RealTypeRepr     RETURN {OB.cRealTypeRepr    } :- .
+ LongrealTypeRepr , RealTypeRepr     RETURN {OB.cLongrealTypeRepr} :- .
+                                                                   
+ ShortintTypeRepr , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+ IntegerTypeRepr  , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+ LongintTypeRepr  , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+ RealTypeRepr     , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+ LongrealTypeRepr , LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+                                                                   
+ ..                                  RETURN {OB.cErrorTypeRepr   } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION SetOrSmallestRealType ( TypeReprs ) TypeReprs
- NIL              RETURN {OB.cErrorTypeRepr   }?.
-
- SetTypeRepr      RETURN {OB.cSetTypeRepr     }?.                                                              /* !SmallestReal */
-
- ShortintTypeRepr RETURN {OB.cRealTypeRepr    }?.
- IntegerTypeRepr  RETURN {OB.cRealTypeRepr    }?.
- LongintTypeRepr  RETURN {OB.cRealTypeRepr    }?.
- RealTypeRepr     RETURN {OB.cRealTypeRepr    }?.
- LongrealTypeRepr RETURN {OB.cLongrealTypeRepr}?.
-
- ..               RETURN {OB.cErrorTypeRepr   }?.
+ NIL              RETURN {OB.cErrorTypeRepr   } :- .
+                                                
+ SetTypeRepr      RETURN {OB.cSetTypeRepr     } :- .                                                           /* !SmallestReal */
+                                                
+ ShortintTypeRepr RETURN {OB.cRealTypeRepr    } :- .
+ IntegerTypeRepr  RETURN {OB.cRealTypeRepr    } :- .
+ LongintTypeRepr  RETURN {OB.cRealTypeRepr    } :- .
+ RealTypeRepr     RETURN {OB.cRealTypeRepr    } :- .
+ LongrealTypeRepr RETURN {OB.cLongrealTypeRepr} :- .
+                                                
+ ..               RETURN {OB.cErrorTypeRepr   } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION RelationInputType ( type1:TypeReprs , type2:TypeReprs ) TypeReprs
- NIL                                     , _                  RETURN {OB.cErrorTypeRepr     }?.
- _                                       , NIL                RETURN {OB.cErrorTypeRepr     }?.
+ NIL                                     , _                  RETURN {OB.cErrorTypeRepr     } :- .
+ _                                       , NIL                RETURN {OB.cErrorTypeRepr     } :- .
+                                                                                              
+ ShortintTypeRepr                        , ShortintTypeRepr   RETURN {OB.cShortintTypeRepr  } :- .             /* !RelationType */
+ IntegerTypeRepr                         , ShortintTypeRepr   RETURN {OB.cIntegerTypeRepr   } :- .
+ LongintTypeRepr                         , ShortintTypeRepr   RETURN {OB.cLongintTypeRepr   } :- .
+ RealTypeRepr                            , ShortintTypeRepr   RETURN {OB.cRealTypeRepr      } :- .
+ LongrealTypeRepr                        , ShortintTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+                                                                                              
+ ShortintTypeRepr                        , IntegerTypeRepr    RETURN {OB.cIntegerTypeRepr   } :- .
+ IntegerTypeRepr                         , IntegerTypeRepr    RETURN {OB.cIntegerTypeRepr   } :- .
+ LongintTypeRepr                         , IntegerTypeRepr    RETURN {OB.cLongintTypeRepr   } :- .
+ RealTypeRepr                            , IntegerTypeRepr    RETURN {OB.cRealTypeRepr      } :- .
+ LongrealTypeRepr                        , IntegerTypeRepr    RETURN {OB.cLongrealTypeRepr  } :- .
+                                                                                              
+ ShortintTypeRepr                        , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   } :- .
+ IntegerTypeRepr                         , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   } :- .
+ LongintTypeRepr                         , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   } :- .
+ RealTypeRepr                            , LongintTypeRepr    RETURN {OB.cRealTypeRepr      } :- .
+ LongrealTypeRepr                        , LongintTypeRepr    RETURN {OB.cLongrealTypeRepr  } :- .
+                                                                                              
+ ShortintTypeRepr                        , RealTypeRepr       RETURN {OB.cRealTypeRepr      } :- .
+ IntegerTypeRepr                         , RealTypeRepr       RETURN {OB.cRealTypeRepr      } :- .
+ LongintTypeRepr                         , RealTypeRepr       RETURN {OB.cRealTypeRepr      } :- .
+ RealTypeRepr                            , RealTypeRepr       RETURN {OB.cRealTypeRepr      } :- .
+ LongrealTypeRepr                        , RealTypeRepr       RETURN {OB.cLongrealTypeRepr  } :- .
+                                                                                              
+ ShortintTypeRepr                        , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+ IntegerTypeRepr                         , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+ LongintTypeRepr                         , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+ RealTypeRepr                            , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+ LongrealTypeRepr                        , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  } :- .
+                                                                                              
+ CharTypeRepr                            , CharTypeRepr       RETURN {OB.cCharTypeRepr      } :- .
+ CharTypeRepr                            , CharStringTypeRepr RETURN {OB.cCharTypeRepr      } :- .
+ CharStringTypeRepr                      , CharTypeRepr       RETURN {OB.cCharTypeRepr      } :- .
+                                                                                              
+ CharStringTypeRepr                      , CharStringTypeRepr RETURN {OB.cCharStringTypeRepr} :- .
+ StringTypeRepr                          , CharStringTypeRepr RETURN {OB.cStringTypeRepr    } :- .
+ CharStringTypeRepr                      , StringTypeRepr     RETURN {OB.cStringTypeRepr    } :- .
+ StringTypeRepr                          , StringTypeRepr     RETURN {OB.cStringTypeRepr    } :- .
+                                                                                              
+ BooleanTypeRepr                         , BooleanTypeRepr    RETURN {OB.cBooleanTypeRepr   } :- .
+                                                                                              
+ SetTypeRepr                             , SetTypeRepr        RETURN {OB.cSetTypeRepr       } :- .
+                                                                                              
+ ProcedureTypeRepr                       , NilTypeRepr        RETURN {OB.cNilTypeRepr       } :- .
+ NilTypeRepr                             , ProcedureTypeRepr  RETURN {OB.cNilTypeRepr       } :- .
+                                                                                              
+ NilTypeRepr                             , NilTypeRepr        RETURN {OB.cNilTypeRepr       } :- .
+ PointerTypeRepr                         , NilTypeRepr        RETURN {OB.cNilTypeRepr       } :- .
+ NilTypeRepr                             , PointerTypeRepr    RETURN {OB.cNilTypeRepr       } :- .
                                                               
- ShortintTypeRepr                        , ShortintTypeRepr   RETURN {OB.cShortintTypeRepr  }?.              /* !RelationType */
- IntegerTypeRepr                         , ShortintTypeRepr   RETURN {OB.cIntegerTypeRepr   }?.
- LongintTypeRepr                         , ShortintTypeRepr   RETURN {OB.cLongintTypeRepr   }?.
- RealTypeRepr                            , ShortintTypeRepr   RETURN {OB.cRealTypeRepr      }?.
- LongrealTypeRepr                        , ShortintTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
-                                                              
- ShortintTypeRepr                        , IntegerTypeRepr    RETURN {OB.cIntegerTypeRepr   }?.
- IntegerTypeRepr                         , IntegerTypeRepr    RETURN {OB.cIntegerTypeRepr   }?.
- LongintTypeRepr                         , IntegerTypeRepr    RETURN {OB.cLongintTypeRepr   }?.
- RealTypeRepr                            , IntegerTypeRepr    RETURN {OB.cRealTypeRepr      }?.
- LongrealTypeRepr                        , IntegerTypeRepr    RETURN {OB.cLongrealTypeRepr  }?.
-                                                              
- ShortintTypeRepr                        , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   }?.
- IntegerTypeRepr                         , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   }?.
- LongintTypeRepr                         , LongintTypeRepr    RETURN {OB.cLongintTypeRepr   }?.
- RealTypeRepr                            , LongintTypeRepr    RETURN {OB.cRealTypeRepr      }?.
- LongrealTypeRepr                        , LongintTypeRepr    RETURN {OB.cLongrealTypeRepr  }?.
-                                                              
- ShortintTypeRepr                        , RealTypeRepr       RETURN {OB.cRealTypeRepr      }?.
- IntegerTypeRepr                         , RealTypeRepr       RETURN {OB.cRealTypeRepr      }?.
- LongintTypeRepr                         , RealTypeRepr       RETURN {OB.cRealTypeRepr      }?.
- RealTypeRepr                            , RealTypeRepr       RETURN {OB.cRealTypeRepr      }?.
- LongrealTypeRepr                        , RealTypeRepr       RETURN {OB.cLongrealTypeRepr  }?.
-                                                              
- ShortintTypeRepr                        , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
- IntegerTypeRepr                         , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
- LongintTypeRepr                         , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
- RealTypeRepr                            , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
- LongrealTypeRepr                        , LongrealTypeRepr   RETURN {OB.cLongrealTypeRepr  }?.
-                                                              
- CharTypeRepr                            , CharTypeRepr       RETURN {OB.cCharTypeRepr      }?.
- CharTypeRepr                            , CharStringTypeRepr RETURN {OB.cCharTypeRepr      }?.
- CharStringTypeRepr                      , CharTypeRepr       RETURN {OB.cCharTypeRepr      }?.
-                                                              
- CharStringTypeRepr                      , CharStringTypeRepr RETURN {OB.cCharStringTypeRepr}?.
- StringTypeRepr                          , CharStringTypeRepr RETURN {OB.cStringTypeRepr    }?.
- CharStringTypeRepr                      , StringTypeRepr     RETURN {OB.cStringTypeRepr    }?.
- StringTypeRepr                          , StringTypeRepr     RETURN {OB.cStringTypeRepr    }?.
-                                                              
- BooleanTypeRepr                         , BooleanTypeRepr    RETURN {OB.cBooleanTypeRepr   }?.
-                                                              
- SetTypeRepr                             , SetTypeRepr        RETURN {OB.cSetTypeRepr       }?.
-                                                              
- ProcedureTypeRepr                       , NilTypeRepr        RETURN {OB.cNilTypeRepr       }?.
- NilTypeRepr                             , ProcedureTypeRepr  RETURN {OB.cNilTypeRepr       }?.
-                                                              
- NilTypeRepr                             , NilTypeRepr        RETURN {OB.cNilTypeRepr       }?.
- PointerTypeRepr                         , NilTypeRepr        RETURN {OB.cNilTypeRepr       }?.
- NilTypeRepr                             , PointerTypeRepr    RETURN {OB.cNilTypeRepr       }?.
-                                                              
- ProcedureTypeRepr                       , ProcedureTypeRepr  RETURN {OB.cErrorTypeRepr     }?
+ ProcedureTypeRepr                       , ProcedureTypeRepr  RETURN {OB.cErrorTypeRepr     } :- 
                                                               { IF type1=type2 THEN RETURN OB.cNilTypeRepr; END; };.
                                                               
- PointerTypeRepr                         , PointerTypeRepr    RETURN {OB.cErrorTypeRepr     }?
+ PointerTypeRepr                         , PointerTypeRepr    RETURN {OB.cErrorTypeRepr     } :- 
                                                               { IF (type1=type2)
                                                                 OR IsExtensionOf(type1,type2)
                                                                 OR IsExtensionOf(type2,type1)
@@ -1007,99 +1009,99 @@ FUNCTION RelationInputType ( type1:TypeReprs , type2:TypeReprs ) TypeReprs
                                                               };.
                                          
  CharStringTypeRepr                      , ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) 
-                                                            RETURN {OB.cStringTypeRepr    }?.
- ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , CharStringTypeRepr                  
-                                                            RETURN {OB.cStringTypeRepr    }?.
- ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , StringTypeRepr   RETURN {OB.cStringTypeRepr    }?.
- StringTypeRepr                          , ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) 
-                                                            RETURN {OB.cStringTypeRepr    }?.
- ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) 
-                                                            RETURN {OB.cStringTypeRepr    }?.
-
- ..                                                         RETURN {OB.cErrorTypeRepr     }?.
+                                                            RETURN {OB.cStringTypeRepr    } :- .
+ ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , CharStringTypeRepr                               
+                                                            RETURN {OB.cStringTypeRepr    } :- .
+ ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , StringTypeRepr   RETURN {OB.cStringTypeRepr    } :- .
+ StringTypeRepr                          , ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr)          
+                                                            RETURN {OB.cStringTypeRepr    } :- .
+ ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr) , ArrayTypeRepr(_,_,_,_,_,_,CharTypeRepr)          
+                                                            RETURN {OB.cStringTypeRepr    } :- .
+                                                                                            
+ ..                                                         RETURN {OB.cErrorTypeRepr     } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsLegalOrderRelationInputType ( TypeReprs )
- ErrorTypeRepr      ?.
- CharTypeRepr       ?.                                                                                         /* !RelationType */
- CharStringTypeRepr ?.
- StringTypeRepr     ?.
- ShortintTypeRepr   ?.
- IntegerTypeRepr    ?.
- LongintTypeRepr    ?.
- RealTypeRepr       ?.
- LongrealTypeRepr   ?.
+ ErrorTypeRepr      :- .
+ CharTypeRepr       :- .                                                                                       /* !RelationType */
+ CharStringTypeRepr :- .
+ StringTypeRepr     :- .
+ ShortintTypeRepr   :- .
+ IntegerTypeRepr    :- .
+ LongintTypeRepr    :- .
+ RealTypeRepr       :- .
+ LongrealTypeRepr   :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LegalCaseExprTypesOnly ( Te:TypeReprs ) TypeReprs
- CharTypeRepr       RETURN Te                  ?.                                                            /* !CaseExpression */
- CharStringTypeRepr RETURN Te                  ?.
- ShortintTypeRepr   RETURN Te                  ?.
- IntegerTypeRepr    RETURN Te                  ?.
- LongintTypeRepr    RETURN Te                  ?.
- _                  RETURN {OB.cErrorTypeRepr} ?.
+ CharTypeRepr       RETURN Te                  :- .                                                          /* !CaseExpression */
+ CharStringTypeRepr RETURN Te                  :- .
+ ShortintTypeRepr   RETURN Te                  :- .
+ IntegerTypeRepr    RETURN Te                  :- .
+ LongintTypeRepr    RETURN Te                  :- .
+ _                  RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsCaseExprCompatible ( Te:TypeReprs , Tl:TypeReprs )
- .. ? IsCharType(Te) & IsCharType(Tl); .                                                                     /* !CaseExpression */
- .. ? IsIntegerType(Te) & IsIncludedBy(Tl,Te); .
+ .. :- CONDITION IsCharType(Te) & IsCharType(Tl); .                                                          /* !CaseExpression */
+ .. :- CONDITION IsIntegerType(Te) & IsIncludedBy(Tl,Te); .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ConstTypeCorrection ( Type:TypeReprs , Value:ValueReprs ) TypeReprs
- CharTypeRepr     , CharValue       RETURN {OB.cCharStringTypeRepr} ?.                                     /* !CharEqualString1 */
- ShortintTypeRepr , IntegerValue(v) RETURN {MinimalIntegerType(v) } ?.                                   /* !MinimalIntegerType */
- IntegerTypeRepr  , IntegerValue(v) RETURN {MinimalIntegerType(v) } ?.
- LongintTypeRepr  , IntegerValue(v) RETURN {MinimalIntegerType(v) } ?.
- ..                                 RETURN Type                     ?.
+ CharTypeRepr     , CharValue       RETURN {OB.cCharStringTypeRepr} :- .                                   /* !CharEqualString1 */
+ ShortintTypeRepr , IntegerValue(v) RETURN {MinimalIntegerType(v) } :- .                                 /* !MinimalIntegerType */
+ IntegerTypeRepr  , IntegerValue(v) RETURN {MinimalIntegerType(v) } :- .
+ LongintTypeRepr  , IntegerValue(v) RETURN {MinimalIntegerType(v) } :- .
+ ..                                 RETURN Type                     :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsLegalResultType ( TypeReprs )
- RecordTypeRepr ? FAIL; .                                                                                        /* !ResultType */
- ArrayTypeRepr  ? FAIL; .
- _              ? .
+ RecordTypeRepr :- FAIL; .                                                                                       /* !ResultType */
+ ArrayTypeRepr  :- FAIL; .
+ _              :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LegalForExprTypesOnly ( Te:TypeReprs ) TypeReprs
- ShortintTypeRepr   RETURN Te                  ?.                                                                  /* !ForExprs */
- IntegerTypeRepr    RETURN Te                  ?.
- LongintTypeRepr    RETURN Te                  ?.
- _                  RETURN {OB.cErrorTypeRepr} ?.
+ ShortintTypeRepr   RETURN Te                  :- .                                                                /* !ForExprs */
+ IntegerTypeRepr    RETURN Te                  :- .
+ LongintTypeRepr    RETURN Te                  :- .
+ _                  RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LegalAbsTypesOnly ( Te:TypeReprs ) TypeReprs
- ShortintTypeRepr   RETURN Te                  ?.                                                                /* !PredeclAbs */
- IntegerTypeRepr    RETURN Te                  ?.
- LongintTypeRepr    RETURN Te                  ?.
- RealTypeRepr       RETURN Te                  ?.
- LongrealTypeRepr   RETURN Te                  ?.
- _                  RETURN {OB.cErrorTypeRepr} ?.
+ ShortintTypeRepr   RETURN Te                  :- .                                                              /* !PredeclAbs */
+ IntegerTypeRepr    RETURN Te                  :- .
+ LongintTypeRepr    RETURN Te                  :- .
+ RealTypeRepr       RETURN Te                  :- .
+ LongrealTypeRepr   RETURN Te                  :- .
+ _                  RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE IsValidLenDim ( T:TypeReprs , ValueReprs )
 
- ArrayTypeRepr , IntegerValue(v) ?{                                                                              /* !PredeclLen */
+ ArrayTypeRepr , IntegerValue(v) :- {                                                                            /* !PredeclLen */
     RETURN (0<=v) & (v<DimOfArrayType(T));
  };.
 
- .. ?.
+ .. :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LegalShiftableTypesOnly ( Te:TypeReprs ) TypeReprs
- ShortintTypeRepr RETURN Te                  ?.                                                               /* !SysdeclLshRot */
- IntegerTypeRepr  RETURN Te                  ?.
- LongintTypeRepr  RETURN Te                  ?.
- CharTypeRepr     RETURN Te                  ?.
- ByteTypeRepr     RETURN Te                  ?.
- _                RETURN {OB.cErrorTypeRepr} ?.
+ ShortintTypeRepr RETURN Te                  :- .                                                             /* !SysdeclLshRot */
+ IntegerTypeRepr  RETURN Te                  :- .
+ LongintTypeRepr  RETURN Te                  :- .
+ CharTypeRepr     RETURN Te                  :- .
+ ByteTypeRepr     RETURN Te                  :- .
+ _                RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1121,7 +1123,7 @@ FUNCTION DupAllFields ( Tail      : Entries                                     
         ( DupAllFields(Tail,prevEntry)
         , module      , ident    , exportMode    , level   , declStatus
         , typerepr    , isParam  , isReceiverPar , parMode , address    
-        , refMode     , isWithed , isLaccessed                          ) ?.
+        , refMode     , isWithed , isLaccessed                          ) :- .
 
 /*---------------------------------------------------------------------------*/
  _,     boundProc:BoundProcEntry                                                /* A bound procedure in the base record is now  */
@@ -1132,7 +1134,7 @@ FUNCTION DupAllFields ( Tail      : Entries                                     
         InheritedProcEntry
         ( DupAllFields(Tail,prevEntry)
         , module      , ident    , exportMode    , level   , declStatus
-        , boundProc                                                     ) ?.
+        , boundProc                                                     ) :- .
 
 /*---------------------------------------------------------------------------*/
  _,     InheritedProcEntry                                                      /* An inherited bound procedure remains         */
@@ -1143,17 +1145,17 @@ FUNCTION DupAllFields ( Tail      : Entries                                     
         InheritedProcEntry
         ( DupAllFields(Tail,prevEntry)
         , module      , ident    , exportMode    , level   , declStatus
-        , boundProc                                                     ) ?.
+        , boundProc                                                     ) :- .
 
 /*---------------------------------------------------------------------------*/
  _,     DataEntry(prevEntry,..)                                                 /* Other (what other?) entries don't get copied.*/
  RETURN
-        DupAllFields(Tail,prevEntry) ?.
+        DupAllFields(Tail,prevEntry) :- .
 
 /*---------------------------------------------------------------------------*/
         ..                                                                      /* All entries processed: Do the concatenation. */
  RETURN
-        Tail ?.
+        Tail :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1172,11 +1174,11 @@ FUNCTION CloneRecordFields ( NewScope     : Entries
                         ,/* extTypeReprList =: */ _
                         ,/* fields          =: */ baseTypeFields
                         ,/* nofBoundProcs   =: */ _)
-                        RETURN NewScope ?
+                        RETURN NewScope :- 
                         { NewScope:=DupAllFields(NewScope,baseTypeFields);
                         };.
 
-..                      RETURN NewScope ?.
+..                      RETURN NewScope :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1193,12 +1195,12 @@ PROCEDURE AppendExtension ( recordTypeRepr:TypeReprs , newRecordTypeRepr:TypeRep
                             ,/* extTypeReprList =: */ typeReprList
                             ,/* fields          =: */ ..)
 ,/* newRecordTypeRepr =: */ _
-                            ?{ typeReprList:=OB.mTypeReprList
-                                             ((* prev     := *) typeReprList
-                                             ,(* typeRepr := *) newRecordTypeRepr);
-                            };.
+                            :- { typeReprList:=OB.mTypeReprList
+                                               ((* prev     := *) typeReprList
+                                               ,(* typeRepr := *) newRecordTypeRepr);
+                               };.
 
- ..                         ?.
+ ..                         :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1221,9 +1223,10 @@ PREDICATE RedefAlreadyExists                                                    
  ,/* label           =: */ _
  ,/* namePath        =: */ _
  ,/* redefinedProc   =: */ redefinedProc
- ,/* procNum         =: */ ..),.. ? redefinedProc:=orgProc;.
+ ,/* procNum         =: */ ..),.. :- redefinedProc:=orgProc;.
 
- DataEntry(prev,..)           ,.. ? RedefAlreadyExists(prev,ident,orgProc);.    /* other field list entries                     */
+ DataEntry(prev,..)           ,.. :- CONDITION RedefAlreadyExists(prev,ident,orgProc);.
+                                                                                /* other field list entries                     */
                                                                                 /* --> continue search                          */
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
@@ -1246,7 +1249,7 @@ LOCAL{ VAR deletedProc:OB.tOB; }
                       ,/* declStatus      =: */ _
                       ,/* boundProcEntry  =: */ boundProcEntry)
 ,/* module      =: */ .. => {deletedProc}
-                      RETURN field ?
+                      RETURN field :- 
                       { deletedProc:=boundProcEntry; 
                         IF (mod=module) OR (exportMode#OB.PRIVATE) THEN 
                            field:=prev;
@@ -1258,12 +1261,12 @@ LOCAL{ VAR deletedProc:OB.tOB; }
                       (/* prevEntry       =: */ prev
                       ,/* module          =: */ ..)
 ,/* module      =: */ .. => entry
-                      RETURN field ?
+                      RETURN field :- 
                       prev:=DeleteBoundProc(prev,module,ident=>entry);.
 
 /*---------------------------------------------------------------------------*/
  /* field       =: */ .. => {OB.cmtEntry}                                       /* whole field list processed                   */
-                      RETURN field ?.
+                      RETURN field :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1302,10 +1305,10 @@ FUNCTION BindProcedureToExtensions                                             /
                                                      ,/* module         := */ module)
                               ,/* forwardEntry := */ {OB.cmtEntry}
                               ,/* currPosition := */ {POS.NoPosition}
-                              ,/* module       := */ module) ?.
+                              ,/* module       := */ module) :- .
 
 /*---------------------------------------------------------------------------*/
-..                     RETURN table ?.
+..                     RETURN table :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1340,7 +1343,7 @@ LOCAL{ VAR dummyEntry:OB.tOB; }
                        ,/* position        =: */ position
                        ,/* label           =: */ ..)
 ,/* currPosition =: */ ..
-                       RETURN table ?
+                       RETURN table :- 
                        { IF ~complete THEN 
                             fExportMode := E.MaxExportMode(fExportMode,eExportMode);
                             position    := currPosition;
@@ -1376,7 +1379,7 @@ LOCAL{ VAR dummyEntry:OB.tOB; }
                        ,/* redefinedProc   =: */ redefinedProc
                        ,/* procNum         =: */ ..)
 ,/* table        =: */ ..                  
-                       RETURN BindProcedureToExtensions(typeReprList,entry,table,module) ?
+                       RETURN BindProcedureToExtensions(typeReprList,entry,table,module) :- 
                        {  prev   := DeleteBoundProc(fields,module,ident,redefinedProc); 
                           fields := entry; 
                        };.
@@ -1402,7 +1405,7 @@ LOCAL{ VAR dummyEntry:OB.tOB; }
                        ,/* declStatus      =: */ _
                        ,/* boundProcEntry  =: */ boundProcEntry)
 ,/* table        =: */ ..
-                       RETURN table ?
+                       RETURN table :- 
                        { IF ~RedefAlreadyExists(fields,ident,boundProcEntry) THEN 
                             prev   := DeleteBoundProc(fields,module,ident,dummyEntry); 
                             fields :=entry;
@@ -1411,13 +1414,13 @@ LOCAL{ VAR dummyEntry:OB.tOB; }
                        };.
 
 /*---------------------------------------------------------------------------*/
-..                     RETURN table ?.
+..                     RETURN table :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION LegalReceiverTypeOnly ( type:TypeReprs ) TypeReprs
 
- RecordTypeRepr                                                  RETURN type ?.
+ RecordTypeRepr                                                  RETURN type :- .
 
  PointerTypeRepr
  (/* entry           =: */ _
@@ -1433,9 +1436,9 @@ FUNCTION LegalReceiverTypeOnly ( type:TypeReprs ) TypeReprs
                            ,/* level       =: */ _
                            ,/* declStatus  =: */ _
                            ,/* typeRepr    =: */ RecordTypeRepr)
- )                                                               RETURN type ?.
+ )                                                               RETURN type :- .
 
- _                                                               RETURN {OB.cErrorTypeRepr} ?.
+ _                                                               RETURN {OB.cErrorTypeRepr} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1458,26 +1461,26 @@ PROCEDURE CheckFieldsPreRedefs                                                  
                          ,/* position    =: */ position
                          ,/* label       =: */ ..)
 ,/* boundProcIdent =: */ ..
-                         ?{ CheckFieldsPreRedefs                                /* check further record fields                  */
-                            (prev
-                            ,boundProcIdent
-                            ,boundProcType);
+                         :- { CheckFieldsPreRedefs                              /* check further record fields                  */
+                              (prev
+                              ,boundProcIdent
+                              ,boundProcType);
 
-                            IF ~HaveMatchingFormalPars(currProcType,boundProcType)                               /* !RedefMatch */
-                               THEN ERR.MsgPos(ERR.MsgNonMatchingRedef,position);
-                            END; (* IF *)
-                         };.
+                              IF ~HaveMatchingFormalPars(currProcType,boundProcType)                               /* !RedefMatch */
+                                 THEN ERR.MsgPos(ERR.MsgNonMatchingRedef,position);
+                              END; (* IF *)
+                           };.
 
 /*---------------------------------------------------------------------------*/
  /* fields         =: */ DataEntry                                              /* only procedures are of interest              */
                          (/* prevEntry   =: */ prev:Entries
                          ,/* module      =: */ ..)
 ,/* boundProcIdent =: */ ..
-                         ?{ CheckFieldsPreRedefs                                /* check further record fields                  */
-                            (prev
-                            ,boundProcIdent
-                            ,boundProcType);
-                          };.
+                         :- { CheckFieldsPreRedefs                              /* check further record fields                  */
+                              (prev
+                              ,boundProcIdent
+                              ,boundProcType);
+                            };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1501,21 +1504,21 @@ PROCEDURE CheckTypeReprListsPreRedefs                                           
                                             ,/* nofBoundProcs   =: */ _)
                          )
 ,/* boundProcIdent =: */ ..
-                         ?{ CheckTypeReprListsPreRedefs                         /* check further record types                   */
-                            (prev
-                            ,boundProcIdent
-                            ,boundProcType);
+                         :- { CheckTypeReprListsPreRedefs                       /* check further record types                   */
+                              (prev
+                              ,boundProcIdent
+                              ,boundProcType);
 
-                            CheckTypeReprListsPreRedefs                         /* check all extension of the record type       */
-                            (extTypeReprList
-                            ,boundProcIdent
-                            ,boundProcType);
+                              CheckTypeReprListsPreRedefs                       /* check all extension of the record type       */
+                              (extTypeReprList
+                              ,boundProcIdent
+                              ,boundProcType);
 
-                            CheckFieldsPreRedefs                                /* now check this record field list             */
-                            (fields
-                            ,boundProcIdent
-                            ,boundProcType);
-                         };.
+                              CheckFieldsPreRedefs                              /* now check this record field list             */
+                              (fields
+                              ,boundProcIdent
+                              ,boundProcType);
+                            };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /* UNEXPORTED: */
@@ -1535,11 +1538,11 @@ PROCEDURE CheckPreRedefinitions                                                 
                          ,/* extTypeReprList =: */ typeReprList:TypeReprLists
                          ,/* fields          =: */ ..)
 ,/* boundProcIdent =: */ ..
-                         ?{ CheckTypeReprListsPreRedefs                         /* check all extension of the record type       */
-                            (typeReprList
-                            ,boundProcIdent
-                            ,boundProcType);
-                          };.
+                         :- { CheckTypeReprListsPreRedefs                       /* check all extension of the record type       */
+                              (typeReprList
+                              ,boundProcIdent
+                              ,boundProcType);
+                            };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1555,7 +1558,7 @@ FUNCTION CheckBoundProc ( module        : ModuleEntry                           
  /* module        =: */ _                                                       /* No record field found ?                      */
 ,/* field         =: */ ErrorEntry                                              /* --> that's OK                                */
 ,/* boundProcType =: */ ..
-                        RETURN {ERR.NoErrorMsg} ?
+                        RETURN {ERR.NoErrorMsg} :- 
                         { CheckPreRedefinitions
                           (receiverType
                           ,boundProcIdent
@@ -1571,7 +1574,7 @@ FUNCTION CheckBoundProc ( module        : ModuleEntry                           
                         ,/* exportMode  =: */ exportMode
                         ,/* level       =: */ ..)
 ,/* boundProcType =: */ ..
-                        RETURN {ErrorMsg} ?
+                        RETURN {ErrorMsg} :- 
                         { IF (mod=module)                                       /* Visible ?                                    */
                           OR (exportMode#OB.PRIVATE)
                              THEN ErrorMsg := ERR.MsgAlreadyDeclared;           /* !UniqueObjectName                            */
@@ -1593,10 +1596,9 @@ FUNCTION CheckBoundProc ( module        : ModuleEntry                           
                         ,/* complete    =: */ {FALSE}
                         ,/* position    =: */ ..)
 ,/* boundProcType =: */ ..
-                        RETURN {ErrorMsg} ?
-                        { 
-IF isForward THEN ErrorMsg:=ERR.MsgAlreadyDeclared
-ELSIF ~HaveMatchingFormalPars(procType,boundProcType)
+                        RETURN {ErrorMsg} :- 
+                        { IF isForward THEN ErrorMsg:=ERR.MsgAlreadyDeclared
+                          ELSIF ~HaveMatchingFormalPars(procType,boundProcType)
                              THEN ErrorMsg := ERR.MsgNonMatchingActualDecl;     /* !ForwardBoundMatch                           */
                              ELSE ErrorMsg := ERR.NoErrorMsg;
                           END;
@@ -1606,7 +1608,7 @@ ELSIF ~HaveMatchingFormalPars(procType,boundProcType)
  /* module        =: */ _                                                       /* Found record field is origin bound           */
 ,/* field         =: */ BoundProcEntry                                          /* procedure?                                   */
 ,/* boundProcType =: */ ..
-                        RETURN {ERR.MsgAlreadyDeclared} ?.                      /* !UniqueObjectName                            */
+                        RETURN {ERR.MsgAlreadyDeclared} :- .                    /* !UniqueObjectName                            */
 
 /*---------------------------------------------------------------------------*/
  /* module        =: */ _                                                       /* Found record field is inherited bound        */
@@ -1629,7 +1631,7 @@ ELSIF ~HaveMatchingFormalPars(procType,boundProcType)
                                                  ,/* complete    =: */ ..)
                         )
 ,/* boundProcType =: */ ..
-                        RETURN {ErrorMsg} ?
+                        RETURN {ErrorMsg} :- 
                         { IF ((mod=module) OR                                   /* Visible & non-matching formal parameters ?   */
                               (exportMode#OB.PRIVATE))
                            & ~HaveMatchingFormalPars(procType,boundProcType)
@@ -1642,8 +1644,8 @@ ELSIF ~HaveMatchingFormalPars(procType,boundProcType)
 /*$1*/
 PREDICATE IsExistingBoundProc ( Module:ModuleEntry, TypeReprs , BoundProc:Entries )
 
- _ , ErrorTypeRepr , _          ?.
- _ , _             , ErrorEntry ?.
+ _ , ErrorTypeRepr , _          :- .
+ _ , _             , ErrorEntry :- .
 
  _
 ,RecordTypeRepr
@@ -1663,10 +1665,10 @@ PREDICATE IsExistingBoundProc ( Module:ModuleEntry, TypeReprs , BoundProc:Entrie
  ,/* module          =: */ _
  ,/* ident           =: */ ident
  ,/* exportMode      =: */ ..)
-                           ? { RETURN E.IsVisibleBoundProcEntry
-                                      (Module
-                                      ,E.Lookup0(fields,ident))
-                             }; .
+                           :- { RETURN E.IsVisibleBoundProcEntry
+                                       (Module
+                                       ,E.Lookup0(fields,ident))
+                              }; .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1679,9 +1681,9 @@ PROCEDURE CalcProcNumsOfEntries ( table:Entries )
  ,/* exportMode    =: */ _
  ,/* level         =: */ _
  ,/* declStatus    =: */ {OB.DECLARED}
- ,/* typeRepr      =: */ type) ? CalcProcNumsOfEntries(prev); CalcProcNumsOfType(type);.
+ ,/* typeRepr      =: */ type) :- CalcProcNumsOfEntries(prev); CalcProcNumsOfType(type);.
 
- DataEntry(prev:Entries,..)    ? CalcProcNumsOfEntries(prev);.
+ DataEntry(prev:Entries,..)    :- CalcProcNumsOfEntries(prev);.
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1697,11 +1699,11 @@ PROCEDURE CalcProcNumsOfType ( type:TypeReprs )
  ,/* baseTypeRepr    =: */ _
  ,/* extTypeReprList =: */ _
  ,/* fields          =: */ fields
- ,/* nofBoundProcs   =: */ nofBoundProcs)         ? { IF nofBoundProcs=0 THEN 
-                                                         nofBoundProcs:=CountNonOriginBoundProcs(fields); 
-                                                      END;
-                                                    };
-                                                    CalcProcNumsOfFields(fields,type);. 
+ ,/* nofBoundProcs   =: */ nofBoundProcs)         :- { IF nofBoundProcs=0 THEN 
+                                                          nofBoundProcs:=CountNonOriginBoundProcs(fields); 
+                                                       END;
+                                                     };
+                                                     CalcProcNumsOfFields(fields,type);. 
  
  PointerTypeRepr
  (/* entry           =: */ _
@@ -1717,7 +1719,7 @@ PROCEDURE CalcProcNumsOfType ( type:TypeReprs )
                            ,/* level       =: */ _
                            ,/* declStatus  =: */ _
                            ,/* typeRepr    =: */ t)
- )                                                ? CalcProcNumsOfType(t);.
+ )                                                :- CalcProcNumsOfType(t);.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1739,16 +1741,16 @@ LOCAL{ VAR n:LONGINT; }
  ,/* namePath        =: */ _
  ,/* redefinedProc   =: */ redefinedProc
  ,/* procNum         =: */ procNum
- ,/* env             =: */ _)  RETURN 1+CountNonOriginBoundProcs(prev) ? 
+ ,/* env             =: */ _)  RETURN 1+CountNonOriginBoundProcs(prev) :-  
                                       (~E.IsGenuineEmptyEntry(redefinedProc));.
  
  InheritedProcEntry
  (/* prevEntry       =: */ prev
- ,/* module          =: */ ..) RETURN 1+CountNonOriginBoundProcs(prev) ?.
+ ,/* module          =: */ ..) RETURN 1+CountNonOriginBoundProcs(prev) :- .
 
- DataEntry(prev:Entries,..)    RETURN   CountNonOriginBoundProcs(prev) ?.
+ DataEntry(prev:Entries,..)    RETURN   CountNonOriginBoundProcs(prev) :- .
 
- _                             RETURN 0                                ?.
+ _                             RETURN 0                                :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1769,15 +1771,15 @@ PROCEDURE CalcProcNumsOfFields ( fields:Entries , type:TypeReprs )
  ,/* namePath        =: */ _
  ,/* redefinedProc   =: */ redefinedProc
  ,/* procNum         =: */ procNum
- ,/* env             =: */ _),_ ? (procNum={OB.NOPROCNUM});
-                                  CalcProcNumsOfFields(prev,type);
-                                  { IF E.IsGenuineEmptyEntry(redefinedProc) THEN 
-                                       procNum:=NewProcNum(type); 
-                                    ELSE 
-                                       procNum:=ProcNumOfBoundProc(redefinedProc); 
-                                    END; };.
+ ,/* env             =: */ _),_ :- CONDITION (procNum={OB.NOPROCNUM});
+                                   CalcProcNumsOfFields(prev,type);
+                                   { IF E.IsGenuineEmptyEntry(redefinedProc) THEN 
+                                        procNum:=NewProcNum(type); 
+                                     ELSE 
+                                        procNum:=ProcNumOfBoundProc(redefinedProc); 
+                                     END; };.
  
- DataEntry(prev:Entries,..)  ,_ ? CalcProcNumsOfFields(prev,type);.
+ DataEntry(prev:Entries,..)  ,_ :- CalcProcNumsOfFields(prev,type);.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1799,11 +1801,11 @@ FUNCTION ProcNumOfBoundProc ( entry:Entries ) LONGINT
  ,/* redefinedProc   =: */ _
  ,/* procNum         =: */ procNum
  ,/* env             =: */ _) 
-   RETURN procNum        ?{ IF procNum=OB.NOPROCNUM THEN 
-                               CalcProcNumsOfType(E.ReceiverTypeOfBoundProc(entry))
-                            END; };.
+   RETURN procNum        :- { IF procNum=OB.NOPROCNUM THEN 
+                                CalcProcNumsOfType(E.ReceiverTypeOfBoundProc(entry))
+                              END; };.
 
- _ RETURN {OB.NOPROCNUM} ?.
+ _ RETURN {OB.NOPROCNUM} :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1821,69 +1823,69 @@ LOCAL{ VAR num:LONGINT; }
  ,/* extTypeReprList =: */ _
  ,/* fields          =: */ _
  ,/* nofBoundProcs   =: */ nofBoundProcs) 
-   RETURN {num}          ? { num:=nofBoundProcs; INC(nofBoundProcs); };.
+   RETURN {num}          :- { num:=nofBoundProcs; INC(nofBoundProcs); };.
  
- _ RETURN {OB.NOPROCNUM} ?.
+ _ RETURN {OB.NOPROCNUM} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeSelected ( TypeReprs , ident:tIdent ) Entries
- RecordTypeRepr(_,_,_,_,_,_,_,_,fields:Entries,_) , _   RETURN {E.Lookup0(fields,ident)} ?.
- ..                                                     RETURN {OB.cErrorEntry     } ?.
+ RecordTypeRepr(_,_,_,_,_,_,_,_,fields:Entries,_) , _   RETURN {E.Lookup0(fields,ident)} :- .
+ ..                                                     RETURN {OB.cErrorEntry     } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeIndexed ( TypeReprs ) TypeReprs
- ArrayTypeRepr(_,_,_,_,_,_,elemType)                    RETURN elemType                  ?.
- ..                                                     RETURN {OB.cErrorTypeRepr      } ?.
+ ArrayTypeRepr(_,_,_,_,_,_,elemType)                    RETURN elemType                  :- .
+ ..                                                     RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeOpenIndexed ( TypeReprs ) TypeReprs
- ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},elemType)    RETURN elemType                  ?.
- ..                                                     RETURN {OB.cErrorTypeRepr      } ?.
+ ArrayTypeRepr(_,_,_,_,_,{OB.OPENARRAYLEN},elemType)    RETURN elemType                  :- .
+ ..                                                     RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeDereferenced ( TypeReprs ) TypeReprs
- PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type)) RETURN type                      ?.
- ..                                                     RETURN {OB.cErrorTypeRepr      } ?.
+ PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type)) RETURN type                      :- .
+ ..                                                     RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeArgumented ( procTypeRepr : TypeReprs ) TypeReprs
 
- ProcedureTypeRepr(_,_,_,_,_,_,type:TypeReprs,_)        RETURN type                      ?.
- _                                                      RETURN {OB.cErrorTypeRepr      } ?.
+ ProcedureTypeRepr(_,_,_,_,_,_,type:TypeReprs,_)        RETURN type                      :- .
+ _                                                      RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeLonged ( TypeReprs ) TypeReprs                                                                  
- ShortintTypeRepr                                       RETURN {OB.cIntegerTypeRepr    } ?.                     /* !PredeclLong */
- IntegerTypeRepr                                        RETURN {OB.cLongintTypeRepr    } ?.
- RealTypeRepr                                           RETURN {OB.cLongrealTypeRepr   } ?.
- _                                                      RETURN {OB.cErrorTypeRepr      } ?.
+ ShortintTypeRepr                                       RETURN {OB.cIntegerTypeRepr    } :- .                   /* !PredeclLong */
+ IntegerTypeRepr                                        RETURN {OB.cLongintTypeRepr    } :- .
+ RealTypeRepr                                           RETURN {OB.cLongrealTypeRepr   } :- .
+ _                                                      RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeShortened ( TypeReprs ) TypeReprs
- IntegerTypeRepr                                        RETURN {OB.cShortintTypeRepr   } ?.
- LongintTypeRepr                                        RETURN {OB.cIntegerTypeRepr    } ?.
- LongrealTypeRepr                                       RETURN {OB.cRealTypeRepr       } ?.
- _                                                      RETURN {OB.cErrorTypeRepr      } ?.
+ IntegerTypeRepr                                        RETURN {OB.cShortintTypeRepr   } :- .
+ LongintTypeRepr                                        RETURN {OB.cIntegerTypeRepr    } :- .
+ LongrealTypeRepr                                       RETURN {OB.cRealTypeRepr       } :- .
+ _                                                      RETURN {OB.cErrorTypeRepr      } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeLimited ( type:TypeReprs ) TypeReprs                                                           
- SetTypeRepr                                            RETURN {OB.cIntegerTypeRepr    } ?.                     /* !MinMaxTypes */
- _                                                      RETURN type                      ?.
+ SetTypeRepr                                            RETURN {OB.cIntegerTypeRepr    } :- .                   /* !MinMaxTypes */
+ _                                                      RETURN type                      :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION TypeDimensioned ( TypeReprs , ValueReprs ) ValueReprs                                                 
  LOCAL{ VAR o:OB.tOB; }
 
- ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr),IntegerValue(dim) RETURN {o} ?{                                     /* !LenDimLimits */
+ ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr),IntegerValue(dim) RETURN {o} :- {                                   /* !LenDimLimits */
     IF dim=0
        THEN IF len=OB.OPENARRAYLEN
                THEN o := OB.cmtValue;
@@ -1895,14 +1897,14 @@ FUNCTION TypeDimensioned ( TypeReprs , ValueReprs ) ValueReprs
     END;
  };.
 
- ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr),mtValue RETURN {o} ?{
+ ArrayTypeRepr(_,_,_,_,_,len,elemTypeRepr),mtValue RETURN {o} :- {
     IF len=OB.OPENARRAYLEN
        THEN o := OB.cmtValue;
        ELSE o := OB.mIntegerValue(len);
     END;
  };.
 
- .. RETURN {OB.cErrorValue} ?.
+ .. RETURN {OB.cErrorValue} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -1923,7 +1925,7 @@ PROCEDURE AppendTDesc ( TDescList , Entries, n:NamePaths )
                        ,/* isInTDescList   =: */ isInTDescList
                        ,/* label           =: */ label)
  )		       
-,_                        ?{ 
+,_                        :- { 
    IF ~isInTDescList & IsLegalPointerBaseType(t) THEN 
       isInTDescList:=TRUE; 
       l:=OB.mTDescElem(l,n,t);
@@ -1952,7 +1954,7 @@ PROCEDURE DefineTypeReprLabel ( Entries , label:tLabel )
                          ,/* isInTDescList   =: */ _
                          ,/* label           =: */ l)
  ),_                                                  
- ? (l={LAB.MT}); {
+ :-  (l={LAB.MT}); {
     l:=label; 
  };.
 
@@ -1965,9 +1967,9 @@ FUNCTION LabelOfTypeRepr ( TypeReprs ) tLabel
  ,/* size            =: */ _
  ,/* typeBlocklists  =: */ _
  ,/* isInTDescList   =: */ _
- ,/* label           =: */ l) RETURN l        ? { IF l=LAB.MT THEN l:=LAB.NewLocal(); END; };.
+ ,/* label           =: */ l) RETURN l        :- { IF l=LAB.MT THEN l:=LAB.NewLocal(); END; };.
  
- _                            RETURN {LAB.MT} ?.
+ _                            RETURN {LAB.MT} :- .
 
 /********************************************************************************************************************************/
 /*** END T.pum                                                                                                                ***/

@@ -77,14 +77,14 @@ PROCEDURE StackFrameLinks ( Entries , localSpace:LONGINT , fTempLabel:tLabel => 
 
  BoundProcEntry(_,_,_,_,level,_,_,_,_,_,label,_,_,_,env),.. ;
  ProcedureEntry(_,_,_,_,level,_,_,_,_  ,label,_    ,env),.. => idOfLocalSub , spaceAdjust
- ? StackFrameLinks1(level,env,label,localSpace,fTempLabel=>idOfLocalSub,spaceAdjust);.
+ :- StackFrameLinks1(level,env,label,localSpace,fTempLabel=>idOfLocalSub,spaceAdjust);.
 
 /*END StackFrameLinks */
 
 /********************************************************************************************************************************/
 PROCEDURE StackFrameLinks1 ( level:tLevel , env:OB , label:tLabel , localSpace:LONGINT , fTempLabel:tLabel => tOperId , LONGINT )
 LOCAL{ VAR ii,spaceAdjust:LONGINT; idOfdispN,idOfLocalSub:ASM.tOperId; }
- .. => {idOfLocalSub},{spaceAdjust} ?{
+ .. => {idOfLocalSub},{spaceAdjust} :- {
     spaceAdjust:=0; 
     IF level<LIM.FirstNestingDepthToUseEnter THEN                       
        ASM.C1                      ( pushl  ,  R(ebp)                                        ); 
@@ -139,7 +139,7 @@ LOCAL{ VAR size,elemSize,shift:LONGINT; }
   ,/* refMode       =: */ {OB.REFPAR}
   ,/* isWithed      =: */ _
   ,/* isLaccessed   =: */ isLaccessed)
- )?{
+ ) :- {
     IF ARG.OptionCommentsInAsm THEN 
        ASM.CmtLnS('Local copy for parameter '); ASM.CmtId(ident); 
     END;
@@ -267,7 +267,7 @@ LOCAL{ VAR size,elemSize,shift:LONGINT; }
  };.
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Signature(next:SignatureRepr,_)?{
+ Signature(next:SignatureRepr,_) :- {
     RefdValParamsCopy(next); 
  };.
  
@@ -277,17 +277,17 @@ LOCAL{ VAR size,elemSize,shift:LONGINT; }
 PROCEDURE Skipper ( type:TypeReprs )
 LOCAL{ VAR arrayOfs,openDim,elemSize,shift:LONGINT; }
 
- TypeRepr(_,size,..) ? (size>0); {
+ TypeRepr(_,size,..) :- CONDITION (size>0); {
     ASM.CS2( add,l  ,  i(ADR.Align8(4+size)),R(ebx) ); 
     ASM.C1 ( jmp    ,  R(esi)                       ); 
  };.
 
- RecordTypeRepr(_,size,..) ? (size=0); { (* An open array has also size=0! *)
+ RecordTypeRepr(_,size,..) :- CONDITION (size=0); { (* An open array has also size=0! *)
     ASM.CS2( add,l  ,  i(8),R(ebx) ); 
     ASM.C1 ( jmp    ,  R(esi)      ); 
  };.
 
- ArrayTypeRepr(_,_,_,_,_,len,..) ? (len=OB.OPENARRAYLEN); {
+ ArrayTypeRepr(_,_,_,_,_,len,..) :- CONDITION (len=OB.OPENARRAYLEN); {
     openDim       := T.OpenDimOfArrayType(type); 
     elemSize      := T.ElemSizeOfOpenArrayType(type); 
     CASE openDim OF

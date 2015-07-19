@@ -1,0 +1,17 @@
+*.o
+*.r
+ADR.md
+ADR.mi
+BL.md
+BL.mi
+CMT.md
+CMT.mi
+CODEf.md
+CODEf.mi
+CODEf.tmp
+CoderTree.TS
+MockaTest/FormalParam
+MockaTest/Halt.o
+MockaTest/Halt.r
+OB.TS
+oberon.cgd.tmp

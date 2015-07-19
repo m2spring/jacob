@@ -167,53 +167,54 @@ BEGIN{  InitBitRangeTab; }
 /********************************************************************************************************************************/
 FUNCTION OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr ( type:TypeReprs ) LONGINT
  PointerTypeRepr(_,_,_,_,_
-                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN T.OpenDimOfArrayType(baseType)               ?.
- ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr(elemType) ? (len>OB.OPENARRAYLEN);.
- ArrayTypeRepr(_,_,_,_,_,_  ,elemType)            RETURN T.OpenDimOfArrayType(type)                   ?.
- _                                                RETURN 0                                            ?.
+                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN T.OpenDimOfArrayType(baseType)               :- .
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN OArrDimFrom_Arr_Or_Ptr_Or_ArrOfPtr(elemType) :- CONDITION 
+                                                                                                         (len>OB.OPENARRAYLEN);.
+ ArrayTypeRepr(_,_,_,_,_,_  ,elemType)            RETURN T.OpenDimOfArrayType(type)                   :- .
+ _                                                RETURN 0                                            :- .
 
 /********************************************************************************************************************************/
 FUNCTION ArrayOfsFromODim ( odim:LONGINT ) tAddress
 
- _ RETURN {odim}? { CASE odim OF
-                    |0:  ;
-                    |1:  odim:=4; 
-                    ELSE odim:=4*odim+4; 
-                    END; };.
+ _ RETURN {odim} :- { CASE odim OF
+                      |0:  ;
+                      |1:  odim:=4; 
+                      ELSE odim:=4*odim+4; 
+                      END; };.
 
 /********************************************************************************************************************************/
 FUNCTION ArrayOfs ( type:TypeReprs ) tAddress
 
- _ RETURN ArrayOfsFromODim({T.OpenDimOfArrayType(type)}) ?.
+ _ RETURN ArrayOfsFromODim({T.OpenDimOfArrayType(type)}) :- .
 
 /********************************************************************************************************************************/
 FUNCTION LenOfsFromOpenParamType ( type:TypeReprs ) tAddress
 
- _ RETURN 4+LenOfsFromOpenPointerBaseType(type) ?.
+ _ RETURN 4+LenOfsFromOpenPointerBaseType(type) :- .
 
 /********************************************************************************************************************************/
 FUNCTION LenOfsFromOpenPointerBaseType ( type:TypeReprs ) tAddress
 
- ArrayTypeRepr(_,_,_,_,_,len0,ArrayTypeRepr(_,_,_,_,_,len1,_)) RETURN 4 ? ( (len0=OB.OPENARRAYLEN) 
-                                                                          & (len1=OB.OPENARRAYLEN));.
+ ArrayTypeRepr(_,_,_,_,_,len0,ArrayTypeRepr(_,_,_,_,_,len1,_)) RETURN 4 :-  CONDITION ( (len0=OB.OPENARRAYLEN) 
+                                                                                      & (len1=OB.OPENARRAYLEN)); .
  
- _                                                             RETURN 0 ?.
+ _                                                             RETURN 0 :- .
 
 /********************************************************************************************************************************/
 FUNCTION LenOfsFromTypeOfOpenEntry ( type:TypeReprs ) tAddress
 
  /* consider LEN(a[i,j,k]) with a:ARRAY L1,L2,L3 OF POINTER TO ARRAY OF aType */
 
- ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN LenOfsFromTypeOfOpenEntry(elemType)     ? (len>OB.OPENARRAYLEN);.
-
+ ArrayTypeRepr(_,_,_,_,_,len,elemType)            RETURN LenOfsFromTypeOfOpenEntry(elemType)     :-  CONDITION
+                                                                                                     (len>OB.OPENARRAYLEN);.
  PointerTypeRepr(_,_,_,_,_
-                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN LenOfsFromOpenPointerBaseType(baseType) ?.
+                ,TypeEntry(_,_,_,_,_,_,baseType)) RETURN LenOfsFromOpenPointerBaseType(baseType) :- .
  
- _                                                RETURN LenOfsFromOpenPointerBaseType(type)     ?.
+ _                                                RETURN LenOfsFromOpenPointerBaseType(type)     :- .
 
 /********************************************************************************************************************************/
 FUNCTION LocalVarBase ( level:tLevel ) tAddress
- _ RETURN { -4-4*(level-OB.MODULELEVEL) } ?.
+ _ RETURN { -4-4*(level-OB.MODULELEVEL) } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE NextVarAddr (  level    : tLevel
@@ -225,15 +226,15 @@ LOCAL{ VAR a:tAddress; }
 
    /* level   =: */ {OB.MODULELEVEL},.. 
 => /* varAddr := */ a
-,  /* newAddr := */ a+typesize          ?  { a:=pAligned(oldAddr,typesize); };.
+,  /* newAddr := */ a+typesize          :-   { a:=pAligned(oldAddr,typesize); };.
 
    /* level   =: */ {OB.FIELDLEVEL},.. 
 => /* varAddr := */ oldAddr
-,  /* newAddr := */ oldAddr+typesize    ?.
+,  /* newAddr := */ oldAddr+typesize    :- .
 
    /* level   =: */ .. 
 => /* varAddr := */ a
-,  /* newAddr := */ a                   ?  { a:=nAligned(oldAddr-typesize,typesize); };.
+,  /* newAddr := */ a                   :-   { a:=nAligned(oldAddr-typesize,typesize); };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE NextParAddr (  parMode  : tParMode
@@ -249,62 +250,62 @@ LOCAL{ VAR od:LONGINT; a:tAddress; r:tParMode; }
 ,  /* oldAddr =: */ _
 => /* parAddr := */ oldAddr+4
 ,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ oldAddr+8 ?.
+,  /* newAddr := */ oldAddr+8 :- .
                                                                 
    /* parMode =: */ _
 ,  /* type    =: */ RecordTypeRepr
 ,  /* oldAddr =: */ _
 => /* parAddr := */ oldAddr
 ,  /* refMode := */ r          
-,  /* newAddr := */ {a} ? { CASE T.SizeOfType(type) OF
-                            |0      : r:=OB.VALPAR; a:=oldAddr; 
-                            |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
-                            ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
-                            END; };.
+,  /* newAddr := */ {a} :-  { CASE T.SizeOfType(type) OF
+                              |0      : r:=OB.VALPAR; a:=oldAddr; 
+                              |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
+                              ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
+                              END; };.
                                                                 
    /* parMode =: */ _
 ,  /* type    =: */ ArrayTypeRepr(_,_,_,_,_,len,_)
 ,  /* oldAddr =: */ _
 => /* parAddr := */ oldAddr
 ,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ {a} ? (len=OB.OPENARRAYLEN); 
-                          { od:=T.OpenDimOfArrayType(type); a:=oldAddr+4+4*od;
-			    IF od>1 THEN INC(a,4); END; };.
+,  /* newAddr := */ {a} :-  CONDITION (len=OB.OPENARRAYLEN); 
+                            { od:=T.OpenDimOfArrayType(type); a:=oldAddr+4+4*od;
+                              IF od>1 THEN INC(a,4); END; };.
    
    /* parMode =: */ _
 ,  /* type    =: */ ArrayTypeRepr
 ,  /* oldAddr =: */ _
 => /* parAddr := */ oldAddr
 ,  /* refMode := */ r          
-,  /* newAddr := */ {a} ? { IF parMode=OB.REFPAR THEN 
-                               r:=OB.REFPAR; a:=oldAddr+4; 
-                            ELSE
-                               CASE T.SizeOfType(type) OF
-                               |0      : r:=OB.VALPAR; a:=oldAddr; 
-			       |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
-			       ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
-                               END;
-                            END; };.
+,  /* newAddr := */ {a} :-  { IF parMode=OB.REFPAR THEN 
+                                  r:=OB.REFPAR; a:=oldAddr+4; 
+                              ELSE
+                                  CASE T.SizeOfType(type) OF
+                                  |0      : r:=OB.VALPAR; a:=oldAddr; 
+                                  |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
+                                  ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
+                                  END;
+                              END; };.
    
    /* parMode =: */ {OB.REFPAR}
 ,  /* type    =: */ ..
 => /* parAddr := */ oldAddr
 ,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ oldAddr+4 ?.
+,  /* newAddr := */ oldAddr+4 :- .
    
    /* parMode =: */ _
 ,  /* type    =: */ ..
 => /* parAddr := */ oldAddr
 ,  /* refMode := */ {OB.VALPAR}
-,  /* newAddr := */ {oldAddr+Align4(T.SizeOfType(type))} ?.
+,  /* newAddr := */ {oldAddr+Align4(T.SizeOfType(type))} :- .
    
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION TTableElemOfsInTDesc ( staticType:TypeReprs , testType:TypeReprs => tAddress ) BOOLEAN
 
  RecordTypeRepr(_,_,_,_,_,staticLevel,_,_,_,_),RecordTypeRepr(_,_,_,_,_,testLevel,_,_,_,_) 
- => (4*(testLevel-LIM.MaxExtensionLevel-3)) ? RETURN (testLevel>staticLevel);.
+ => (4*(testLevel-LIM.MaxExtensionLevel-3)) :-  RETURN (testLevel>staticLevel);.
 
- .. => 0 ? RETURN FALSE;.
+ .. => 0 :-  RETURN FALSE;.
 
 /********************************************************************************************************************************/
 /*** END ADR.pum                                                                                                              ***/

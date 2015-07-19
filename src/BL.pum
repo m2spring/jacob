@@ -35,24 +35,24 @@ GLOBAL{ IMPORT ADR      ,
 /*$1*/
 PREDICATE IsEmptyBlocklist ( Blocklists )
 
- NoBlocklist ?.
+ NoBlocklist :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION HeightOfBlocklist ( Blocklists ) LONGINT
 
- Blocklist(prev,_,_,_,_,height) RETURN {UTI.MaxLI(HeightOfBlocklist(prev),height)} ?.
- ..                             RETURN 0                                           ?.
+ Blocklist(prev,_,_,_,_,height) RETURN {UTI.MaxLI(HeightOfBlocklist(prev),height)} :- .
+ ..                             RETURN 0                                           :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION AdjustIncr ( bl:Blocklists , elemSize:tSize ) Blocklists
 
         Blocklist(NoBlocklist      ,sub,ofs,count,incr      ,height),_ 
- RETURN Blocklist({OB.cNoBlocklist},sub,ofs,count,{elemSize},height) ? (count=1);.
+ RETURN Blocklist({OB.cNoBlocklist},sub,ofs,count,{elemSize},height) :-  CONDITION (count=1);.
 
         ..                                        
- RETURN bl                                                           ?.
+ RETURN bl                                                           :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -60,30 +60,30 @@ FUNCTION ConcatBlocklists ( b1:Blocklists , b2:Blocklists , base:tAddress ) Bloc
      
         _     
       , NoBlocklist,.. 
- RETURN b1 ?.
+ RETURN b1 :- .
  
         Blocklist(prev       ,sub1:Blocklists,ofs1,count1       ,incr1,height1)
       , Blocklist(NoBlocklist,sub2:Blocklists,ofs2,count2       ,incr2,height2),..
  RETURN Blocklist(prev       ,sub2           ,ofs1,count1+count2,incr2,height2)
- ? (incr1 = incr2) 
- & (ofs1+count1*incr1 = base+ofs2) 
- & AreEqualBlocklists(sub1,sub2); .
+ :- CONDITION (incr1 = incr2) 
+            & (ofs1+count1*incr1 = base+ofs2) 
+            & AreEqualBlocklists(sub1,sub2); .
 
         _
       , Blocklist(prev                          ,sub:Blocklists,ofs     ,count,incr,height),..
- RETURN Blocklist(ConcatBlocklists(b1,prev,base),sub           ,base+ofs,count,incr,height) ?.
+ RETURN Blocklist(ConcatBlocklists(b1,prev,base),sub           ,base+ofs,count,incr,height) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 PREDICATE AreEqualBlocklists ( al:Blocklists , bl:Blocklists )
 
- NoBlocklist                            ,NoBlocklist                             ?.
- Blocklist(p1,s1:Blocklists,o1,c1,i1,h1),Blocklist(p2,s2:Blocklists,o2,c2,i2,h2) ? (o1 = o2) 
-                                                                                 & (c1 = c2) 
-                                                                                 & (i1 = i2)
-										 & (h1 = h2)
-                                                                                 & AreEqualBlocklists(s1,s2)
-                                                                                 & AreEqualBlocklists(p1,p2);.
+ NoBlocklist                            ,NoBlocklist                             :- .
+ Blocklist(p1,s1:Blocklists,o1,c1,i1,h1),Blocklist(p2,s2:Blocklists,o2,c2,i2,h2) :- CONDITION (o1 = o2) 
+                                                                                            & (c1 = c2) 
+                                                                                            & (i1 = i2)
+                                                                                            & (h1 = h2)
+                                                                                            & AreEqualBlocklists(s1,s2)
+                                                                                            & AreEqualBlocklists(p1,p2);.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -91,19 +91,19 @@ FUNCTION BlocklistOfArrayType ( elemBl:Blocklists , len:tSize , elemSize:tSize )
 LOCAL{ VAR bl:OB.tOB; h:LONGINT; }
 
         NoBlocklist,.. 
- RETURN {OB.cNoBlocklist}                                                              ?.
+ RETURN {OB.cNoBlocklist}                                                              :- .
 										  
         Blocklist(NoBlocklist      ,sub:Blocklists,ofs,count    ,_       ,height  ),.. 
- RETURN Blocklist({OB.cNoBlocklist},sub           ,ofs,{len}    ,elemSize,height  )    ? (count=1);.
+ RETURN Blocklist({OB.cNoBlocklist},sub           ,ofs,{len}    ,elemSize,height  )    :- CONDITION (count=1);.
 						   		  
         Blocklist(NoBlocklist      ,sub:Blocklists,ofs,count    ,incr    ,height  ),.. 
- RETURN Blocklist({OB.cNoBlocklist},sub           ,ofs,count*len,incr    ,height  )    ? (count*incr=elemSize);.
+ RETURN Blocklist({OB.cNoBlocklist},sub           ,ofs,count*len,incr    ,height  )    :- CONDITION (count*incr=elemSize);.
 						   		  
         Blocklist(prev             ,sub:Blocklists,ofs,count    ,incr    ,height  ),.. 
- RETURN Blocklist(prev             ,sub           ,ofs,count    ,incr    ,height  )    ? (len=1);.
+ RETURN Blocklist(prev             ,sub           ,ofs,count    ,incr    ,height  )    :- CONDITION (len=1);.
         
         ..
- RETURN Blocklist({OB.cNoBlocklist},elemBl        ,0  ,{len}    ,elemSize,{h}     )    ? 
+ RETURN Blocklist({OB.cNoBlocklist},elemBl        ,0  ,{len}    ,elemSize,{h}     )    :-  
         {  h:=HeightOfBlocklist(elemBl); 
            IF (h>0) OR (len<0) OR (len>LIM.BlocklistLoopUnrollingThreshold) THEN INC(h); END;
         };.
@@ -114,25 +114,26 @@ LOCAL{ VAR bl:OB.tOB; h:LONGINT; }
 /*$1*/
 FUNCTION PtrBlocklistOfType ( t:TypeReprs ) Blocklists
 
- TypeRepr(_,_,TypeBlocklists(ptBl,_),..) RETURN ptBl              ? { IF ptBl=NIL THEN ptBl:=CalcPtrBlocklist(t); END; };.
- ..                                      RETURN {OB.cNoBlocklist} ?.
+ TypeRepr(_,_,TypeBlocklists(ptBl,_),..) RETURN ptBl              :-  { IF ptBl=NIL THEN ptBl:=CalcPtrBlocklist(t); END; };.
+ ..                                      RETURN {OB.cNoBlocklist} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION CalcPtrBlocklist ( t:TypeReprs ) Blocklists
 
- PointerTypeRepr                                        RETURN {OB.cPointerBlocklist}                                     ?.
- ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs)               RETURN PtrBlocklistOfOpenArrayType(t,0)    ? (len=OB.OPENARRAYLEN);.
- ArrayTypeRepr(_,_,_,_,_,len,e:TypeRepr(_,elemSize,..)) RETURN BlocklistOfArrayType(PtrBlocklistOfType(e),{len},elemSize) ?.
- RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_)    RETURN AdjustIncr(PtrBlocklistOfRecordType(fields),size)          ?.
- ..                                                     RETURN {OB.cNoBlocklist}                                          ?.
+ PointerTypeRepr                                        RETURN {OB.cPointerBlocklist}                                     :- .
+ ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs)               RETURN PtrBlocklistOfOpenArrayType(t,0)    :- CONDITION
+                                                                                                      (len=OB.OPENARRAYLEN);.
+ ArrayTypeRepr(_,_,_,_,_,len,e:TypeRepr(_,elemSize,..)) RETURN BlocklistOfArrayType(PtrBlocklistOfType(e),{len},elemSize) :- .
+ RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_)    RETURN AdjustIncr(PtrBlocklistOfRecordType(fields),size)          :- .
+ ..                                                     RETURN {OB.cNoBlocklist}                                          :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION PtrBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
 
  ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs),_ 
-    RETURN PtrBlocklistOfOpenArrayType(e,odim+1) ? (len=OB.OPENARRAYLEN);.
+    RETURN PtrBlocklistOfOpenArrayType(e,odim+1) :- CONDITION (len=OB.OPENARRAYLEN);.
 
  ArrayTypeRepr(_,size,_,_,_,len,e:TypeRepr(_,elemSize,..)),_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -140,7 +141,7 @@ FUNCTION PtrBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ size
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
  RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_),_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -148,7 +149,7 @@ FUNCTION PtrBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ size
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
  PointerTypeRepr,_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -156,9 +157,9 @@ FUNCTION PtrBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ 4
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
- .. RETURN {OB.cNoBlocklist} ?.
+ .. RETURN {OB.cNoBlocklist} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -167,11 +168,11 @@ FUNCTION PtrBlocklistOfRecordType ( fields:Entries ) Blocklists
  VarEntry(prev:Entries,_,_,_,_,_,t:TypeReprs,_,_,_,ofs,_,_,_) RETURN ConcatBlocklists
                                                                      (/* b1   := */ PtrBlocklistOfRecordType(prev)
                                                                      ,/* b2   := */ PtrBlocklistOfType(t)
-                                                                     ,/* base := */ ofs)            ?.
+                                                                     ,/* base := */ ofs)            :- .
 							        
- DataEntry(prev:Entries,..)                                   RETURN PtrBlocklistOfRecordType(prev) ?.
+ DataEntry(prev:Entries,..)                                   RETURN PtrBlocklistOfRecordType(prev) :- .
  							        
- ..                                                           RETURN {OB.cNoBlocklist}              ?.
+ ..                                                           RETURN {OB.cNoBlocklist}              :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -181,40 +182,40 @@ FUNCTION PtrBlocklistOfModuleGlobals ( decls:Entries ) Blocklists
                                                                      (/* b1   := */ PtrBlocklistOfModuleGlobals(prev)
                                                                      ,/* b2   := */ AdjustIncr(PtrBlocklistOfType(t)
                                                                                               ,ADR.Align4(T.SizeOfType(t)))
-                                                                     ,/* base := */ ofs)               ?.
+                                                                     ,/* base := */ ofs)               :- .
 	      				                    
- DataEntry(prev:Entries,..)                                   RETURN PtrBlocklistOfModuleGlobals(prev) ?.
+ DataEntry(prev:Entries,..)                                   RETURN PtrBlocklistOfModuleGlobals(prev) :- .
  	       				                    
- ..                                                           RETURN {OB.cNoBlocklist}                 ?.
+ ..                                                           RETURN {OB.cNoBlocklist}                 :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION PtrBlocklistOfProcLocals ( decls:Entries ) Blocklists
 
- .. RETURN PtrBlOfProcLocals(decls,{OB.cNoBlocklist}) ?.
+ .. RETURN PtrBlOfProcLocals(decls,{OB.cNoBlocklist}) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION PtrBlOfProcLocals ( decls:Entries , b1:Blocklists ) Blocklists
 
- VarEntry(_           ,_,_,_,_,_,_          ,_,_,_,ofs,_,_,_),_ RETURN b1                         ? (ofs>0);.
+ VarEntry(_           ,_,_,_,_,_,_          ,_,_,_,ofs,_,_,_),_ RETURN b1                         :- CONDITION (ofs>0);.
                                                             
  VarEntry(prev:Entries,_,_,_,_,_,t:TypeReprs,_,_,_,ofs,_,_,_),_ RETURN PtrBlOfProcLocals(prev
                                                                                         ,ConcatBlocklists
                                                                                          (/* b1   := */ b1
                                                                                          ,/* b2   := */ PtrBlocklistOfType(t)
                                                                                          ,/* base := */ ofs) 
-                                                                                        )         ?.
+                                                                                        )         :- .
                                                                      
- DataEntry(prev:Entries,..),_                                   RETURN PtrBlOfProcLocals(prev,b1) ?.
+ DataEntry(prev:Entries,..),_                                   RETURN PtrBlOfProcLocals(prev,b1) :- .
                                                                 
- ..                                                             RETURN b1                         ?.
+ ..                                                             RETURN b1                         :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION PtrBlocklistOfProcDecls ( decls:Entries ) Blocklists
 
- .. RETURN PtrBlOfProcDecls(decls,{OB.cNoBlocklist}) ?.
+ .. RETURN PtrBlOfProcDecls(decls,{OB.cNoBlocklist}) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -227,11 +228,11 @@ FUNCTION PtrBlOfProcDecls ( decls:Entries , b1:Blocklists ) Blocklists
                                                                                     ,/* b2   := */ PtrBlocklistOfType(t)
                                                                                     ,/* base := */ ofs) 
                                                                                    ) 
-                                                                            ? (parMode=OB.VALPAR);.
+                                                                            :- CONDITION (parMode=OB.VALPAR);.
                                                                           
- DataEntry(prev:Entries,..),_                                               RETURN PtrBlOfProcDecls(prev,b1) ?.
+ DataEntry(prev:Entries,..),_                                               RETURN PtrBlOfProcDecls(prev,b1) :- .
                                                                             
- ..                                                                         RETURN b1 ?.
+ ..                                                                         RETURN b1 :- .
  
 /********************************************************************************************************************************/
 /*** procedure block lists                                                                                                    ***/
@@ -239,25 +240,26 @@ FUNCTION PtrBlOfProcDecls ( decls:Entries , b1:Blocklists ) Blocklists
 /*$1*/
 FUNCTION ProcBlocklistOfType ( t:TypeReprs ) Blocklists
 
- TypeRepr(_,_,TypeBlocklists(_,prBl),..) RETURN prBl              ? { IF prBl=NIL THEN prBl:=CalcProcBlocklist(t); END; };.
- ..                                      RETURN {OB.cNoBlocklist} ?.
+ TypeRepr(_,_,TypeBlocklists(_,prBl),..) RETURN prBl              :-  { IF prBl=NIL THEN prBl:=CalcProcBlocklist(t); END; };.
+ ..                                      RETURN {OB.cNoBlocklist} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION CalcProcBlocklist ( t:TypeReprs ) Blocklists
 
- ProcedureTypeRepr                                      RETURN {OB.cProcedureBlocklist}                                    ?.
- ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs)               RETURN ProcBlocklistOfOpenArrayType(t,0)    ? (len=OB.OPENARRAYLEN);.
- ArrayTypeRepr(_,_,_,_,_,len,e:TypeRepr(_,elemSize,..)) RETURN BlocklistOfArrayType(ProcBlocklistOfType(e),{len},elemSize) ?.
- RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_)    RETURN AdjustIncr(ProcBlocklistOfRecordType(fields),size)          ?.
- ..                                                     RETURN {OB.cNoBlocklist}                                           ?.
+ ProcedureTypeRepr                                      RETURN {OB.cProcedureBlocklist}                                    :- .
+ ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs)               RETURN ProcBlocklistOfOpenArrayType(t,0) :- CONDITION
+                                                                                                    (len=OB.OPENARRAYLEN);.
+ ArrayTypeRepr(_,_,_,_,_,len,e:TypeRepr(_,elemSize,..)) RETURN BlocklistOfArrayType(ProcBlocklistOfType(e),{len},elemSize) :- .
+ RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_)    RETURN AdjustIncr(ProcBlocklistOfRecordType(fields),size)          :- .
+ ..                                                     RETURN {OB.cNoBlocklist}                                           :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ProcBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
 
  ArrayTypeRepr(_,_,_,_,_,len,e:TypeReprs),_ 
-    RETURN ProcBlocklistOfOpenArrayType(e,odim+1) ? (len=OB.OPENARRAYLEN);.
+    RETURN ProcBlocklistOfOpenArrayType(e,odim+1) :- CONDITION (len=OB.OPENARRAYLEN);.
 
  ArrayTypeRepr(_,size,_,_,_,len,e:TypeRepr(_,elemSize,..)),_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -265,7 +267,7 @@ FUNCTION ProcBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ size
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
  RecordTypeRepr(_,size,_,_,_,_,_,_,fields:Entries,_),_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -273,7 +275,7 @@ FUNCTION ProcBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ size
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
  ProcedureTypeRepr,_
     RETURN Blocklist(/* prev   := */ {OB.cNoBlocklist}
@@ -281,9 +283,9 @@ FUNCTION ProcBlocklistOfOpenArrayType ( t:TypeReprs , odim:LONGINT ) Blocklists
                     ,/* ofs    := */ 0
                     ,/* count  := */ {-odim}
                     ,/* incr   := */ 4
-                    ,/* height := */ 0) ?.
+                    ,/* height := */ 0) :- .
 
- .. RETURN {OB.cNoBlocklist} ?.
+ .. RETURN {OB.cNoBlocklist} :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -292,11 +294,11 @@ FUNCTION ProcBlocklistOfRecordType ( fields:Entries ) Blocklists
  VarEntry(prev:Entries,_,_,_,_,_,t:TypeReprs,_,_,_,ofs,_,_,_) RETURN ConcatBlocklists
                                                                      (/* b1   := */ ProcBlocklistOfRecordType(prev)
                                                                      ,/* b2   := */ ProcBlocklistOfType(t)
-                                                                     ,/* base := */ ofs)             ?.
+                                                                     ,/* base := */ ofs)             :- .
 	      				                     
- DataEntry(prev:Entries,..)                                   RETURN ProcBlocklistOfRecordType(prev) ?.
+ DataEntry(prev:Entries,..)                                   RETURN ProcBlocklistOfRecordType(prev) :- .
  	       				                     
- ..                                                           RETURN {OB.cNoBlocklist}               ?.
+ ..                                                           RETURN {OB.cNoBlocklist}               :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
@@ -306,34 +308,34 @@ FUNCTION ProcBlocklistOfModuleGlobals ( decls:Entries ) Blocklists
                                                                      (/* b1   := */ ProcBlocklistOfModuleGlobals(prev)
                                                                      ,/* b2   := */ AdjustIncr(ProcBlocklistOfType(t)
                                                                                               ,ADR.Align4(T.SizeOfType(t)))
-                                                                     ,/* base := */ ofs) ?.
+                                                                     ,/* base := */ ofs) :- .
 							          
- DataEntry(prev:Entries,..)                                   RETURN ProcBlocklistOfModuleGlobals(prev) ?.
+ DataEntry(prev:Entries,..)                                   RETURN ProcBlocklistOfModuleGlobals(prev) :- .
  	       				                   
- ..                                                           RETURN {OB.cNoBlocklist}                  ?.
+ ..                                                           RETURN {OB.cNoBlocklist}                  :- .
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ProcBlocklistOfProcLocals ( decls:Entries ) Blocklists
 
- .. RETURN ProcBlOfProcLocals(decls,{OB.cNoBlocklist}) ?.
+ .. RETURN ProcBlOfProcLocals(decls,{OB.cNoBlocklist}) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*$1*/
 FUNCTION ProcBlOfProcLocals ( decls:Entries , b1:Blocklists ) Blocklists
 
- VarEntry(_           ,_,_,_,_,_,_          ,_,_,_,ofs,_,_,_),_ RETURN b1                          ? (ofs>0);.
+ VarEntry(_           ,_,_,_,_,_,_          ,_,_,_,ofs,_,_,_),_ RETURN b1                          :- CONDITION (ofs>0);.
                                                             
  VarEntry(prev:Entries,_,_,_,_,_,t:TypeReprs,_,_,_,ofs,_,_,_),_ RETURN ProcBlOfProcLocals(prev
                                                                                          ,ConcatBlocklists
                                                                                           (/* b1   := */ b1
                                                                                           ,/* b2   := */ ProcBlocklistOfType(t)
                                                                                           ,/* base := */ ofs) 
-                                                                                         )         ?.
+                                                                                         )         :- .
                                                                      
- DataEntry(prev:Entries,..),_                                   RETURN ProcBlOfProcLocals(prev,b1) ?.
+ DataEntry(prev:Entries,..),_                                   RETURN ProcBlOfProcLocals(prev,b1) :- .
                                                                 
- ..                                                             RETURN b1                          ?.
+ ..                                                             RETURN b1                          :- .
  
 /********************************************************************************************************************************/
 /*** END BL.pum                                                                                                               ***/
