@@ -469,7 +469,7 @@ PROCEDURE CmtPredecl ( Tree )
  SysNewArgumenting    :- { ASM.CmtS('SYSTEM.NEW'   ); };.
  SysAsmArgumenting    :- { ASM.CmtS('SYSTEM.ASM'   ); };.
 
- _                    :- { ASM.CmtS('$PREDECL:-'    ); };.
+ _                    :- { ASM.CmtS('$PREDECL?'    ); };.
 
 /********************************************************************************************************************************/
  
@@ -670,14 +670,14 @@ PROCEDURE Type ( OB )
     ASM.WrS('POINTER TO '); Type(type);
  };.
 
- PointerTypeRepr :- { ASM.WrS('POINTER TO :-'); };.
+ PointerTypeRepr :- { ASM.WrS('POINTER TO ?'); };.
 
  ProcedureTypeRepr(_,_,_,_,_,sig:SignatureRepr,result:TypeReprs,_) :- {
     ASM.WrS('PROCEDURE('); Signature(sig); ASM.WrS(')');
     IF ~IsEmpty(result) THEN ASM.WrS(':'); Type(result); END;
  };.
 
- _ :- { ASM.WrS(':-TypeRepr'); };.
+ _ :- { ASM.WrS('?TypeRepr'); };.
 
 /********************************************************************************************************************************/
  
