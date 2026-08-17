@@ -43,12 +43,12 @@ BEGIN{  Ident_CASEFAULT := UTI.IdentOf('_CASEFAULT');
         TableSYSTEM     := NIL; }
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 FUNCTION GetTablePREDECL () Entries
  .. RETURN {TablePREDECL} :- {IF TablePREDECL=NIL THEN BuildTables; END; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
-/*$1*/
+ 
 FUNCTION GetTableSYSTEM () Entries
  .. RETURN {TableSYSTEM} :- {IF TableSYSTEM=NIL THEN BuildTables; END; };.
 
@@ -56,41 +56,41 @@ FUNCTION GetTableSYSTEM () Entries
 FUNCTION bC ( n:tName , t:TypeReprs , v:ValueReprs ) Entries
 
  .. RETURN ConstEntry
-           (/* prevEntry   := */ {OB.NoOB}
-           ,/* module      := */ _
-           ,/* ident       := */ UTI.IdentOf(n)
-           ,/* exportMode  := */ {OB.PUBLIC}
-           ,/* level       := */ 0
-           ,/* declStatus  := */ {OB.DECLARED}
-           ,/* typeRepr    := */ t
-           ,/* value       := */ v
-           ,/* label       := */ {LAB.MT}) :- .
+           (  {OB.NoOB}
+           ,  _
+           ,  UTI.IdentOf(n)
+           ,  {OB.PUBLIC}
+           ,  0
+           ,  {OB.DECLARED}
+           ,  t
+           ,  v
+           ,  {LAB.MT}) :- .
                               
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bI ( n:tName , val:LONGINT ) Entries
 
  .. RETURN ConstEntry
-           (/* prevEntry   := */ {OB.NoOB}
-           ,/* module      := */ _
-           ,/* ident       := */ UTI.IdentOf(n)
-           ,/* exportMode  := */ {OB.PUBLIC}
-           ,/* level       := */ 0
-           ,/* declStatus  := */ {OB.DECLARED}
-           ,/* typeRepr    := */ {T.MinimalIntegerType(val)}
-           ,/* value       := */ IntegerValue({val})
-           ,/* label       := */ {LAB.MT}) :- .
+           (  {OB.NoOB}
+           ,  _
+           ,  UTI.IdentOf(n)
+           ,  {OB.PUBLIC}
+           ,  0
+           ,  {OB.DECLARED}
+           ,  {T.MinimalIntegerType(val)}
+           ,  IntegerValue({val})
+           ,  {LAB.MT}) :- .
                               
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bT ( n:tName , t:TypeReprs ) Entries
 
  .. RETURN TypeEntry
-           (/* prevEntry   := */ {OB.NoOB}
-           ,/* module      := */ _
-           ,/* ident       := */ UTI.IdentOf(n)
-           ,/* exportMode  := */ {OB.PUBLIC}
-           ,/* level       := */ 0
-           ,/* declStatus  := */ {OB.DECLARED}
-           ,/* typeRepr    := */ t) :- .
+           (  {OB.NoOB}
+           ,  _
+           ,  UTI.IdentOf(n)
+           ,  {OB.PUBLIC}
+           ,  0
+           ,  {OB.DECLARED}
+           ,  t) :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION bP ( n:tName , kind:SHORTCARD ) Entries
@@ -100,27 +100,27 @@ FUNCTION bP ( n:tName , kind:SHORTCARD ) Entries
 FUNCTION bP1 ( i:tIdent , t:PreDeclProcTypeRepr ) Entries
 
  _,     PreDeclProcTypeRepr
-        (/* entry          =: */ entry
-        ,/* size           =: */ size
-        ,/* typeBlocklists =: */ typeBlocklists
-        ,/* isInTDescList  =: */ isInTDescList
-        ,/* label          =: */ label
-        ,/* signatureRepr  =: */ signatureRepr
-        ,/* resultType     =: */ resultType
-        ,/* paramSpace     =: */ paramSpace) 
+        (  entry
+        ,  size
+        ,  typeBlocklists
+        ,  isInTDescList
+        ,  label
+        ,  signatureRepr
+        ,  resultType
+        ,  paramSpace) 
  RETURN ProcedureEntry     
-        (/* prevEntry      := */ {OB.NoOB}
-        ,/* module         := */ _
-        ,/* ident          := */ i
-        ,/* exportMode     := */ {OB.PUBLIC}
-        ,/* level          := */ 0
-        ,/* declStatus     := */ {OB.DECLARED}
-        ,/* typeRepr       := */ t
-        ,/* complete       := */ TRUE
-        ,/* position       := */ _
-        ,/* label          := */ {LAB.MT}
-        ,/* namePath       := */ {OB.cmtEntry}
-        ,/* env            := */ NIL) :- { entry          := OB.cNonameEntry;
+        (  {OB.NoOB}
+        ,  _
+        ,  i
+        ,  {OB.PUBLIC}
+        ,  0
+        ,  {OB.DECLARED}
+        ,  t
+        ,  TRUE
+        ,  _
+        ,  {LAB.MT}
+        ,  {OB.cmtEntry}
+        ,  NIL) :- { entry          := OB.cNonameEntry;
                                            size           := OT.SIZEoPROCEDURE;
                                            typeBlocklists := OB.cmtTypeBlocklist; 
                                            isInTDescList  := FALSE; 
@@ -133,23 +133,23 @@ FUNCTION bP1 ( i:tIdent , t:PreDeclProcTypeRepr ) Entries
 PROCEDURE EnterPRE ( entry:Entries )
 
  TypeEntry
- (/* prevEntry   =: */ prev
- ,/* module      =: */ module
- ,/* ident       =: */ _
- ,/* exportMode  =: */ exportMode
- ,/* level       =: */ _
- ,/* declStatus  =: */ _
- ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) :- { prev         := TablePREDECL; 
+ (  prev
+ ,  module
+ ,  _
+ ,  exportMode
+ ,  _
+ ,  _
+ ,  TypeRepr(entryOfType,..)) :- { prev         := TablePREDECL; 
                                                       module       := OB.cPredeclModuleEntry; 
                                                       exportMode   := OB.PRIVATE; 
                                                       entryOfType  := entry; 
                                                       TablePREDECL := entry; };.
  DataEntry
- (/* prevEntry   =: */ prev
- ,/* module      =: */ module     
- ,/* ident       =: */ _
- ,/* exportMode  =: */ exportMode
- ,/* level       =: */ ..)                       :- { prev         := TablePREDECL; 
+ (  prev
+ ,  module     
+ ,  _
+ ,  exportMode
+ ,  ..)                       :- { prev         := TablePREDECL; 
                                                       module       := OB.cPredeclModuleEntry;
                                                       exportMode   := OB.PRIVATE; ; 
                                                       TablePREDECL := entry; };.
@@ -160,20 +160,20 @@ PROCEDURE EnterPRE ( entry:Entries )
 PROCEDURE EnterSYS ( entry:Entries )
 
  TypeEntry
- (/* prevEntry   =: */ prev
- ,/* module      =: */ module     
- ,/* ident       =: */ _
- ,/* exportMode  =: */ _
- ,/* level       =: */ _
- ,/* declStatus  =: */ _
- ,/* typeRepr    =: */ TypeRepr(entryOfType,..)) :- { prev         := TableSYSTEM; 
+ (  prev
+ ,  module     
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  TypeRepr(entryOfType,..)) :- { prev         := TableSYSTEM; 
                                                       module       := OB.cSystemModuleEntry; 
                                                       entryOfType  := entry; 
                                                       TableSYSTEM  := entry; };.
  DataEntry
- (/* prevEntry   =: */ prev
- ,/* module      =: */ module     
- ,/* ident       =: */ ..)                       :- { prev         := TableSYSTEM; 
+ (  prev
+ ,  module     
+ ,  ..)                       :- { prev         := TableSYSTEM; 
                                                       module       := OB.cSystemModuleEntry;
                                                       TableSYSTEM  := entry; };.
 
@@ -183,38 +183,38 @@ PROCEDURE EnterSYS ( entry:Entries )
 PROCEDURE DefLabel ( entry:Entries , label:tLabel )
 
  ProcedureEntry
- (/* prevEntry     := */ _
- ,/* module        := */ _
- ,/* ident         := */ _
- ,/* exportMode    := */ _
- ,/* level         := */ _
- ,/* declStatus    := */ _
- ,/* typeRepr      := */ _
- ,/* complete      := */ _
- ,/* position      := */ _
- ,/* label         := */ l
- ,/* namePath      := */ ..),_ :- l:=label;.
+ (  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  l
+ ,  ..),_ :- l:=label;.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE DefEmptySignature ( Entries )
 
  ProcedureEntry     
- (/* prevEntry      := */ _
- ,/* module         := */ _
- ,/* ident          := */ _
- ,/* exportMode     := */ _
- ,/* level          := */ _
- ,/* declStatus     := */ _
- ,/* typeRepr       := */ PreDeclProcTypeRepr
-                          (/* entry          =: */ _
-                          ,/* size           =: */ _
-                          ,/* typeBlocklists =: */ _
-                          ,/* isInTDescList  =: */ _
-                          ,/* label          =: */ _
-                          ,/* signatureRepr  =: */ signatureRepr
-                          ,/* resultType     =: */ _
-                          ,/* paramSpace     =: */ _) 
- ,/* complete       := */ ..) :- { signatureRepr:=OB.cmtSignature; };.
+ (  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  _
+ ,  PreDeclProcTypeRepr
+                          (  _
+                          ,  _
+                          ,  _
+                          ,  _
+                          ,  _
+                          ,  signatureRepr
+                          ,  _
+                          ,  _) 
+ ,  ..) :- { signatureRepr:=OB.cmtSignature; };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE BuildTables ()

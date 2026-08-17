@@ -1,0 +1,26 @@
+IMPLEMENTATION MODULE StringM;
+
+IMPORT StringMem;
+FROM Strings IMPORT tString;
+
+PROCEDURE PutString (VAR s: tString) : tStringRef;
+BEGIN
+  RETURN StringMem.PutString(s);
+END PutString;
+
+PROCEDURE GetString (r: tStringRef; VAR s: tString);
+BEGIN
+  StringMem.GetString(r, s);
+END GetString;
+
+PROCEDURE Length (r: tStringRef) : CARDINAL;
+BEGIN
+  RETURN StringMem.Length(r);
+END Length;
+
+PROCEDURE IsEqual (r: tStringRef; VAR s: tString) : BOOLEAN;
+BEGIN
+  RETURN StringMem.IsEqual(r, s);
+END IsEqual;
+
+END StringM.

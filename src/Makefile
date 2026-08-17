@@ -63,6 +63,7 @@ Jacob:		DatePatch \
 		TD.md       TD.mi \
 		UTI.md      UTI.mi \
 		V.md        V.mi
+		python3 ../bin/fixup_position_import.py
 		echo p Jacob | mc -nog -nogc -index -range -info -noblip
 
 DatePatch:
@@ -125,7 +126,7 @@ UTIS-elf.s:	UTIS.c UTIS.h
    
 # Watch the leading \t in the line above :-)
 
-Scanner.mi:	oberon.rex
+Scanner.md Scanner.mi:	oberon.rex
 	    	rex -dmi oberon.rex
 
 oberon.aecp:	oberon.ast oberon.eva oberon.che oberon.pre
@@ -142,7 +143,7 @@ CoderTree.TS:	oberon.ast
 		echo VIEW CoderTree | cat - oberon.ast | ast -47
 
 Parser.md Parser.mi:	oberon.lal
-		lark -b -d oberon.lal
+		lark -di oberon.lal
 
 Eval.md Eval.mi:	oberon.aecp
 		ag -A7 oberon.aecp

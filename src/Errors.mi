@@ -60,6 +60,9 @@ BEGIN (* WriteErrorMessage *)
  |WrongParseTable: IO.WriteS(IO.StdError,"parse table mismatch"   );
  |OpenParseTable : IO.WriteS(IO.StdError,"cannot open parse table");
  |ReadParseTable : IO.WriteS(IO.StdError,"cannot read parse table");
+ |TooManyErrors  : IO.WriteS(IO.StdError,"too many errors"        );
+ |TokenFound     : IO.WriteS(IO.StdError,"found"                  );
+ |FoundExpected  : IO.WriteS(IO.StdError,"found/expected"         );
  ELSE              IO.WriteS(IO.StdError," error code: "          );
                    IO.WriteI(IO.StdError,ErrorCode,0              );
  END; (* CASE *)

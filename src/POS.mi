@@ -1,5 +1,7 @@
 IMPLEMENTATION MODULE POS;
 
+IMPORT IO;
+
 (*------------------------------------------------------------------------------------------------------------------------------*)
 (*$1*)
 PROCEDURE IncCol(VAR Position : tPosition; n : SHORTINT);
@@ -19,6 +21,13 @@ BEGIN (* Compare *)
                             END; (* IF *)
  END; (* IF *)
 END Compare;
+
+(*------------------------------------------------------------------------------------------------------------------------------*)
+(*$1*)
+PROCEDURE WritePosition(f : IO.tFile; Position : tPosition);
+BEGIN (* WritePosition *)
+ IO.WriteI(f, Position.Line, 0); IO.WriteC(f, '.'); IO.WriteI(f, Position.Column, 0);
+END WritePosition;
 
 (*------------------------------------------------------------------------------------------------------------------------------*)
 BEGIN (* POS *)

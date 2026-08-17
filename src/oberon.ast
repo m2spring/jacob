@@ -8,8 +8,7 @@ IMPORT{ IMPORT ERR            ,
                LAB            ,
                OB             ,
                OT             ,
-               POS            ,
-               Strings        ; }
+               POS            ; }
 
 EXPORT{ TYPE   tIdent         = Idents.tIdent  ;                            (* These types are re-declared due to the fact that *)
                tParMode       = OB.tParMode    ;                            (* qualidents are illegal in an ast specification.  *)

@@ -16,9 +16,9 @@ GLOBAL{ IMPORT ADR, ASM, Idents, LAB, OT, PR, STR, T, UTI;
         FROM   ASM IMPORT i, R, iL, L, l, esp;
         FROM   ASMOP IMPORT add, pushl, call;
 
-/*$1*/
+ 
         CONST  BRACKETS    = TRUE           ;
-/*$*/
+ 
                NOBRACKETS  = FALSE          ;
         TYPE   tIdent      = Idents.tIdent  ;
                tExportMode = OB.tExportMode ;
@@ -26,14 +26,14 @@ GLOBAL{ IMPORT ADR, ASM, Idents, LAB, OT, PR, STR, T, UTI;
                tLevel      = OB.tLevel      ;
                tSize       = OB.tSize       ;
 
-/*$1*/
+ 
         PROCEDURE NotNilCoerce(co : OB.tOB) : OB.tOB;
         BEGIN
          IF co = OB.NoOB THEN RETURN OB.cmtCoercion; ELSE RETURN co END; 
         END NotNilCoerce; }
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PREDICATE IsEmpty ( OB )
  NIL            :- .
  mtObject       :- .
@@ -45,7 +45,7 @@ PREDICATE IsEmpty ( OB )
  mtLabelRange   :- .
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PREDICATE IsEmptyNode ( Tree )
  mtImport         :- .
  mtDeclUnit       :- .
@@ -71,26 +71,26 @@ PREDICATE IsEmptyNode ( Tree )
  mtSysAsmExprList :- .
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PREDICATE IsPredeclArgumenting ( Tree )
  PredeclArgumenting :- .
  Importing(_,_,_,_,PredeclArgumenting,..) :- .
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PREDICATE IsInt1Value ( ValueReprs )
  IntegerValue(v) :-  {RETURN (v=1)}; .
  _               :-  FAIL;           .
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Trace( Entries , stage:LONGINT ) 
 
  BoundProcEntry(_,_,_,_,_,_,_,_,_,_,label,..),_ ;
  ProcedureEntry(_,_,_,_,_,_,_,_,_  ,label,..),_ :-  
     Trace1(label,stage); .
 
-/*$1*/
+ 
 PROCEDURE Trace1 ( label:tLabel , stage:LONGINT )
 LOCAL{ VAR lab:LAB.T; s:ARRAY [0..50] OF CHAR; }
 
@@ -113,7 +113,7 @@ LOCAL{ VAR lab:LAB.T; s:ARRAY [0..50] OF CHAR; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Cmt ( t:Tree )
 LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
 
@@ -386,7 +386,7 @@ LOCAL{VAR n:SHORTCARD; arr:ARRAY [0..200] OF CHAR; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE CmtExpr ( coerce:Coercion , expr:Exprs , brackets:BOOLEAN )
 LOCAL{ VAR arr:ARRAY [0..100] OF CHAR; }
 
@@ -429,7 +429,7 @@ LOCAL{ VAR arr:ARRAY [0..100] OF CHAR; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE CmtPredecl ( Tree )
  AbsArgumenting       :- { ASM.CmtS('ABS'          ); };.
  AshArgumenting       :- { ASM.CmtS('ASH'          ); };.
@@ -469,10 +469,10 @@ PROCEDURE CmtPredecl ( Tree )
  SysNewArgumenting    :- { ASM.CmtS('SYSTEM.NEW'   ); };.
  SysAsmArgumenting    :- { ASM.CmtS('SYSTEM.ASM'   ); };.
 
- _                    :- { ASM.CmtS('$PREDECL?'    ); };.
+ _                    :- { ASM.CmtS('$PREDECL:-'    ); };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Procedure ( Entries , Procs )
  
  ProcedureEntry
@@ -492,7 +492,7 @@ PROCEDURE Procedure ( Entries , Procs )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
-/*$1*/
+ 
 PROCEDURE Procedure1 ( id     : tIdent         
                      , em     : tExportMode
                      , lv     : tLevel
@@ -528,7 +528,7 @@ PROCEDURE Procedure1 ( id     : tIdent
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE DstLevel ( Environment )
 LOCAL{ VAR i:INTEGER; f:BOOLEAN; }
 
@@ -545,7 +545,7 @@ LOCAL{ VAR i:INTEGER; f:BOOLEAN; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Parameters ( OB )
 LOCAL{ VAR ofs:LONGINT; s:ARRAY [0..30] OF CHAR; }
 
@@ -605,7 +605,7 @@ LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Locals ( OB )
 LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
 
@@ -626,7 +626,7 @@ LOCAL{ VAR s:ARRAY [0..30] OF CHAR; }
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Signature ( OB )
 
  Signature(next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type,_,_,parMode,..)) :- {
@@ -639,7 +639,7 @@ PROCEDURE Signature ( OB )
  };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE Type ( OB )
 
  mtTypeRepr    :- { ASM.WrS('<EmptyType>'); };.
@@ -670,24 +670,24 @@ PROCEDURE Type ( OB )
     ASM.WrS('POINTER TO '); Type(type);
  };.
 
- PointerTypeRepr :- { ASM.WrS('POINTER TO ?'); };.
+ PointerTypeRepr :- { ASM.WrS('POINTER TO :-'); };.
 
  ProcedureTypeRepr(_,_,_,_,_,sig:SignatureRepr,result:TypeReprs,_) :- {
     ASM.WrS('PROCEDURE('); Signature(sig); ASM.WrS(')');
     IF ~IsEmpty(result) THEN ASM.WrS(':'); Type(result); END;
  };.
 
- _ :- { ASM.WrS('?TypeRepr'); };.
+ _ :- { ASM.WrS(':-TypeRepr'); };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE ExportMode ( em:tExportMode )
 
  {OB.PUBLIC  } :- { ASM.WrS('*'); };.
  {OB.READONLY} :- { ASM.WrS('-'); };.
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 PROCEDURE CmtBlocklist ( bl:Blocklists )
 
  Blocklist(prev,..) :- {
@@ -697,7 +697,7 @@ PROCEDURE CmtBlocklist ( bl:Blocklists )
     ASM.WrLn;
  };.
  
-/*$1*/
+ 
 PROCEDURE CmtBl ( bl:Blocklists )
  
  Blocklist(prev,subl,ofs,count,incr,height) :- {

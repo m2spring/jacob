@@ -255,7 +255,7 @@ END GenerateRootModule;
 
 (************************************************************************************************************************)
 PROCEDURE Link(dir,mainname:ARRAY OF CHAR):BOOLEAN; 
-VAR ek:tLinkElemP; eb:tLibElemP; dirLen,cmdLen:CARDINAL; cmd:POINTER TO ARRAY [0..100000] OF CHAR; 
+VAR ek:tLinkElemP; eb:tLibElemP; dirLen,cmdLen:CARDINAL; cmd:POINTER TO ARRAY [0..65000] OF CHAR;
     rootname:ARRAY [0..MaxNameLength] OF CHAR; OK,f:BOOLEAN; 
 BEGIN (* Link *)          
  IF linkHd=NIL THEN RETURN FALSE; END; (* IF *)

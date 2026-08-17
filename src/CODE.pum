@@ -285,7 +285,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; }
  NilProcedureValue,_               ,_                => {dcode} :- { Cons.GlobalVariable(LAB.NILPROC,0,Idents.NoIdent,acode); 
                                                                      Cons.AddressOf(acode,dcode); };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeValue: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeValue: failed'); };.
 
 /*END CodeValue */
 

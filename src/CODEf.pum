@@ -125,20 +125,20 @@ LOCAL{ VAR size,elemSize,shift:LONGINT; }
  Signature 
  (next:SignatureRepr
  ,VarEntry
-  (/* prevEntry     =: */ _
-  ,/* moduleIdent   =: */ _
-  ,/* ident         =: */ ident
-  ,/* exportMode    =: */ _
-  ,/* level         =: */ _
-  ,/* declStatus    =: */ _
-  ,/* typeRepr      =: */ typeRepr
-  ,/* isParam       =: */ _
-  ,/* isReceiverPar =: */ _
-  ,/* parMode       =: */ {OB.VALPAR}
-  ,/* address       =: */ ofs
-  ,/* refMode       =: */ {OB.REFPAR}
-  ,/* isWithed      =: */ _
-  ,/* isLaccessed   =: */ isLaccessed)
+  (  _
+  ,  _
+  ,  ident
+  ,  _
+  ,  _
+  ,  _
+  ,  typeRepr
+  ,  _
+  ,  _
+  ,  {OB.VALPAR}
+  ,  ofs
+  ,  {OB.REFPAR}
+  ,  _
+  ,  isLaccessed)
  ) :- {
     IF ARG.OptionCommentsInAsm THEN 
        ASM.CmtLnS('Local copy for parameter '); ASM.CmtId(ident); 

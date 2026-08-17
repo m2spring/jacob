@@ -255,8 +255,10 @@ BEGIN (* Init *)
  IF ARG.TableDir^[0]#0C THEN 
     STR.Copy(dir,ARG.TableDir^); 
     IF dir[STR.Length(dir)-1]#'/' THEN STR.Append(dir,'/'); END;
-    STR.Prepend(Scanner.ScanTabName,dir);
-    STR.Prepend(Parser .ParsTabName,dir);
+    (* Scanner.ScanTabName / Parser.ParsTabName no longer exist as runtime-
+       settable variables in cocktail2110's generated rex/lark output (table
+       search path is now fixed at generation time via -l), so -tab can only
+       still redirect ERR's own table lookup. *)
     STR.Prepend(ERR    .ErrTabName ,dir);
  END;         
 END Init;

@@ -46,42 +46,42 @@ BEGIN{  MaxLineLength := 80; }
 
 /********************************************************************************************************************************/
 PROCEDURE WrObjName ( OB )
- mtEntry             ?{ O.Str('<mtEntry>'); };.
- ErrorEntry          ?{ O.Str('<ErrorEntry>'); };.
+ mtEntry             :-{ O.Str('<mtEntry>'); };.
+ ErrorEntry          :-{ O.Str('<ErrorEntry>'); };.
  ModuleEntry(id,..)  ;
- DataEntry(_,_,id,..)?{ O.Ident(id); };.
- mtTypeRepr          ?{ O.Str('<mtTypeRepr>'); };.
- ErrorTypeRepr       ?{ O.Str('<ErrorTypeRepr>'); };.
- TypeRepr(entry,..)  ? WrObjName(entry);.
- ..                  ?{ O.Str('<OB>'); };.
+ DataEntry(_,_,id,..):-{ O.Ident(id); };.
+ mtTypeRepr          :-{ O.Str('<mtTypeRepr>'); };.
+ ErrorTypeRepr       :-{ O.Str('<ErrorTypeRepr>'); };.
+ TypeRepr(entry,..)  :- WrObjName(entry);.
+ ..                  :-{ O.Str('<OB>'); };.
 
 /********************************************************************************************************************************/
 FUNCTION MaxIdentLen ( OB ) SHORTCARD
- DataEntry (prev,_,ident,_,_,{OB.DECLARED},..) RETURN {MaxSC(UTI.IdentLength(ident),MaxIdentLen(prev))} ?.
- DataEntry (prev,_,ident,_,_,_,..)             RETURN {MaxSC(2+UTI.IdentLength(ident),MaxIdentLen(prev))} ?.
- Entry (prev)                                  RETURN MaxIdentLen(prev) ?.
- _                                             RETURN 0 ?.
+ DataEntry (prev,_,ident,_,_,{OB.DECLARED},..) RETURN {MaxSC(UTI.IdentLength(ident),MaxIdentLen(prev))} :-.
+ DataEntry (prev,_,ident,_,_,_,..)             RETURN {MaxSC(2+UTI.IdentLength(ident),MaxIdentLen(prev))} :-.
+ Entry (prev)                                  RETURN MaxIdentLen(prev) :-.
+ _                                             RETURN 0 :-.
 
 /********************************************************************************************************************************/
 FUNCTION MaxIdentLen0 ( OB ) SHORTCARD
- DataEntry (prev,_,ident,_,_,{OB.DECLARED},..) RETURN {MaxSC(UTI.IdentLength(ident),MaxIdentLen0(prev))} ?.
- DataEntry (prev,_,ident,_,_,_,..)             RETURN {MaxSC(2+UTI.IdentLength(ident),MaxIdentLen0(prev))} ?.
- _                                             RETURN 0 ?.
+ DataEntry (prev,_,ident,_,_,{OB.DECLARED},..) RETURN {MaxSC(UTI.IdentLength(ident),MaxIdentLen0(prev))} :-.
+ DataEntry (prev,_,ident,_,_,_,..)             RETURN {MaxSC(2+UTI.IdentLength(ident),MaxIdentLen0(prev))} :-.
+ _                                             RETURN 0 :-.
 
 /********************************************************************************************************************************/
 PREDICATE IsEmpty ( OB )
- NIL            ?.
- mtObject       ?.
- mtEntry        ?.
- mtTypeReprList ?.
- mtTypeRepr     ?.
- mtSignature    ?.
- mtValue        ?.
- mtLabelRange   ?.
+ NIL            :-.
+ mtObject       :-.
+ mtEntry        :-.
+ mtTypeReprList :-.
+ mtTypeRepr     :-.
+ mtSignature    :-.
+ mtValue        :-.
+ mtLabelRange   :-.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpLabelRange ( s : STRING , o : LabelRanges )
- .. ?{
+ .. :-{
     E:=ED.Create();
 
     ED.Text(E,s);
@@ -97,13 +97,13 @@ PROCEDURE DumpLabelRange ( s : STRING , o : LabelRanges )
 PROCEDURE DumpRanges ( o : LabelRanges )
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- mtLabelRange ?{
+ mtLabelRange :-{
     ED.Text(E,'<EmptyLabelRange>');
     ED.CR(E);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- CharRange(next:LabelRanges,a,b) ?{
+ CharRange(next:LabelRanges,a,b) :-{
     ED.Text(E,'['); ED.Char(E,a); ED.Text(E,'..'); ED.Char(E,b); ED.Text(E,']');
     ED.CR(E);
 
@@ -111,7 +111,7 @@ PROCEDURE DumpRanges ( o : LabelRanges )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- IntegerRange(next:LabelRanges,a,b) ?{
+ IntegerRange(next:LabelRanges,a,b) :-{
     ED.Text(E,'['); ED.Longint(E,a); ED.Text(E,'..'); ED.Longint(E,b); ED.Text(E,']');
     ED.CR(E);
 
@@ -123,7 +123,7 @@ PROCEDURE DumpTable ( moduleIdent : tIdent
                     , o           : OB
                     , text        : tStringRef
                     , ident       : tIdent )
- .. ?{
+ .. :-{
     E:=ED.Create();
     ModuleIdent:=moduleIdent;
 
@@ -147,7 +147,7 @@ PROCEDURE DumpTable0 ( moduleIdent : tIdent
                      , o           : OB
                      , text        : tStringRef
                      , ident       : tIdent )
- .. ?{
+ .. :-{
     E:=ED.Create();
     ModuleIdent:=moduleIdent;
 
@@ -169,12 +169,12 @@ PROCEDURE DumpTable0 ( moduleIdent : tIdent
 /********************************************************************************************************************************/
 PROCEDURE DumpOB ( o:OB )
 
- ScopeEntry (prev) ?{
+ ScopeEntry (prev) :-{
     DumpOB(prev);
     ED.Line(E);
  };.
 
- DataEntry (prev,..) ?{
+ DataEntry (prev,..) :-{
     IF ~IsEmpty(prev) THEN DumpOB(prev); END; (* IF *)
     DumpObject(o);
  };.
@@ -182,14 +182,14 @@ PROCEDURE DumpOB ( o:OB )
 /********************************************************************************************************************************/
 PROCEDURE DumpOB0 ( o:OB )
 
- DataEntry (prev,..) ?{
+ DataEntry (prev,..) :-{
     IF ~IsEmpty(prev) THEN DumpOB0(prev); END; (* IF *)
     DumpObject(o);
  };.
 
 /********************************************************************************************************************************/
 FUNCTION ObjectDumped ( s:STRING , o:OB ) OB
- .. RETURN o ?{
+ .. RETURN o :-{
     E:=ED.Create();
     ModuleIdent:=Idents.NoIdent;
 
@@ -208,12 +208,12 @@ PROCEDURE DumpObject ( o:OB )
 LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- NIL ?{
+ NIL :-{
     ED.Text(E,'<NoObject>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ServerEntry (_,_,ident,_,_,_,serverTable:Entries,serverId) ?{
+ ServerEntry (_,_,ident,_,_,_,serverTable:Entries,serverId) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' SERVER    ');
     ED.Ident(E,serverId);
@@ -221,7 +221,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ConstEntry (_,_,ident,_,_,_,type:TypeReprs,value:ValueReprs,label) ?{
+ ConstEntry (_,_,ident,_,_,_,type:TypeReprs,value:ValueReprs,label) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' CONST     ');
 
@@ -242,7 +242,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- TypeEntry (_,_,ident,_,_,_,type:TypeReprs) ?{
+ TypeEntry (_,_,ident,_,_,_,type:TypeReprs) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' TYPE      ');
 
@@ -271,7 +271,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- VarEntry (_,_,ident,_,level,_,type:TypeReprs,isParam,isReceiverPar,parMode,address,refMode,_,_) ?{
+ VarEntry (_,_,ident,_,level,_,type:TypeReprs,isParam,isReceiverPar,parMode,address,refMode,_,_) :-{
     DumpIdentOfEntry(o);
     IF isReceiverPar
        THEN ED.Text(E,' RECEIVER  ');
@@ -318,7 +318,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ProcedureEntry (_,_,ident,_,_,_,type:TypeReprs,complete,..) ?{
+ ProcedureEntry (_,_,ident,_,_,_,type:TypeReprs,complete,..) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' PROCEDURE ');
 
@@ -329,7 +329,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- BoundProcEntry (_,_,ident,_,_,_,receiverSig:SignatureRepr,type:TypeReprs,complete,_,_,_,redefinedProc,procNum,_) ?{
+ BoundProcEntry (_,_,ident,_,_,_,receiverSig:SignatureRepr,type:TypeReprs,complete,_,_,_,redefinedProc,procNum,_) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' BOUND     ');
 
@@ -354,7 +354,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
 /*------------------------------------------------------------------------------------------------------------------------------*/
  InheritedProcEntry (_,_,_,_,_,_
                     ,BoundProcEntry(_,_,ident,_,_,_,receiverSig:SignatureRepr,type:TypeReprs,complete,_,_,_,_,procNum,_) 
-                    ) ?{
+                    ) :-{
     DumpIdentOfEntry(o);
     ED.Text(E,' INHERITED ');
 
@@ -371,17 +371,17 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- TypeReprs ?{
+ TypeReprs :-{
     DumpType(o,Idents.NoIdent);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- GenericSignature ?{
+ GenericSignature :-{
     ED.Text(E,'..');
  };.
  
 /*------------------------------------------------------------------------------------------------------------------------------*/
- Signature (next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type,_,_,parMode,..)) ?{
+ Signature (next:SignatureRepr,VarEntry(_,_,ident,_,_,_,type,_,_,parMode,..)) :-{
 
     IF parMode=OB.REFPAR THEN ED.Text(E,'VAR '); END; (* IF *)
     IF ident#Idents.NoIdent THEN 
@@ -403,37 +403,37 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- mtValue ?{
+ mtValue :-{
     ED.Text(E,'<EmptyValue>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ErrorValue ?{
-    ED.Text(E,'<?Value>');
+ ErrorValue :-{
+    ED.Text(E,'<:-Value>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- BooleanValue(v) ?{
+ BooleanValue(v) :-{
     ED.Boolean(E,v);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- CharValue(v) ?{
+ CharValue(v) :-{
     ED.Char(E,v);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- StringValue(v) ?{
+ StringValue(v) :-{
     ED.String(E,v);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- SetValue(v) ?{
+ SetValue(v) :-{
     ED.Set(E,v);
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- IntegerValue(v) ?{
+ IntegerValue(v) :-{
     IF    v=OT.MINoSHORTINT THEN ED.Text(E,'MIN(SHORTINT)');
     ELSIF v=OT.MAXoSHORTINT THEN ED.Text(E,'MAX(SHORTINT)');
     ELSIF v=OT.MINoINTEGER  THEN ED.Text(E,'MIN(INTEGER)');
@@ -445,7 +445,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- RealValue(v) ?{
+ RealValue(v) :-{
     IF    v=OT.MINoREAL THEN ED.Text(E,'MIN(REAL)');
     ELSIF v=OT.MAXoREAL THEN ED.Text(E,'MAX(REAL)');
                         ELSE ED.Real(E,v);
@@ -453,7 +453,7 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- LongrealValue(v) ?{
+ LongrealValue(v) :-{
     IF    OT.EqualoLONGREAL(v,OT.MINoLONGREAL) THEN ED.Text(E,'MIN(LONGREAL)');
     ELSIF OT.EqualoLONGREAL(v,OT.MAXoLONGREAL) THEN ED.Text(E,'MAX(LONGREAL)');
                                                ELSE ED.Longreal(E,v);
@@ -461,25 +461,25 @@ LOCAL{ VAR arr:ARRAY [0..20] OF CHAR; }
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- NilValue          ?{ ED.Text(E,'<NIL>'  ); };.
- NilPointerValue   ?{ ED.Text(E,'NIL'    ); };.
- NilProcedureValue ?{ ED.Text(E,'NILPROC'); };.
+ NilValue          :-{ ED.Text(E,'<NIL>'  ); };.
+ NilPointerValue   :-{ ED.Text(E,'NIL'    ); };.
+ NilProcedureValue :-{ ED.Text(E,'NILPROC'); };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- mtTypeRepr , _ ?{
+ mtTypeRepr , _ :-{
     ED.Text(E,'<EmptyType>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ErrorTypeRepr , _ ?{
+ ErrorTypeRepr , _ :-{
     ED.Text(E,'<ErrorType>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- TypeRepr (TypeEntry(_,ModuleEntry(mIdent,..),ident,_,level,..),size,..) , _ ?
+ TypeRepr (TypeEntry(_,ModuleEntry(mIdent,..),ident,_,level,..),size,..) , _ :-
  (level<=0) OR (ident#TypeIdent); 
  {
     IF (mIdent#ModuleIdent) & (mIdent#Idents.NoIdent) & (mIdent#PR.IdentPREDECL) THEN 
@@ -489,27 +489,27 @@ PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- NilTypeRepr , _ ?{
+ NilTypeRepr , _ :-{
     ED.Text(E,'<NIL>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ForwardTypeRepr , _ ?{
+ ForwardTypeRepr , _ :-{
     ED.Text(E,'<Forward>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- CharStringTypeRepr , _ ?{
+ CharStringTypeRepr , _ :-{
     ED.Text(E,'<Char>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- StringTypeRepr , _ ?{
+ StringTypeRepr , _ :-{
     ED.Text(E,'<String>');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ArrayTypeRepr (_,_,_,_,_,len,elemTypeRepr:TypeReprs) , _ ?{
+ ArrayTypeRepr (_,_,_,_,_,len,elemTypeRepr:TypeReprs) , _ :-{
     ED.Text(E,'ARRAY ');
     IF len>0 THEN ED.Longint(E,len); ED.Text(E,' '); END; (* IF *)
     ED.Text(E,'OF ');
@@ -519,7 +519,7 @@ PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- RecordTypeRepr (_,_,_,_,_,extLevel,baseTypeRepr:TypeReprs,extTypeReprList:TypeReprLists,fields:Entries,nofBoundProcs) , _ ?{
+ RecordTypeRepr (_,_,_,_,_,extLevel,baseTypeRepr:TypeReprs,extTypeReprList:TypeReprLists,fields:Entries,nofBoundProcs) , _ :-{
     ED.IndentCur(E);
     ED.Text(E,'RECORD');
     IF ~IsEmpty(baseTypeRepr) THEN 
@@ -554,7 +554,7 @@ PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- PointerTypeRepr (_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type:TypeReprs)) , _ ?{
+ PointerTypeRepr (_,_,_,_,_,TypeEntry(_,_,_,_,_,_,type:TypeReprs)) , _ :-{
     ED.Text(E,'POINTER TO ');
 
     IF ARG.OptionShowTypeAddrs THEN ED.Addr(E,type); ED.Text(E,'/'); END; (* IF *)
@@ -562,50 +562,50 @@ PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- PointerTypeRepr , _ ?{
-    ED.Text(E,'POINTER TO ?');
+ PointerTypeRepr , _ :-{
+    ED.Text(E,'POINTER TO :-');
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- CaseFaultTypeRepr ,_?{ ED.Text(E, ';'                                                       ); };.
- WithFaultTypeRepr ,_?{ ED.Text(E, ';'                                                       ); };.
- AbsTypeRepr       ,_?{ ED.Text(E, '(<Numeric>) : <Numeric>;'                                ); };.
- AshTypeRepr       ,_?{ ED.Text(E, '(<Integer>) : LONGINT;'                                  ); };.
- CapTypeRepr       ,_?{ ED.Text(E, '(CHAR) : CHAR;'                                          ); };.
- ChrTypeRepr       ,_?{ ED.Text(E, '(<Integer>) : CHAR;'                                     ); };.
- EntierTypeRepr    ,_?{ ED.Text(E, '(<Real>) : LONGINT;'                                     ); };.
- LenTypeRepr       ,_?{ ED.Text(E, '(VAR ARRAY OF SYSTEM$BYTE[,<Integer>]) : LONGINT;'       ); };.
- LongTypeRepr      ,_?{ ED.Text(E, '(<Shortint,Integer,Real>) : <Integer,Longint,Longreal>;' ); };.
- MaxTypeRepr       ,_?{ ED.Text(E, '(<Type>) : <Generic>;'                                   ); };.
- MinTypeRepr       ,_?{ ED.Text(E, '(<Type>) : <Generic>;'                                   ); };.
- OddTypeRepr       ,_?{ ED.Text(E, '(<Integer>) : BOOLEAN;'                                  ); };.
- OrdTypeRepr       ,_?{ ED.Text(E, '(CHAR) : INTEGER;'                                       ); };.
- ShortTypeRepr     ,_?{ ED.Text(E, '(<Integer,Longint,Longreal>) : <Shortint,Integer,Real>;' ); };.
- SizeTypeRepr      ,_?{ ED.Text(E, '(<Type>) : <Integer>;'                                   ); };.
- AssertTypeRepr    ,_?{ ED.Text(E, '(<Integer>[,<Integer>]);'                                ); };.
- CopyTypeRepr      ,_?{ ED.Text(E, '(ARRAY OF CHAR,VAR ARRAY OF CHAR);'                      ); };.
- DecTypeRepr       ,_?{ ED.Text(E, '(VAR <Integer>[,<Integer>]);'                            ); };.
- ExclTypeRepr      ,_?{ ED.Text(E, '(VAR SET, <Integer>);'                                   ); };.
- HaltTypeRepr      ,_?{ ED.Text(E, '(INTEGER);'                                              ); };.
- IncTypeRepr       ,_?{ ED.Text(E, '(VAR <Integer>[,<Integer>]);'                            ); };.
- InclTypeRepr      ,_?{ ED.Text(E, '(VAR SET, <Integer>);'                                   ); };.
- NewTypeRepr       ,_?{ ED.Text(E, '(<Pointer>{,<Integer>});'                                ); };.
- SysAdrTypeRepr    ,_?{ ED.Text(E, '(VAR ARRAY OF SYSTEM$BYTE) : LONGINT;'                   ); };.
- SysBitTypeRepr    ,_?{ ED.Text(E, '(LONGINT,<Integer>) : BOOLEAN;'                          ); };.
- SysCcTypeRepr     ,_?{ ED.Text(E, '(<Integer>) : BOOLEAN;'                                  ); };.
- SysLshTypeRepr    ,_?{ ED.Text(E, '(<Integer,Char,Byte>,<Integer>) : <Generic>;'            ); };.
- SysRotTypeRepr    ,_?{ ED.Text(E, '(<Integer,Char,Byte>,<Integer>) : <Generic>;'            ); };.
- SysValTypeRepr    ,_?{ ED.Text(E, '(<Type>,VAR ARRAY OF SYSTEM$BYTE) : <Generic>;'          ); };.
- SysGetTypeRepr    ,_?{ ED.Text(E, '(LONGINT,<Generic>);'                                    ); };.
- SysPutTypeRepr    ,_?{ ED.Text(E, '(LONGINT,<Generic>);'                                    ); };.
- SysGetregTypeRepr ,_?{ ED.Text(E, '(<Integer>,<Generic>);'                                  ); };.
- SysPutregTypeRepr ,_?{ ED.Text(E, '(<Integer>,<Generic>);'                                  ); };.
- SysMoveTypeRepr   ,_?{ ED.Text(E, '(LONGINT,LONGINT,<Integer>);'                            ); };.
- SysNewTypeRepr    ,_?{ ED.Text(E, '(<Pointer>,<Integer>);'                                  ); };.
- SysAsmTypeRepr    ,_?{ ED.Text(E, '(ARRAY OF CHAR {, ARRAY OF CHAR});'                      ); };.
+ CaseFaultTypeRepr ,_:-{ ED.Text(E, ';'                                                       ); };.
+ WithFaultTypeRepr ,_:-{ ED.Text(E, ';'                                                       ); };.
+ AbsTypeRepr       ,_:-{ ED.Text(E, '(<Numeric>) : <Numeric>;'                                ); };.
+ AshTypeRepr       ,_:-{ ED.Text(E, '(<Integer>) : LONGINT;'                                  ); };.
+ CapTypeRepr       ,_:-{ ED.Text(E, '(CHAR) : CHAR;'                                          ); };.
+ ChrTypeRepr       ,_:-{ ED.Text(E, '(<Integer>) : CHAR;'                                     ); };.
+ EntierTypeRepr    ,_:-{ ED.Text(E, '(<Real>) : LONGINT;'                                     ); };.
+ LenTypeRepr       ,_:-{ ED.Text(E, '(VAR ARRAY OF SYSTEM$BYTE[,<Integer>]) : LONGINT;'       ); };.
+ LongTypeRepr      ,_:-{ ED.Text(E, '(<Shortint,Integer,Real>) : <Integer,Longint,Longreal>;' ); };.
+ MaxTypeRepr       ,_:-{ ED.Text(E, '(<Type>) : <Generic>;'                                   ); };.
+ MinTypeRepr       ,_:-{ ED.Text(E, '(<Type>) : <Generic>;'                                   ); };.
+ OddTypeRepr       ,_:-{ ED.Text(E, '(<Integer>) : BOOLEAN;'                                  ); };.
+ OrdTypeRepr       ,_:-{ ED.Text(E, '(CHAR) : INTEGER;'                                       ); };.
+ ShortTypeRepr     ,_:-{ ED.Text(E, '(<Integer,Longint,Longreal>) : <Shortint,Integer,Real>;' ); };.
+ SizeTypeRepr      ,_:-{ ED.Text(E, '(<Type>) : <Integer>;'                                   ); };.
+ AssertTypeRepr    ,_:-{ ED.Text(E, '(<Integer>[,<Integer>]);'                                ); };.
+ CopyTypeRepr      ,_:-{ ED.Text(E, '(ARRAY OF CHAR,VAR ARRAY OF CHAR);'                      ); };.
+ DecTypeRepr       ,_:-{ ED.Text(E, '(VAR <Integer>[,<Integer>]);'                            ); };.
+ ExclTypeRepr      ,_:-{ ED.Text(E, '(VAR SET, <Integer>);'                                   ); };.
+ HaltTypeRepr      ,_:-{ ED.Text(E, '(INTEGER);'                                              ); };.
+ IncTypeRepr       ,_:-{ ED.Text(E, '(VAR <Integer>[,<Integer>]);'                            ); };.
+ InclTypeRepr      ,_:-{ ED.Text(E, '(VAR SET, <Integer>);'                                   ); };.
+ NewTypeRepr       ,_:-{ ED.Text(E, '(<Pointer>{,<Integer>});'                                ); };.
+ SysAdrTypeRepr    ,_:-{ ED.Text(E, '(VAR ARRAY OF SYSTEM$BYTE) : LONGINT;'                   ); };.
+ SysBitTypeRepr    ,_:-{ ED.Text(E, '(LONGINT,<Integer>) : BOOLEAN;'                          ); };.
+ SysCcTypeRepr     ,_:-{ ED.Text(E, '(<Integer>) : BOOLEAN;'                                  ); };.
+ SysLshTypeRepr    ,_:-{ ED.Text(E, '(<Integer,Char,Byte>,<Integer>) : <Generic>;'            ); };.
+ SysRotTypeRepr    ,_:-{ ED.Text(E, '(<Integer,Char,Byte>,<Integer>) : <Generic>;'            ); };.
+ SysValTypeRepr    ,_:-{ ED.Text(E, '(<Type>,VAR ARRAY OF SYSTEM$BYTE) : <Generic>;'          ); };.
+ SysGetTypeRepr    ,_:-{ ED.Text(E, '(LONGINT,<Generic>);'                                    ); };.
+ SysPutTypeRepr    ,_:-{ ED.Text(E, '(LONGINT,<Generic>);'                                    ); };.
+ SysGetregTypeRepr ,_:-{ ED.Text(E, '(<Integer>,<Generic>);'                                  ); };.
+ SysPutregTypeRepr ,_:-{ ED.Text(E, '(<Integer>,<Generic>);'                                  ); };.
+ SysMoveTypeRepr   ,_:-{ ED.Text(E, '(LONGINT,LONGINT,<Integer>);'                            ); };.
+ SysNewTypeRepr    ,_:-{ ED.Text(E, '(<Pointer>,<Integer>);'                                  ); };.
+ SysAsmTypeRepr    ,_:-{ ED.Text(E, '(ARRAY OF CHAR {, ARRAY OF CHAR});'                      ); };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ProcedureTypeRepr (_,_,_,_,_,signatureRepr:SignatureRepr,resultRepr:TypeReprs,_) , _ ?{
+ ProcedureTypeRepr (_,_,_,_,_,signatureRepr:SignatureRepr,resultRepr:TypeReprs,_) , _ :-{
     ED.Text(E,'(');
     DumpObject(signatureRepr);
     IF IsEmpty(resultRepr)
@@ -618,13 +618,13 @@ PROCEDURE DumpType ( o:TypeReprs , TypeIdent:tIdent )
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- .. ?{
-    ED.Text(E,'?TypeRepr');
+ .. :-{
+    ED.Text(E,':-TypeRepr');
  };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpFieldTable ( f:Entries )
- _ ?{
+ _ :-{
     ED.SetTab(E,1,2+MaxIdentLen0(f));
     DumpFields(f);
  };.
@@ -632,16 +632,16 @@ PROCEDURE DumpFieldTable ( f:Entries )
 /********************************************************************************************************************************/
 PROCEDURE DumpFields ( f:Entries )
 
- ScopeEntry ?.
+ ScopeEntry :-.
 
- DataEntry (prev:Entry,..) ?{
+ DataEntry (prev:Entry,..) :-{
     IF ~IsEmpty(prev) THEN DumpFields(prev); END; (* IF *)
     DumpObject(f);
  };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpTypeReprList ( e:TypeReprLists )
- TypeReprList (prev:TypeReprLists,typeRepr:TypeReprs) ?{
+ TypeReprList (prev:TypeReprLists,typeRepr:TypeReprs) :-{
     IF ~IsEmpty(prev)
        THEN DumpTypeReprList(prev);
             ED.Text(E,',');
@@ -651,7 +651,7 @@ PROCEDURE DumpTypeReprList ( e:TypeReprLists )
 
 /********************************************************************************************************************************/
 PROCEDURE DumpIdentOfEntry ( o:Entries )
- DataEntry (_,ModuleEntry(moduleIdent,..),ident,_,level,declStatus,..) ?{
+ DataEntry (_,ModuleEntry(moduleIdent,..),ident,_,level,declStatus,..) :-{
     IF declStatus#OB.DECLARED THEN ED.Text(E,'<'); END; (* IF *)
 
     IF ((level>0) OR (level=OB.FIELDLEVEL)) & (moduleIdent#ModuleIdent)
@@ -675,7 +675,7 @@ PROCEDURE DumpBoundProcEntry ( Entries )
                                   ,..)
                          )
                ,..) 
- ?{
+ :-{
     ED.Ident(E,moduleIdent); 
     ED.Text(E,'.'); 
     ED.Ident(E,typeIdent); 
@@ -683,22 +683,22 @@ PROCEDURE DumpBoundProcEntry ( Entries )
     ED.Ident(E,procIdent); 
  };.
  
- .. ?{
-    ED.Text(E,'?BoundProcEntry'); 
+ .. :-{
+    ED.Text(E,':-BoundProcEntry'); 
  };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpExportModeOfEntry ( DataEntry )
 
- DataEntry (_,_,_,{OB.PUBLIC  },..) ?{ ED.Text(E,'*'); };.
- DataEntry (_,_,_,{OB.READONLY},..) ?{ ED.Text(E,'-'); };.
- _                                  ?{ ED.Text(E,' '); };.
+ DataEntry (_,_,_,{OB.PUBLIC  },..) :-{ ED.Text(E,'*'); };.
+ DataEntry (_,_,_,{OB.READONLY},..) :-{ ED.Text(E,'-'); };.
+ _                                  :-{ ED.Text(E,' '); };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpTypeSize ( type:TypeReprs )
  LOCAL{VAR size : CARDINAL; s: ARRAY [0..SizeWidth+1] OF CHAR;  }
 
- _ ?{
+ _ :-{
     IF ARG.OptionShowTypeSizes
        THEN size:=T.SizeOfType(type);
             ED.Text(E,'S=');
@@ -714,11 +714,11 @@ PROCEDURE DumpTypeSize ( type:TypeReprs )
 /********************************************************************************************************************************/
 PROCEDURE DumpBlocklist ( bl:Blocklists )
 
- NoBlocklist ?{ 
+ NoBlocklist :-{ 
     ED.Text(E,'-'); 
  };.
 
- Blocklist (prev:Blocklists,sub:Blocklists,ofs,count,incr,height)?{ 
+ Blocklist (prev:Blocklists,sub:Blocklists,ofs,count,incr,height):-{ 
 
     ED.Text(E,'('); ED.Longint(E,ofs); 
     ED.Text(E,','); ED.Longint(E,count); 
@@ -742,7 +742,7 @@ FUNCTION MaxEntryIdLen ( o : OB ) SHORTCARD
  LOCAL{VAR len:SHORTCARD;}
 
  DataEntry(prev:Entries,ModuleEntry(moduleIdent,..),ident,exportMode,_,_)
-    RETURN {len} ?
+    RETURN {len} :-
     { IF moduleIdent#ModuleIdent
          THEN len := UTI.IdentLength(moduleIdent)+1;
          ELSE len := 0;
@@ -752,31 +752,31 @@ FUNCTION MaxEntryIdLen ( o : OB ) SHORTCARD
       len:=MaxSC(MaxEntryIdLen(prev),len);
     };.
 
- Entry(prev:Entries,..) ?
+ Entry(prev:Entries,..) :-
     RETURN MaxEntryIdLen(prev);.
 
- _  RETURN 0 ?.
+ _  RETURN 0 :-.
 
 /********************************************************************************************************************************/
 PREDICATE ImportsExists ( o : OB )
- ServerEntry                ?.
- DataEntry(prev:Entries,..) ? ImportsExists(prev); .
+ ServerEntry                :-.
+ DataEntry(prev:Entries,..) :- ImportsExists(prev); .
 
 /********************************************************************************************************************************/
 PREDICATE ConstsExists ( o : OB )
- ConstEntry(_,_,ident,{OB.PUBLIC},..) ?.
- DataEntry(prev:Entries,..)           ? ConstsExists(prev); .
+ ConstEntry(_,_,ident,{OB.PUBLIC},..) :-.
+ DataEntry(prev:Entries,..)           :- ConstsExists(prev); .
 
 /********************************************************************************************************************************/
 PREDICATE TypesExists ( o : OB )
- TypeEntry(_,_,ident,{OB.PUBLIC},..) ?.
- DataEntry(prev:Entries,..)          ? TypesExists(prev); .
+ TypeEntry(_,_,ident,{OB.PUBLIC},..) :-.
+ DataEntry(prev:Entries,..)          :- TypesExists(prev); .
 
 /********************************************************************************************************************************/
 PREDICATE VarsExists ( o : OB )
- VarEntry(_,_,ident,{OB.PUBLIC  },..) ?.
- VarEntry(_,_,ident,{OB.READONLY},..) ?.
- DataEntry(prev:Entries,..)           ? VarsExists(prev); .
+ VarEntry(_,_,ident,{OB.PUBLIC  },..) :-.
+ VarEntry(_,_,ident,{OB.READONLY},..) :-.
+ DataEntry(prev:Entries,..)           :- VarsExists(prev); .
 
 /********************************************************************************************************************************/
 /*** END OD.pum                                                                                                               ***/
