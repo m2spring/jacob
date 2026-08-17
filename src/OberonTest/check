@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ "$1" != "of" -a "$1" != "oc" -a "$1" != "all" ] 
    then echo "Usage: check [ of | oc | all ]"
@@ -8,7 +8,7 @@ if [ "$1" != "of" -a "$1" != "oc" -a "$1" != "all" ]
         exit
 fi
 
-dir=`dirname $0`
+dir=`cd \`dirname $0\` && pwd`
 
 #declare -x OC=$dir/bin/oc
 

@@ -505,10 +505,10 @@ PROCEDURE Dump ( t:Tree )
  };.
 /*------------------------------------------------------------------------------------------------------------------------------*/
  mtQualident :-{
-    ED.Text(E,'mtQualident:-');
+    ED.Text(E,'mtQualident?');
  };.
  ErrorQualident :-{
-    ED.Text(E,'ErrorQualident:-');
+    ED.Text(E,'ErrorQualident?');
  };.
  UnqualifiedIdent ( _ , ident ) :-{
     ED.Ident(E,ident);
@@ -1152,7 +1152,7 @@ PROCEDURE DumpPredecl ( Tree )
  SysNewArgumenting    :-{ ED.Text(E,'SYSTEM$NEW'   ); };.
  SysAsmArgumenting    :-{ ED.Text(E,'SYSTEM$ASM'   ); };.
 
- _                    :-{ ED.Text(E,'$PREDECL:-'    ); };.
+ _                    :-{ ED.Text(E,'$PREDECL?'    ); };.
 
 /********************************************************************************************************************************/
 PROCEDURE DumpValue ( ValueReprs )
