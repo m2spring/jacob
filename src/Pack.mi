@@ -1,0 +1,64 @@
+IMPLEMENTATION MODULE Pack;
+
+CONST
+  Sign      = '!';
+  FirstChar = '+';
+  LastChar  = '~';
+  Factor    = (ORD(LastChar) - ORD(FirstChar) + 1) DIV 2;
+
+PROCEDURE UnpackCard
+  (    handler : UnpackCardHandler;
+       string  : ARRAY OF CHAR;
+       count   : CARDINAL);
+VAR
+  i, j, tmp : CARDINAL;
+  value     : LONGCARD;
+BEGIN
+  i := 0;
+  FOR j := 1 TO count DO
+    value := 0;
+    REPEAT
+      tmp := ORD(string[i]) - ORD(FirstChar);
+      value := value * Factor + (tmp MOD Factor);
+      INC(i);
+    UNTIL tmp < Factor;
+    handler(value);
+  END;
+END UnpackCard;
+
+PROCEDURE Unpack
+  (    handler : UnpackCardHandler;
+       string  : ARRAY OF CHAR;
+       count   : CARDINAL);
+BEGIN
+  UnpackCard(handler, string, count);
+END Unpack;
+
+PROCEDURE UnpackInt
+  (    handler : UnpackIntHandler;
+       string  : ARRAY OF CHAR;
+       count   : CARDINAL);
+VAR
+  issigned  : BOOLEAN;
+  i, j, tmp : CARDINAL;
+  value     : LONGCARD;
+BEGIN
+  i := 0;
+  FOR j := 1 TO count DO
+    value := 0;
+    issigned := string[i] = Sign;
+    IF issigned THEN INC(i); END;
+    REPEAT
+      tmp := ORD(string[i]) - ORD(FirstChar);
+      value := value * Factor + (tmp MOD Factor);
+      INC(i);
+    UNTIL tmp < Factor;
+    IF issigned THEN
+      handler(- LONGINT(value));
+    ELSE
+      handler(value);
+    END;
+  END;
+END UnpackInt;
+
+END Pack.

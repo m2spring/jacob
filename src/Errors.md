@@ -11,6 +11,11 @@ CONST  (* error codes *)
        WrongParseTable      = 5  ;
        OpenParseTable       = 6  ;
        ReadParseTable       = 7  ;
+       TooManyErrors        = 8  ;
+       TokenFound           = 9  ;
+       FoundExpected        = 10 ;
+       TclTkError           = 11 ;
+       ConfigureUnknownParam= 12 ;
 
        (* error classes *)
        NoError              = 0  ;

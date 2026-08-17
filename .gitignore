@@ -14,3 +14,5 @@ mvn.out*
 .project
 .DS_Store
 .Xdefaults
+/Jacob
+lib/*.o

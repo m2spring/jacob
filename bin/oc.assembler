@@ -1,8 +1,8 @@
 #!/bin/sh
 
 case $1 in
-'-elf' ) AS=/usr/bin/as ; shift ;;
-*      ) AS=/usr/i486-linuxaout/bin/as ;;
+'-elf' ) AS="/usr/bin/as --32" ; shift ;;
+*      ) AS="/usr/bin/as --32" ;;
 esac;
 
 $AS -L -o $1.o $1.s

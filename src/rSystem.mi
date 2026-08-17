@@ -1,0 +1,25 @@
+IMPLEMENTATION MODULE rSystem;
+
+FROM Argument IMPORT ArgTable;
+FROM SYSTEM IMPORT ADDRESS;
+IMPORT Storage;
+
+PROCEDURE rExit (Status: INTEGER);
+BEGIN
+  HALT;
+END rExit;
+
+PROCEDURE PutArgs (Argc: SHORTCARD; Argv: ArgTable);
+BEGIN
+  (* Jacob gets its own command-line arguments through its own ARG
+     module; this reuse-library path is never actually consulted. *)
+END PutArgs;
+
+PROCEDURE rAlloc (ByteCount: LONGINT) : ADDRESS;
+VAR a : ADDRESS;
+BEGIN
+  Storage.ALLOCATE(a, ByteCount);
+  RETURN a;
+END rAlloc;
+
+END rSystem.

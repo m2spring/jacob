@@ -14,7 +14,7 @@ GLOBAL{ IMPORT  OT        ,
                 StringMem ; }
 
 /********************************************************************************************************************************/
-/*$1*/
+ 
 FUNCTION GetCoercion ( SrcType:TypeReprs , DstType:TypeReprs ) Coercion
  _                  , NIL              RETURN {OB.cmtCoercion       } :- .
  NIL                , _                RETURN {OB.cmtCoercion       } :- .
@@ -32,7 +32,7 @@ FUNCTION GetCoercion ( SrcType:TypeReprs , DstType:TypeReprs ) Coercion
  ..                                    RETURN {OB.cmtCoercion       } :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
-/*$1*/
+ 
 FUNCTION DoCoercion ( coerce:Coercion , arg:ValueReprs ) ValueReprs
  LOCAL{ VAR result:OB.tOB; vLongint:OT.oLONGINT; vReal:OT.oREAL; vLongreal:OT.oLONGREAL; vChar:OT.oCHAR; vString:OT.oSTRING; }
 
@@ -59,7 +59,7 @@ FUNCTION DoCoercion ( coerce:Coercion , arg:ValueReprs ) ValueReprs
  ..                                         RETURN arg :- .
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
-/*$1*/
+ 
 PROCEDURE DoRealCoercion ( Coercion , REF value:ValueReprs , REF type:TypeReprs ) 
 LOCAL{ VAR r:REAL; l:OT.oLONGREAL; }
 

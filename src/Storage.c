@@ -74,82 +74,82 @@ typedef tBlockDesc *tTag;
                                   +NOFELEMS(block)*ELEMSIZE(block))
 
 /*---------------------------------------------------------------------------*/
-static void AnchorBlockFrame(){ asm("
-
-# Desc for AnchorBlock
-_AB$N:  .asciz	\"anchor\"
-
-	.align	2
-	.long	_AB$N		# -12 name
-	.long	0		# -8  size
-	.long	_NILPROC	# -4  skipper
-_AB$D:				#     walker
-
+static void AnchorBlockFrame(){ asm("\n\
+\n\
+# Desc for AnchorBlock\n\
+_AB$N:  .asciz	\"anchor\"\n\
+\n\
+	.align	2\n\
+	.long	_AB$N		# -12 name\n\
+	.long	0		# -8  size\n\
+	.long	_NILPROC	# -4  skipper\n\
+_AB$D:				#     walker\n\
+\n\
 "); } extern void *PRE(AB$D);
 
 /*---------------------------------------------------------------------------*/
-static void FreeBlockFrame(){ asm("
-
-# Desc for FreeBlock
-_FB$N:  .asciz	\"free\"
-
-	.align	2,144
-_FB$S:  addl	4(%ebx),%ebx
-	jmp	%esi
-
-	.align	2
-	.long	_FB$N	# -12 name
-	.long	0	# -8  size
-	.long	_FB$S	# -4  skipper
-_FB$D:			#     walker
-
+static void FreeBlockFrame(){ asm("\n\
+\n\
+# Desc for FreeBlock\n\
+_FB$N:  .asciz	\"free\"\n\
+\n\
+	.align	2,144\n\
+_FB$S:  addl	4(%ebx),%ebx\n\
+	jmp	%esi\n\
+\n\
+	.align	2\n\
+	.long	_FB$N	# -12 name\n\
+	.long	0	# -8  size\n\
+	.long	_FB$S	# -4  skipper\n\
+_FB$D:			#     walker\n\
+\n\
 "); } extern void *PRE(FB$D);
 
 /*---------------------------------------------------------------------------*/
-static void SmallBlockFrame(){ asm("
-
-# Desc for SmallBlock
-_B8$N:	.asciz	\"small\"
-
-	.align	2,144
-_B8$S:  addl	$8,%ebx
-	jmp	%esi
-
-	.align	2
-	.long	_B8$N	# -12 name
-	.long	0	# -8  size
-	.long	_B8$S	# -4  skipper
-_B8$D:			#     walker
-
+static void SmallBlockFrame(){ asm("\n\
+\n\
+# Desc for SmallBlock\n\
+_B8$N:	.asciz	\"small\"\n\
+\n\
+	.align	2,144\n\
+_B8$S:  addl	$8,%ebx\n\
+	jmp	%esi\n\
+\n\
+	.align	2\n\
+	.long	_B8$N	# -12 name\n\
+	.long	0	# -8  size\n\
+	.long	_B8$S	# -4  skipper\n\
+_B8$D:			#     walker\n\
+\n\
 "); } extern void *PRE(B8$D);
 
 /*---------------------------------------------------------------------------*/
-static void SentinelBlockFrame(){ asm("
-
-# Desc for SentinelBlock
-_ZB$N:	.asciz	\"sentinel\"
-
-	.align	2,144
-_ZB$S:  ret
-
-	.align	2
-	.long	_ZB$N	# -12 name
-	.long	0	# -8  size
-	.long	_ZB$S	# -4  skipper
-_ZB$D:			#     walker
-
+static void SentinelBlockFrame(){ asm("\n\
+\n\
+# Desc for SentinelBlock\n\
+_ZB$N:	.asciz	\"sentinel\"\n\
+\n\
+	.align	2,144\n\
+_ZB$S:  ret\n\
+\n\
+	.align	2\n\
+	.long	_ZB$N	# -12 name\n\
+	.long	0	# -8  size\n\
+	.long	_ZB$S	# -4  skipper\n\
+_ZB$D:			#     walker\n\
+\n\
 "); } extern void *PRE(ZB$D);
 
 /*---------------------------------------------------------------------------*/
-static void SystemBlockSkipperFrame(){ asm("
-
-# Skipper for SystemBlock
-	.align	2,144
-_SB$S:	movl	-4(%ebx),%eax
-	andb	$0xFE,%al
-	addl	(%eax),%ebx
-        jmp	%esi
-
+static void SystemBlockSkipperFrame(){ asm("\n\
+\n\
+# Skipper for SystemBlock\n\
+	.align	2,144\n\
+_SB$S:	movl	-4(%ebx),%eax\n\
+	andb	$0xFE,%al\n\
+	addl	(%eax),%ebx\n\
+        jmp	%esi\n\
+\n\
 "); } extern void *PRE(SB$S);
 
 /*****************************************************************************/
@@ -313,28 +313,28 @@ void PRE(GetInfo)(void *inf$D, tHeapInfo *inf){
 } /* GetInfo */
 
 /*****************************************************************************/
-void AllocFail(unsigned size, unsigned nofAttempts){ asm("
-
-	pushl	%eax
-	pushl	%ebx
-	pushl	%ecx
-	pushl	%edx
-	pushl	%esi
-	pushl	%edi
-        
-	pushl	12(%ebp)
-	pushl	8(%ebp)
-        movl	_AllocFailHandlerProc,%eax
-	call	%eax
-	addl	$8,%esp
-
-	popl	%edi
-	popl	%esi
-	popl	%edx
-	popl	%ecx
-	popl	%ebx
-	popl	%eax
-        
+void AllocFail(unsigned size, unsigned nofAttempts){ asm("\n\
+\n\
+	pushl	%eax\n\
+	pushl	%ebx\n\
+	pushl	%ecx\n\
+	pushl	%edx\n\
+	pushl	%esi\n\
+	pushl	%edi\n\
+        \n\
+	pushl	12(%ebp)\n\
+	pushl	8(%ebp)\n\
+        movl	_AllocFailHandlerProc,%eax\n\
+	call	%eax\n\
+	addl	$8,%esp\n\
+\n\
+	popl	%edi\n\
+	popl	%esi\n\
+	popl	%edx\n\
+	popl	%ecx\n\
+	popl	%ebx\n\
+	popl	%eax\n\
+        \n\
 "); } /* AllocFail */
 
 /*****************************************************************************/
@@ -496,25 +496,25 @@ void PRE($staticNEW)(/*  8(ebp) */ unsigned *var
    }
 #endif
 
-   asm("
-   pushl %eax
-   pushl %ebx
-   pushl %ecx
-   pushl %edx
-   pushl %esi
-   pushl %edi
-
-   movl  8(%ebp),%edi # edi = var
-   movl  (%edi),%edi  # edi = *var
-
-   call  20(%ebp)     # call initAddr
-
-   popl  %edi
-   popl  %esi
-   popl  %edx
-   popl  %ecx
-   popl  %ebx
-   popl  %eax
+   asm("\n\
+   pushl %eax\n\
+   pushl %ebx\n\
+   pushl %ecx\n\
+   pushl %edx\n\
+   pushl %esi\n\
+   pushl %edi\n\
+\n\
+   movl  8(%ebp),%edi # edi = var\n\
+   movl  (%edi),%edi  # edi = *var\n\
+\n\
+   call  20(%ebp)     # call initAddr\n\
+\n\
+   popl  %edi\n\
+   popl  %esi\n\
+   popl  %edx\n\
+   popl  %ecx\n\
+   popl  %ebx\n\
+   popl  %eax\n\
    ");
 } /* staticNEW */
 
@@ -574,25 +574,25 @@ void PRE($openNEW)(/*  8(ebp) */ unsigned *var
    }
 #endif
 
-   asm("
-   pushl %eax
-   pushl %ebx
-   pushl %ecx
-   pushl %edx
-   pushl %esi
-   pushl %edi
-
-   movl  8(%ebp),%edi # edi = var
-   movl  (%edi),%edi  # edi = *var
-                      
-   call  20(%ebp)     # call initAddr
-
-   popl  %edi
-   popl  %esi
-   popl  %edx
-   popl  %ecx
-   popl  %ebx
-   popl  %eax
+   asm("\n\
+   pushl %eax\n\
+   pushl %ebx\n\
+   pushl %ecx\n\
+   pushl %edx\n\
+   pushl %esi\n\
+   pushl %edi\n\
+\n\
+   movl  8(%ebp),%edi # edi = var\n\
+   movl  (%edi),%edi  # edi = *var\n\
+                      \n\
+   call  20(%ebp)     # call initAddr\n\
+\n\
+   popl  %edi\n\
+   popl  %esi\n\
+   popl  %edx\n\
+   popl  %ecx\n\
+   popl  %ebx\n\
+   popl  %eax\n\
    ");
 } /* $openNEW */
 
@@ -637,430 +637,430 @@ void PRE(MarkBlock)(unsigned block){
 } /* MarkBlock */
 
 /*****************************************************************************/
-void PRE(MarkAll)(){ asm("
-
-       pushl   %eax
-       pushl   %ebx
-       pushl   %ecx
-       pushl   %edx
-       pushl   %esi
-       pushl   %edi
-       
-       pushl   $MarkAllDone
-       movl    _HeapStart,%ebx
-       addl    $12,%ebx
-       movl    $MarkAllLoop,%esi
-MarkAllLoop:
-       movl    -4(%ebx),%edi
-       orl     $1,-4(%ebx)
-       jmp     -4(%edi)
-       
-MarkAllDone:
-       andl    $0xFFFFFFFE,-4(%ebx) # clear sentinel's mark
-       popl    %edi
-       popl    %esi
-       popl    %edx
-       popl    %ecx
-       popl    %ebx
-       popl    %eax
-        
+void PRE(MarkAll)(){ asm("\n\
+\n\
+       pushl   %eax\n\
+       pushl   %ebx\n\
+       pushl   %ecx\n\
+       pushl   %edx\n\
+       pushl   %esi\n\
+       pushl   %edi\n\
+       \n\
+       pushl   $MarkAllDone\n\
+       movl    _HeapStart,%ebx\n\
+       addl    $12,%ebx\n\
+       movl    $MarkAllLoop,%esi\n\
+MarkAllLoop:\n\
+       movl    -4(%ebx),%edi\n\
+       orl     $1,-4(%ebx)\n\
+       jmp     -4(%edi)\n\
+       \n\
+MarkAllDone:\n\
+       andl    $0xFFFFFFFE,-4(%ebx) # clear sentinel's mark\n\
+       popl    %edi\n\
+       popl    %esi\n\
+       popl    %edx\n\
+       popl    %ecx\n\
+       popl    %ebx\n\
+       popl    %eax\n\
+        \n\
 "); } /* MarkAll */
 
 /*****************************************************************************/
 void PRE(Mark)(){ 
 
    SAVE_ROOT_EBP(); 
-   asm("
-       pushl   %eax
-       pushl   %ebx
-       pushl   %ecx
-       pushl   %edx
-       pushl   %esi
-       pushl   %edi
-       pushl   %ebp
-
-       call    MarkIt
-
-       jmp     MarkDone
-
-#------------------------------------------------------------------------------
-ShowBlockName1: .asciz \" --> \"
-ShowBlockName:
-       pushl   %eax
-
-       pushl   %ebp ; call _DumpDec ; addl $4,%esp
-       pushl   $ShowBlockName1; call _DumpStr ; addl $4,%esp
-       movl    -4(%ebp),%eax
-       andl    $0xfffffffe,%eax
-       pushl   -12(%eax) ; call _DumpStr ; addl $4,%esp
-       call    _DumpLn
-
-       popl    %eax
-       ret
-       
-#------------------------------------------------------------------------------
-ShowOfsAndNew1: .asciz \": \"
-ShowOfsAndNew:
-       pushl   %ebx ; call _DumpDec ; addl $4,%esp
-       pushl   $ShowOfsAndNew1; call _DumpStr ; addl $4,%esp
-       pushl   %eax ; call _DumpDec ; addl $4,%esp
-       call    _DumpLn
-       ret
-       
-#------------------------------------------------------------------------------
-ShowBlockInfo1: .asciz  \"block \"
-ShowBlockInfo2: .asciz  \"tag   \"
-ShowBlockInfo3: .asciz  \"name  \"
-ShowBlockInfo:
-       pushl   %eax
-
-       pushl   $ShowBlockInfo1 ; call _DumpStr ; addl $4,%esp
-       pushl   %ebp ; call _DumpDec ; addl $4,%esp
-       call    _DumpLn
-
-       pushl   $ShowBlockInfo2 ; call _DumpStr ; addl $4,%esp
-       pushl   -4(%ebp) ; call _DumpDec ; addl $4,%esp
-       call    _DumpLn
-
-       pushl   $ShowBlockInfo3 ; call _DumpStr ; addl $4,%esp
-       movl    -4(%ebp),%eax
-       andl    $0xfffffffe,%eax
-       pushl   -12(%eax) ; call _DumpStr ; addl $4,%esp
-       call    _DumpLn
-
-       call    _DumpLn
-       popl    %eax
-       ret
-       
-#------------------------------------------------------------------------------
-ShowOpenInfo1: .asciz \"open at ofs=\"
-ShowOpenInfo2: .asciz \" nofElems=\"
-ShowOpenInfo3: .asciz \" base=\"
-ShowOpenInfo:	  
-
-       pushl   $ShowOpenInfo1 ; call _DumpStr ; addl $4,%esp
-       pushl   %ebx ; call _DumpDec ; addl $4,%esp
-
-       pushl   $ShowOpenInfo2 ; call _DumpStr ; addl $4,%esp
-       pushl   %ecx ; call _DumpDec ; addl $4,%esp
-
-       pushl   $ShowOpenInfo3 ; call _DumpStr ; addl $4,%esp
-       pushl   %esi ; call _DumpDec ; addl $4,%esp
-
-       call    _DumpLn
-       ret
-       
-#------------------------------------------------------------------------------
-MarkIt:
-       movl    _root_ebp,%ebp        # act := root_ebp
-       
-MarkRepeat:                          # REPEAT
-# call ShowBlockName # !DEBUG
-       movl    -4(%ebp),%edi         #    desc := MEM(act-4); 
-
-                                     #    (* process fixed offsets *)
-       movl    (%edi),%ebx           #    ofs  := MEM(desc); 
-       
-       jmp     MarkWhileCond1        #    WHILE ofs # -1 DO
-MarkWhile1:
-       movl    (%ebp,%ebx),%eax      #       new := MEM(act+ofs); 
-       
-# call ShowOfsAndNew # !DEBUG
-
-       testl   %eax,%eax             #       IF (new # NIL)
-       jz      MarkIfEnd1
-
-       btsb    $0,-4(%eax)           #       &  ~ISMARKED(new-4) THEN
-       jc      MarkIfEnd1
-       
-       pushl   %edi                  #          PUSH(desc);
-       movl    %ebp,%edx             #          last := act;
-       movl    %eax,%ebp             #          act  := new;
-       call    MarkABlock            #          MarkABlock;
-       movl    %edx,%ebp             #          act  := last;
-       popl    %edi                  #          POP(desc);
-MarkIfEnd1:                          #       END; (* IF *)
-
-       addl    $4,%edi               #       INC(desc,4);
-       movl    (%edi),%ebx           #       ofs := MEM(desc);
-       
-MarkWhileCond1:                      #    END; (* WHILE ofs >= 0 *)
-       cmpl    $-1,%ebx
-       jnz     MarkWhile1
-
-       addl    $4,%edi               #    INC(desc,4);
-
-                                     #    (* process open offsets *)
-       jmp     MarkWhileCond2        #    WHILE MEM(desc) = -2 DO
-MarkWhile2:
-       pushl   %edi                  #       PUSH(desc);
-       movl    4(%edi),%ebx          #       ofs   := MEM(desc+4);
-       movl    4(%ebp,%ebx),%ecx     #       count := MEM(act+ofs+4);
-       movl    (%ebp,%ebx),%esi      #       base  := MEM(act+ofs);
-# call ShowOpenInfo # !DEBUG
-MarkLoop:                            #       LOOP
-       addl    $12,%edi              #          INC(desc,12);
-       movl    (%edi),%ebx           #          ofs := MEM(desc);
-       
-       jmp     MarkWhileCond3        #          WHILE ofs # -1 DO
-MarkWhile3:
-
-       movl    (%esi,%ebx),%eax      #             new := MEM(base+ofs); 
-# call ShowOfsAndNew # !DEBUG
-       testl   %eax,%eax             #             IF (new # NIL)
-       jz      MarkIfEnd2
-       
-       btsb    $0,-4(%eax)           #             &  ~ISMARKED(new-4) THEN
-       jc      MarkIfEnd2
-       
-       pushl   %edi                  #                PUSH(desc);
-       movl    %ebp,%edx             #                last := act;
-       movl    %eax,%ebp             #                act  := new;
-       call    MarkABlock            #                MarkABlock;
-       movl    %edx,%ebp             #                act  := last;
-       popl    %edi                  #                POP(desc);
-MarkIfEnd2:                          #             END; (* IF *)
-
-       addl    $4,%edi               #             INC(desc,4);
-       movl    (%edi),%ebx           #             ofs := MEM(desc);
-       
-MarkWhileCond3:                      #          END; (* WHILE ofs # -1 *)
-       cmpl    $-1,%ebx
-       jnz     MarkWhile3
-       
-       dec     %ecx                  #          DEC(count);
-       jz      MarkLoopEnd           #          IF count = 0 THEN EXIT; END;
-       
-       movl    (%esp),%edi           #          desc := TOP();
-       addl    8(%edi),%esi          #          INC(base,MEM(desc+8)); (* elemSize *)
-
-       jmp     MarkLoop              #       END; (* LOOP *)
-MarkLoopEnd:
-
-       addl    $4,%edi               #       INC(desc,4);
-       addl    $4,%esp               #       DROP;
-
-MarkWhileCond2:                      #    END; (* WHILE MEM(desc) = -2 *)
-       cmpl    $-2,(%edi)
-       jz      MarkWhile2
-
-       movl    (%ebp),%ebp           #    act := MEM(act); 
-       testl   %ebp,%ebp
-       jnz     MarkRepeat            # UNTIL act = 0;
-       ret                           # RETURN;
-
-#------------------------------------------------------------------------------
-MarkABlock:
-# call ShowBlockName # !DEBUG
-       movl    -4(%ebp),%edi         # desc := MEM(act-4);
-       movl    (%edi),%ebx           # ofs  := MEM(desc);
-       
-       cmpl    $-1,%ebx              # IF ofs = -1 THEN RETURN; END;
-       jz      MarkBlockDone
-
-       cmpl    $-2,%ebx              # IF ofs # -2 THEN
-       jz      MarkBlockIfElse0
-       
-       jmp     MarkBlockWhileCond1   #    WHILE ofs # -1 DO
-MarkBlockWhile1:       
-
-       movl    (%ebp,%ebx),%eax      #       new := MEM(act+ofs);
-# call ShowOfsAndNew # !DEBUG
-       testl   %eax,%eax             #       IF (new # NIL)
-       jz      MarkBlockIfEnd1
-       
-       btsb    $0,-4(%eax)           #       &  ~ISMARKED(new-4) THEN
-       jc      MarkBlockIfEnd1
-       
-       movl    %edx,(%ebp,%ebx)      #          MEM(act+ofs) := last;
-       movl    %edi,-4(%ebp)         #          MEM(act-4)   := desc;
-       movl    %ebp,%edx             #          last         := act;
-       movl    %eax,%ebp             #          act          := new;
-       call    MarkABlock            #          MarkABlock;
-       movl    %ebp,%eax             #          new          := act;
-       movl    %edx,%ebp             #          act          := last;
-       movl    -4(%ebp),%edi         #          desc         := MEM(act-4);
-       movl    (%edi),%ebx           #          ofs          := MEM(desc);
-       movl    (%ebp,%ebx),%edx      #          last         := MEM(act+ofs);
-       movl    %eax,(%ebp,%ebx)      #          MEM(act+ofs) := new;
-MarkBlockIfEnd1:                     #       END; (* IF *)
-
-       addl    $4,%edi               #       INC(desc,4);
-       movl    (%edi),%ebx           #       ofs := MEM(desc);
-
-MarkBlockWhileCond1:                 #    END; (* WHILE ofs # -1 *)
-       cmpl    $-1,%ebx
-       jnz     MarkBlockWhile1
-       
-       movl    4(%edi),%eax          #    MEM(act-4) := MEM(desc+4);
-       movl    %eax,-4(%ebp)
-
-       jmp     MarkBlockIfEnd0       # ELSE
-MarkBlockIfElse0:
-
-       pushl   %ecx                  #    PUSH(count);
-       pushl   %esi                  #    PUSH(base);
-       pushl   %edi                  #    PUSH(desc);
-       movl    (%ebp),%ecx           #    count := MEM(act);
-       movl    %ebp,%esi             #    base  := act;
-       addl    4(%edi),%esi          #    INC(base,MEM(desc+4));
-       
-MarkBlockRepeat:                     #    REPEAT
-       addl    $12,%edi              #       INC(desc,12);
-       movl    (%edi),%ebx           #       ofs := MEM(desc);
-       
-       jmp     MarkBlockWhileCond2   #       WHILE ofs # -1 DO
-MarkBlockWhile2:
-       movl    (%esi,%ebx),%eax      #          new := MEM(base+ofs);
-       
-       testl   %eax,%eax             #          IF (new # NIL)
-       jz      MarkBlockIfEnd2
-       
-       btsb    $0,-4(%eax)           #          &  ~ISMARKED(new-4) THEN
-       jc      MarkBlockIfEnd2
-       
-       movl    %edx,(%esi,%ebx)      #             MEM(base+ofs) := last;
-       movl    %edi,-4(%ebp)         #             MEM(act-4)    := desc;
-       movl    %ebp,%edx             #             last          := act;
-       movl    %eax,%ebp             #             act           := new;
-       call    MarkABlock            #             MarkABlock;
-       movl    %ebp,%eax             #             new           := act;
-       movl    %edx,%ebp             #             act           := last;
-       movl    -4(%ebp),%edi         #             desc          := MEM(act-4);
-       movl    (%edi),%ebx           #             ofs           := MEM(desc);
-       movl    (%esi,%ebx),%edx      #             last          := MEM(base+ofs);
-       movl    %eax,(%esi,%ebx)      #             MEM(base+ofs) := new;
-MarkBlockIfEnd2:                     #          END; (* IF *)
-
-       addl    $4,%edi               #          INC(desc,4);
-       movl    (%edi),%ebx           #          ofs := MEM(desc);
-       
-MarkBlockWhileCond2:                 #       END; (* WHILE ofs # -1 *)
-       cmpl    $-1,%ebx
-       jnz     MarkBlockWhile2
-
-       movl    (%esp),%edi           #       desc := TOP();
-       addl    8(%edi),%esi          #       INC(base,MEM(desc+8)); (* elemSize *)
-       decl    %ecx                  #       DEC(count);
-       jnz     MarkBlockRepeat       #    UNTIL count = 0;
-       
-       popl    -4(%ebp)              #    POP(MEM(act-4));
-       popl    %esi                  #    POP(base);
-       popl    %ecx                  #    POP(count);
-MarkBlockIfEnd0:                     # END; (* IF ofs # -2 *)
-       
-MarkBlockDone:
-       ret                           # RETURN;
-
-#------------------------------------------------------------------------------
-MarkDone:
-       popl    %ebp
-       popl    %edi
-       popl    %esi
-       popl    %edx
-       popl    %ecx
-       popl    %ebx
-       popl    %eax	
-
+   asm("\n\
+       pushl   %eax\n\
+       pushl   %ebx\n\
+       pushl   %ecx\n\
+       pushl   %edx\n\
+       pushl   %esi\n\
+       pushl   %edi\n\
+       pushl   %ebp\n\
+\n\
+       call    MarkIt\n\
+\n\
+       jmp     MarkDone\n\
+\n\
+#------------------------------------------------------------------------------\n\
+ShowBlockName1: .asciz \" --> \"\n\
+ShowBlockName:\n\
+       pushl   %eax\n\
+\n\
+       pushl   %ebp ; call _DumpDec ; addl $4,%esp\n\
+       pushl   $ShowBlockName1; call _DumpStr ; addl $4,%esp\n\
+       movl    -4(%ebp),%eax\n\
+       andl    $0xfffffffe,%eax\n\
+       pushl   -12(%eax) ; call _DumpStr ; addl $4,%esp\n\
+       call    _DumpLn\n\
+\n\
+       popl    %eax\n\
+       ret\n\
+       \n\
+#------------------------------------------------------------------------------\n\
+ShowOfsAndNew1: .asciz \": \"\n\
+ShowOfsAndNew:\n\
+       pushl   %ebx ; call _DumpDec ; addl $4,%esp\n\
+       pushl   $ShowOfsAndNew1; call _DumpStr ; addl $4,%esp\n\
+       pushl   %eax ; call _DumpDec ; addl $4,%esp\n\
+       call    _DumpLn\n\
+       ret\n\
+       \n\
+#------------------------------------------------------------------------------\n\
+ShowBlockInfo1: .asciz  \"block \"\n\
+ShowBlockInfo2: .asciz  \"tag   \"\n\
+ShowBlockInfo3: .asciz  \"name  \"\n\
+ShowBlockInfo:\n\
+       pushl   %eax\n\
+\n\
+       pushl   $ShowBlockInfo1 ; call _DumpStr ; addl $4,%esp\n\
+       pushl   %ebp ; call _DumpDec ; addl $4,%esp\n\
+       call    _DumpLn\n\
+\n\
+       pushl   $ShowBlockInfo2 ; call _DumpStr ; addl $4,%esp\n\
+       pushl   -4(%ebp) ; call _DumpDec ; addl $4,%esp\n\
+       call    _DumpLn\n\
+\n\
+       pushl   $ShowBlockInfo3 ; call _DumpStr ; addl $4,%esp\n\
+       movl    -4(%ebp),%eax\n\
+       andl    $0xfffffffe,%eax\n\
+       pushl   -12(%eax) ; call _DumpStr ; addl $4,%esp\n\
+       call    _DumpLn\n\
+\n\
+       call    _DumpLn\n\
+       popl    %eax\n\
+       ret\n\
+       \n\
+#------------------------------------------------------------------------------\n\
+ShowOpenInfo1: .asciz \"open at ofs=\"\n\
+ShowOpenInfo2: .asciz \" nofElems=\"\n\
+ShowOpenInfo3: .asciz \" base=\"\n\
+ShowOpenInfo:	  \n\
+\n\
+       pushl   $ShowOpenInfo1 ; call _DumpStr ; addl $4,%esp\n\
+       pushl   %ebx ; call _DumpDec ; addl $4,%esp\n\
+\n\
+       pushl   $ShowOpenInfo2 ; call _DumpStr ; addl $4,%esp\n\
+       pushl   %ecx ; call _DumpDec ; addl $4,%esp\n\
+\n\
+       pushl   $ShowOpenInfo3 ; call _DumpStr ; addl $4,%esp\n\
+       pushl   %esi ; call _DumpDec ; addl $4,%esp\n\
+\n\
+       call    _DumpLn\n\
+       ret\n\
+       \n\
+#------------------------------------------------------------------------------\n\
+MarkIt:\n\
+       movl    _root_ebp,%ebp        # act := root_ebp\n\
+       \n\
+MarkRepeat:                          # REPEAT\n\
+# call ShowBlockName # !DEBUG\n\
+       movl    -4(%ebp),%edi         #    desc := MEM(act-4); \n\
+\n\
+                                     #    (* process fixed offsets *)\n\
+       movl    (%edi),%ebx           #    ofs  := MEM(desc); \n\
+       \n\
+       jmp     MarkWhileCond1        #    WHILE ofs # -1 DO\n\
+MarkWhile1:\n\
+       movl    (%ebp,%ebx),%eax      #       new := MEM(act+ofs); \n\
+       \n\
+# call ShowOfsAndNew # !DEBUG\n\
+\n\
+       testl   %eax,%eax             #       IF (new # NIL)\n\
+       jz      MarkIfEnd1\n\
+\n\
+       btsl    $0,-4(%eax)           #       &  ~ISMARKED(new-4) THEN\n\
+       jc      MarkIfEnd1\n\
+       \n\
+       pushl   %edi                  #          PUSH(desc);\n\
+       movl    %ebp,%edx             #          last := act;\n\
+       movl    %eax,%ebp             #          act  := new;\n\
+       call    MarkABlock            #          MarkABlock;\n\
+       movl    %edx,%ebp             #          act  := last;\n\
+       popl    %edi                  #          POP(desc);\n\
+MarkIfEnd1:                          #       END; (* IF *)\n\
+\n\
+       addl    $4,%edi               #       INC(desc,4);\n\
+       movl    (%edi),%ebx           #       ofs := MEM(desc);\n\
+       \n\
+MarkWhileCond1:                      #    END; (* WHILE ofs >= 0 *)\n\
+       cmpl    $-1,%ebx\n\
+       jnz     MarkWhile1\n\
+\n\
+       addl    $4,%edi               #    INC(desc,4);\n\
+\n\
+                                     #    (* process open offsets *)\n\
+       jmp     MarkWhileCond2        #    WHILE MEM(desc) = -2 DO\n\
+MarkWhile2:\n\
+       pushl   %edi                  #       PUSH(desc);\n\
+       movl    4(%edi),%ebx          #       ofs   := MEM(desc+4);\n\
+       movl    4(%ebp,%ebx),%ecx     #       count := MEM(act+ofs+4);\n\
+       movl    (%ebp,%ebx),%esi      #       base  := MEM(act+ofs);\n\
+# call ShowOpenInfo # !DEBUG\n\
+MarkLoop:                            #       LOOP\n\
+       addl    $12,%edi              #          INC(desc,12);\n\
+       movl    (%edi),%ebx           #          ofs := MEM(desc);\n\
+       \n\
+       jmp     MarkWhileCond3        #          WHILE ofs # -1 DO\n\
+MarkWhile3:\n\
+\n\
+       movl    (%esi,%ebx),%eax      #             new := MEM(base+ofs); \n\
+# call ShowOfsAndNew # !DEBUG\n\
+       testl   %eax,%eax             #             IF (new # NIL)\n\
+       jz      MarkIfEnd2\n\
+       \n\
+       btsl    $0,-4(%eax)           #             &  ~ISMARKED(new-4) THEN\n\
+       jc      MarkIfEnd2\n\
+       \n\
+       pushl   %edi                  #                PUSH(desc);\n\
+       movl    %ebp,%edx             #                last := act;\n\
+       movl    %eax,%ebp             #                act  := new;\n\
+       call    MarkABlock            #                MarkABlock;\n\
+       movl    %edx,%ebp             #                act  := last;\n\
+       popl    %edi                  #                POP(desc);\n\
+MarkIfEnd2:                          #             END; (* IF *)\n\
+\n\
+       addl    $4,%edi               #             INC(desc,4);\n\
+       movl    (%edi),%ebx           #             ofs := MEM(desc);\n\
+       \n\
+MarkWhileCond3:                      #          END; (* WHILE ofs # -1 *)\n\
+       cmpl    $-1,%ebx\n\
+       jnz     MarkWhile3\n\
+       \n\
+       dec     %ecx                  #          DEC(count);\n\
+       jz      MarkLoopEnd           #          IF count = 0 THEN EXIT; END;\n\
+       \n\
+       movl    (%esp),%edi           #          desc := TOP();\n\
+       addl    8(%edi),%esi          #          INC(base,MEM(desc+8)); (* elemSize *)\n\
+\n\
+       jmp     MarkLoop              #       END; (* LOOP *)\n\
+MarkLoopEnd:\n\
+\n\
+       addl    $4,%edi               #       INC(desc,4);\n\
+       addl    $4,%esp               #       DROP;\n\
+\n\
+MarkWhileCond2:                      #    END; (* WHILE MEM(desc) = -2 *)\n\
+       cmpl    $-2,(%edi)\n\
+       jz      MarkWhile2\n\
+\n\
+       movl    (%ebp),%ebp           #    act := MEM(act); \n\
+       testl   %ebp,%ebp\n\
+       jnz     MarkRepeat            # UNTIL act = 0;\n\
+       ret                           # RETURN;\n\
+\n\
+#------------------------------------------------------------------------------\n\
+MarkABlock:\n\
+# call ShowBlockName # !DEBUG\n\
+       movl    -4(%ebp),%edi         # desc := MEM(act-4);\n\
+       movl    (%edi),%ebx           # ofs  := MEM(desc);\n\
+       \n\
+       cmpl    $-1,%ebx              # IF ofs = -1 THEN RETURN; END;\n\
+       jz      MarkBlockDone\n\
+\n\
+       cmpl    $-2,%ebx              # IF ofs # -2 THEN\n\
+       jz      MarkBlockIfElse0\n\
+       \n\
+       jmp     MarkBlockWhileCond1   #    WHILE ofs # -1 DO\n\
+MarkBlockWhile1:       \n\
+\n\
+       movl    (%ebp,%ebx),%eax      #       new := MEM(act+ofs);\n\
+# call ShowOfsAndNew # !DEBUG\n\
+       testl   %eax,%eax             #       IF (new # NIL)\n\
+       jz      MarkBlockIfEnd1\n\
+       \n\
+       btsl    $0,-4(%eax)           #       &  ~ISMARKED(new-4) THEN\n\
+       jc      MarkBlockIfEnd1\n\
+       \n\
+       movl    %edx,(%ebp,%ebx)      #          MEM(act+ofs) := last;\n\
+       movl    %edi,-4(%ebp)         #          MEM(act-4)   := desc;\n\
+       movl    %ebp,%edx             #          last         := act;\n\
+       movl    %eax,%ebp             #          act          := new;\n\
+       call    MarkABlock            #          MarkABlock;\n\
+       movl    %ebp,%eax             #          new          := act;\n\
+       movl    %edx,%ebp             #          act          := last;\n\
+       movl    -4(%ebp),%edi         #          desc         := MEM(act-4);\n\
+       movl    (%edi),%ebx           #          ofs          := MEM(desc);\n\
+       movl    (%ebp,%ebx),%edx      #          last         := MEM(act+ofs);\n\
+       movl    %eax,(%ebp,%ebx)      #          MEM(act+ofs) := new;\n\
+MarkBlockIfEnd1:                     #       END; (* IF *)\n\
+\n\
+       addl    $4,%edi               #       INC(desc,4);\n\
+       movl    (%edi),%ebx           #       ofs := MEM(desc);\n\
+\n\
+MarkBlockWhileCond1:                 #    END; (* WHILE ofs # -1 *)\n\
+       cmpl    $-1,%ebx\n\
+       jnz     MarkBlockWhile1\n\
+       \n\
+       movl    4(%edi),%eax          #    MEM(act-4) := MEM(desc+4);\n\
+       movl    %eax,-4(%ebp)\n\
+\n\
+       jmp     MarkBlockIfEnd0       # ELSE\n\
+MarkBlockIfElse0:\n\
+\n\
+       pushl   %ecx                  #    PUSH(count);\n\
+       pushl   %esi                  #    PUSH(base);\n\
+       pushl   %edi                  #    PUSH(desc);\n\
+       movl    (%ebp),%ecx           #    count := MEM(act);\n\
+       movl    %ebp,%esi             #    base  := act;\n\
+       addl    4(%edi),%esi          #    INC(base,MEM(desc+4));\n\
+       \n\
+MarkBlockRepeat:                     #    REPEAT\n\
+       addl    $12,%edi              #       INC(desc,12);\n\
+       movl    (%edi),%ebx           #       ofs := MEM(desc);\n\
+       \n\
+       jmp     MarkBlockWhileCond2   #       WHILE ofs # -1 DO\n\
+MarkBlockWhile2:\n\
+       movl    (%esi,%ebx),%eax      #          new := MEM(base+ofs);\n\
+       \n\
+       testl   %eax,%eax             #          IF (new # NIL)\n\
+       jz      MarkBlockIfEnd2\n\
+       \n\
+       btsl    $0,-4(%eax)           #          &  ~ISMARKED(new-4) THEN\n\
+       jc      MarkBlockIfEnd2\n\
+       \n\
+       movl    %edx,(%esi,%ebx)      #             MEM(base+ofs) := last;\n\
+       movl    %edi,-4(%ebp)         #             MEM(act-4)    := desc;\n\
+       movl    %ebp,%edx             #             last          := act;\n\
+       movl    %eax,%ebp             #             act           := new;\n\
+       call    MarkABlock            #             MarkABlock;\n\
+       movl    %ebp,%eax             #             new           := act;\n\
+       movl    %edx,%ebp             #             act           := last;\n\
+       movl    -4(%ebp),%edi         #             desc          := MEM(act-4);\n\
+       movl    (%edi),%ebx           #             ofs           := MEM(desc);\n\
+       movl    (%esi,%ebx),%edx      #             last          := MEM(base+ofs);\n\
+       movl    %eax,(%esi,%ebx)      #             MEM(base+ofs) := new;\n\
+MarkBlockIfEnd2:                     #          END; (* IF *)\n\
+\n\
+       addl    $4,%edi               #          INC(desc,4);\n\
+       movl    (%edi),%ebx           #          ofs := MEM(desc);\n\
+       \n\
+MarkBlockWhileCond2:                 #       END; (* WHILE ofs # -1 *)\n\
+       cmpl    $-1,%ebx\n\
+       jnz     MarkBlockWhile2\n\
+\n\
+       movl    (%esp),%edi           #       desc := TOP();\n\
+       addl    8(%edi),%esi          #       INC(base,MEM(desc+8)); (* elemSize *)\n\
+       decl    %ecx                  #       DEC(count);\n\
+       jnz     MarkBlockRepeat       #    UNTIL count = 0;\n\
+       \n\
+       popl    -4(%ebp)              #    POP(MEM(act-4));\n\
+       popl    %esi                  #    POP(base);\n\
+       popl    %ecx                  #    POP(count);\n\
+MarkBlockIfEnd0:                     # END; (* IF ofs # -2 *)\n\
+       \n\
+MarkBlockDone:\n\
+       ret                           # RETURN;\n\
+\n\
+#------------------------------------------------------------------------------\n\
+MarkDone:\n\
+       popl    %ebp\n\
+       popl    %edi\n\
+       popl    %esi\n\
+       popl    %edx\n\
+       popl    %ecx\n\
+       popl    %ebx\n\
+       popl    %eax	\n\
+\n\
    "); 
    RESTORE_ROOT_EBP(); 
 } /* Mark */
 
 /*****************************************************************************/
-void PRE(Sweep)(){ asm("
-
-       pushl   %eax                      # used by some skippers
-       pushl   %ebx                      # points always to the current block
-       pushl   %ecx                      # points to the last block to be set free
-       pushl   %edx                      # points to the last block set free
-       pushl   %esi                      # holds the return address for a skipper
-       pushl   %edi                      # holds the tag of the current block
-       pushl   $SweepDone                # the default return address for the sentinel
-
-       movl    _HeapStart,%ebx
-       leal	4(%ebx),%edx
-       addl    $12,%ebx
-
-#------------------------------------------------------------------------------------------------
-SweepHeadSearch:                         # let us look for a first unmarked block...
-       movl    $SweepHeadLoop,%esi       # skipper default return address
-SweepHeadLoop:
-       btrl    $0,-4(%ebx)               # block marked? ...reset mark
-       jnc     SweepHeadFound            # block was not marked --> further unmarked blocks?
-       movl    -4(%ebx),%edi             # load tag
-       jmp     -4(%edi)                  # call skipper
-
-SweepHeadFound:
-       movl    %ebx,%ecx                 # remember head
-       movl    $SweepFreeEnd,(%esp)      # sentinel alternate return address
-       movl    $SweepFreeLoop,%esi       # skipper alternate return address
-SweepFreeNext:
-       movl    -4(%ebx),%edi             # load tag
-       jmp     -4(%edi)                  # call skipper
-SweepFreeLoop:
-       btrl    $0,-4(%ebx)               # is this block also marked? ...reset mark
-       jnc     SweepFreeNext             # this block was not marked --> continue search
-
-       # we've reached a marked block: all previous blocks starting from head are to be set free
-       movl    %ebx,%eax
-       subl    %ecx,%eax                 # eax = blocksize of head
-       cmpl    $8,%eax                   # eax>8 ?
-       ja      SweepFreeLargeBlock       # yes -->
-
-       # we're freeing a small block (hoping the blocksize's not < 8 ;-)
-       movl    $_B8$D,-4(%ecx)           # this is a small free block
-       movl    %ecx,(%edx)               # link last free block to head
-       movl    %ecx,%edx                 # head is now the last free block
-
-       movl    $SweepDone,(%esp)         # sentinel default return target
-       movl    $SweepHeadLoop,%esi       # skipper default return target
-       movl    -4(%ebx),%edi             # load tag
-       jmp     -4(%edi)                  # call skipper
-
-SweepFreeLargeBlock: # we're freeing a standard block
-       movl    $_FB$D,-4(%ecx)           # descriptor for a standard block...
-       movl    %eax,4(%ecx)              # ...of this size
-       movl    %ecx,(%edx)               # link last free block to head
-       movl    %ecx,%edx                 # head is now the last free block
-       
-       movl    $SweepDone,(%esp)         # sentinel default return target
-       movl    $SweepHeadLoop,%esi       # skipper default return target
-       movl    -4(%ebx),%edi             # load tag
-       jmp     -4(%edi)                  # call skipper
-
-
-SweepFreeEnd:
-       # we've reached the sentinel: all blocks starting from head are to be set free
-       movl    %ebx,%eax
-       subl    %ecx,%eax                 # eax = blocksize of head
-       cmpl    $8,%eax                   # eax>8 ?
-       jg      SweepFreeLargeLastBlock   # yes -->
-
-       # we're freeing a small block (hoping the blocksize's not < 8 ;-)
-       movl    $_B8$D,-4(%ecx)           # this is a small free block
-       jmp     SweepLinkLast
-       
-SweepFreeLargeLastBlock: # we're freeing a standard block
-       movl    $_FB$D,-4(%ecx)           # descriptor for a standard block...
-       movl    %eax,4(%ecx)              # ...of this size
-
-SweepLinkLast:
-       movl    %ecx,(%edx)               # link last free block to head
-       movl    %ebx,(%ecx)               # link head to sentinel
-
-#------------------------------------------------------------------------------------------------
-SweepDone:
-       movl    _HeapEnd,%eax
-       movl    $_ZB$D,-4(%eax)
-       movl    $0,(%eax)
-       
-       popl    %edi
-       popl    %esi
-       popl    %edx
-       popl    %ecx
-       popl    %ebx
-       popl    %eax
-        
+void PRE(Sweep)(){ asm("\n\
+\n\
+       pushl   %eax                      # used by some skippers\n\
+       pushl   %ebx                      # points always to the current block\n\
+       pushl   %ecx                      # points to the last block to be set free\n\
+       pushl   %edx                      # points to the last block set free\n\
+       pushl   %esi                      # holds the return address for a skipper\n\
+       pushl   %edi                      # holds the tag of the current block\n\
+       pushl   $SweepDone                # the default return address for the sentinel\n\
+\n\
+       movl    _HeapStart,%ebx\n\
+       leal	4(%ebx),%edx\n\
+       addl    $12,%ebx\n\
+\n\
+#------------------------------------------------------------------------------------------------\n\
+SweepHeadSearch:                         # let us look for a first unmarked block...\n\
+       movl    $SweepHeadLoop,%esi       # skipper default return address\n\
+SweepHeadLoop:\n\
+       btrl    $0,-4(%ebx)               # block marked? ...reset mark\n\
+       jnc     SweepHeadFound            # block was not marked --> further unmarked blocks?\n\
+       movl    -4(%ebx),%edi             # load tag\n\
+       jmp     -4(%edi)                  # call skipper\n\
+\n\
+SweepHeadFound:\n\
+       movl    %ebx,%ecx                 # remember head\n\
+       movl    $SweepFreeEnd,(%esp)      # sentinel alternate return address\n\
+       movl    $SweepFreeLoop,%esi       # skipper alternate return address\n\
+SweepFreeNext:\n\
+       movl    -4(%ebx),%edi             # load tag\n\
+       jmp     -4(%edi)                  # call skipper\n\
+SweepFreeLoop:\n\
+       btrl    $0,-4(%ebx)               # is this block also marked? ...reset mark\n\
+       jnc     SweepFreeNext             # this block was not marked --> continue search\n\
+\n\
+       # we've reached a marked block: all previous blocks starting from head are to be set free\n\
+       movl    %ebx,%eax\n\
+       subl    %ecx,%eax                 # eax = blocksize of head\n\
+       cmpl    $8,%eax                   # eax>8 ?\n\
+       ja      SweepFreeLargeBlock       # yes -->\n\
+\n\
+       # we're freeing a small block (hoping the blocksize's not < 8 ;-)\n\
+       movl    $_B8$D,-4(%ecx)           # this is a small free block\n\
+       movl    %ecx,(%edx)               # link last free block to head\n\
+       movl    %ecx,%edx                 # head is now the last free block\n\
+\n\
+       movl    $SweepDone,(%esp)         # sentinel default return target\n\
+       movl    $SweepHeadLoop,%esi       # skipper default return target\n\
+       movl    -4(%ebx),%edi             # load tag\n\
+       jmp     -4(%edi)                  # call skipper\n\
+\n\
+SweepFreeLargeBlock: # we're freeing a standard block\n\
+       movl    $_FB$D,-4(%ecx)           # descriptor for a standard block...\n\
+       movl    %eax,4(%ecx)              # ...of this size\n\
+       movl    %ecx,(%edx)               # link last free block to head\n\
+       movl    %ecx,%edx                 # head is now the last free block\n\
+       \n\
+       movl    $SweepDone,(%esp)         # sentinel default return target\n\
+       movl    $SweepHeadLoop,%esi       # skipper default return target\n\
+       movl    -4(%ebx),%edi             # load tag\n\
+       jmp     -4(%edi)                  # call skipper\n\
+\n\
+\n\
+SweepFreeEnd:\n\
+       # we've reached the sentinel: all blocks starting from head are to be set free\n\
+       movl    %ebx,%eax\n\
+       subl    %ecx,%eax                 # eax = blocksize of head\n\
+       cmpl    $8,%eax                   # eax>8 ?\n\
+       jg      SweepFreeLargeLastBlock   # yes -->\n\
+\n\
+       # we're freeing a small block (hoping the blocksize's not < 8 ;-)\n\
+       movl    $_B8$D,-4(%ecx)           # this is a small free block\n\
+       jmp     SweepLinkLast\n\
+       \n\
+SweepFreeLargeLastBlock: # we're freeing a standard block\n\
+       movl    $_FB$D,-4(%ecx)           # descriptor for a standard block...\n\
+       movl    %eax,4(%ecx)              # ...of this size\n\
+\n\
+SweepLinkLast:\n\
+       movl    %ecx,(%edx)               # link last free block to head\n\
+       movl    %ebx,(%ecx)               # link head to sentinel\n\
+\n\
+#------------------------------------------------------------------------------------------------\n\
+SweepDone:\n\
+       movl    _HeapEnd,%eax\n\
+       movl    $_ZB$D,-4(%eax)\n\
+       movl    $0,(%eax)\n\
+       \n\
+       popl    %edi\n\
+       popl    %esi\n\
+       popl    %edx\n\
+       popl    %ecx\n\
+       popl    %ebx\n\
+       popl    %eax\n\
+        \n\
 "); } /* Sweep */
 
 /*****************************************************************************/

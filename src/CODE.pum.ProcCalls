@@ -5,11 +5,11 @@ PROCEDURE CodeProcedureCall ( designator:Designator )
 LOCAL{ VAR acode:ACode; dcode:DCode; }
 
  Designator(_,_,_,Importing(_,_,_,_,a:PredeclArgumenting,_,_),_,_,_,_,_);
- Designator(_,_,_,                  a:PredeclArgumenting     ,_,_,_,_,_)?{ TRACE(CodeProcedureCall.Predecls); 
+ Designator(_,_,_,                  a:PredeclArgumenting     ,_,_,_,_,_):-{ TRACE(CodeProcedureCall.Predecls); 
     CodePredeclProcs(a); 
  };.
 
- ..?{ TRACE(CodeProcedureCall.UserProc); 
+ ..:-{ TRACE(CodeProcedureCall.UserProc); 
     CodeLDesignator(designator,acode);
     Cons.NoFuncResult(acode); 
  };.
@@ -21,12 +21,12 @@ PROCEDURE CodeFunctionReturn ( srcType:TypeReprs , srcVal:ValueReprs , expr:Expr
 LOCAL{ VAR dcode:DCode; }
 
  RealTypeRepr,..;
- LongrealTypeRepr,..?{
+ LongrealTypeRepr,..:-{
     CodeRExpr(srcType,expr,coercion,dcode); 
     Cons.FloatFuncReturn(dcode); 
  };.
 
- .. ?{
+ .. :-{
     CodeRExpr(srcType,expr,coercion,dcode); 
     Cons.FuncReturn(dcode); 
  };.
@@ -38,7 +38,7 @@ PROCEDURE CodeArguments ( SignatureRepr , ExprLists , isForeign:BOOLEAN , argcod
 LOCAL{ VAR argcode:ArgCode; }
 
  Signature(nextSig:SignatureRepr,VarEntry(_,_,_,_,_,_,dstType:TypeReprs,_,_,parMode,_,refMode,_,_))
-,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} ?{ TRACE(CodeArguments); 
+,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} :-{ TRACE(CodeArguments); 
     CodeArguments(nextSig,nextExp,isForeign,argcodeIn,argcode); 
 
     IF isForeign THEN 
@@ -59,15 +59,15 @@ LOCAL{ VAR argcode:ArgCode; }
  };.
  
  sig:GenericSignature
-,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} ?{ TRACE(CodeArguments.Generic); 
+,ExprList(nextExp:ExprLists,expr:Exprs(_,srcType,srcVal),coerce),.. => {argcode} :-{ TRACE(CodeArguments.Generic); 
     CodeArguments(sig,nextExp,isForeign,argcodeIn,argcode); 
 
     CodeGenericParam(srcType,srcVal,expr,argcode,argcode); 
  };.
  
- _,mtExprList,.. => argcodeIn ?.
+ _,mtExprList,.. => argcodeIn :-.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeArguments: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeArguments: failed'); };.
 
 /*END CodeArguments */
 
@@ -82,11 +82,11 @@ LOCAL{ VAR argcode:ArgCode; }
                                       ),_,_,_,_,_
                             )
                  ,_)
- ,_ => {argcode} ?{ TRACE(CodeVarParam.SYSTEM.VAL); 
+ ,_ => {argcode} :-{ TRACE(CodeVarParam.SYSTEM.VAL); 
     CodeVarParam1(dstType,eType,OB.cmtValue,e,argcodeIn,argcode); 
  };.
 
- .. => {argcode} ?{ TRACE(CodeVarParam.Default); 
+ .. => {argcode} :-{ TRACE(CodeVarParam.Default); 
     CodeVarParam1(dstType,srcType,srcVal,expr,argcodeIn,argcode); 
  };.
 
@@ -96,22 +96,22 @@ LOCAL{ VAR argcode:ArgCode; }
 PROCEDURE CodeVarParam1 ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueReprs , expr:Exprs , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; }
 
- RecordTypeRepr,_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ?{ TRACE(CodeVarParam1.Record); 
+ RecordTypeRepr,_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} :-{ TRACE(CodeVarParam1.Record); 
     CodeRecordVarParam(entry,srcType,d,argcodeIn,argcode);
  };.
 
- ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ? (len=OB.OPENARRAYLEN);
+ ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} :- (len=OB.OPENARRAYLEN);
  { TRACE(CodeVarParam1.OpenArray); 
     CodeOpenArrayParam(entry,dstType,srcType,srcVal,d,argcodeIn,argcode); 
  };.
 
- _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeVarParam1.Default); 
+ _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} :-{ TRACE(CodeVarParam1.Default); 
     CodeLDesignator(d,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeVarParam1: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeVarParam1: failed'); };.
 
 /*END CodeVarParam1 */
 
@@ -122,21 +122,21 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; implcode:ImplCode; idData:
            useActNofElems:BOOLEAN; lastLenOfs:LONGINT; }
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- /* actEntry   =: */ VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_)
-,/* frmType    =: */ ArrayTypeRepr(_,_,_,_,_,len,ByteTypeRepr)
-,/* actType    =: */ TypeRepr(_,size,_,_,_)
-,/* actVal     =: */ _
-,/* designator =: */ _
-,_ => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeOpenArrayParam.ArrayOfByte); 
+   VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_)
+,  ArrayTypeRepr(_,_,_,_,_,len,ByteTypeRepr)
+,  TypeRepr(_,size,_,_,_)
+,  _
+,  _
+,_ => {argcode} :- (len=OB.OPENARRAYLEN);{ TRACE(CodeOpenArrayParam.ArrayOfByte); 
     CodeOpenArrayOfByteParam(actType,T.ElemTypeOfArrayType(varType),actEntry,designator,argcodeIn,argcode); 
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- /* actEntry   =: */ VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_) /* == Designator:EntryOut */
-,/* frmType    =: */ _
-,/* actType    =: */ ArrayTypeRepr(_,_,_,_,_,len,_)
-,/* actVal     =: */ _
-,/* designator =: */ Designator,_ => {argcode} ?;{ TRACE(CodeOpenArrayParam.Array); 
+   VarEntry(_,_,_,_,_,_,varType,_,_,_,_,_,_,_) /* == Designator:EntryOut */
+,  _
+,  ArrayTypeRepr(_,_,_,_,_,len,_)
+,  _
+,  Designator,_ => {argcode} :-;{ TRACE(CodeOpenArrayParam.Array); 
 
     useActNofElems:=FALSE; 
     
@@ -180,14 +180,14 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; implcode:ImplCode; idData:
  };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
- ..=> NIL ?{ ERR.Fatal('CODE.CodeOpenArrayParam: failed'); };.
+ ..=> NIL :-{ ERR.Fatal('CODE.CodeOpenArrayParam: failed'); };.
 
 /*END CodeOpenArrayParam */
 
 /********************************************************************************************************************************/
 PROCEDURE CodeImplicitConstLens ( frmType:TypeReprs , actType:TypeReprs , REF implcode:ImplCode )
 
- ArrayTypeRepr(_,_,_,_,_,frmLen,frmElem),ArrayTypeRepr(_,_,_,_,_,actLen,actElem),_ ? (frmLen=OB.OPENARRAYLEN);
+ ArrayTypeRepr(_,_,_,_,_,frmLen,frmElem),ArrayTypeRepr(_,_,_,_,_,actLen,actElem),_ :- (frmLen=OB.OPENARRAYLEN);
  { TRACE(CodeImplicitConstLens); 
     CodeImplicitConstLens(frmElem,actElem,implcode); 
     
@@ -198,7 +198,7 @@ PROCEDURE CodeImplicitConstLens ( frmType:TypeReprs , actType:TypeReprs , REF im
     END;
  };.
 
- .. ?.
+ .. :-.
 
 /********************************************************************************************************************************/
 PROCEDURE CodeOpenArrayOfByteParam ( actType:TypeReprs , flattenedVarType:TypeReprs , actEntry:Entries , designator:Designator 
@@ -212,7 +212,7 @@ LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:
 
  /* PROCEDURE Caller(VAR r:tRecord); BEGIN Callee(r); ... */
  RecordTypeRepr,_,VarEntry(_,_,_,_,_,_,RecordTypeRepr,_,_,parMode,_,_,_,_),..
- => {argcode} ? (parMode=OB.REFPAR); { TRACE(CodeOpenArrayOfByteParam.RecordVarPar); 
+ => {argcode} :- (parMode=OB.REFPAR); { TRACE(CodeOpenArrayOfByteParam.RecordVarPar); 
     CodeImplicitLDesignator(designator,idData,objAcode); 
 
     Cons.Selector(idData.ofsOfObjHeader,idData.acodeToObjHeader,acode); 
@@ -228,7 +228,7 @@ LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:
  
  /* VAR p: ARRAY c OF POINTER TO tRecord; BEGIN Callee(p [i] ^); ... */
  /*       {          }                                  {   }        */
- RecordTypeRepr,PointerTypeRepr,.. => {argcode} ?{ TRACE(CodeOpenArrayOfByteParam.PointerToRecord); 
+ RecordTypeRepr,PointerTypeRepr,.. => {argcode} :-{ TRACE(CodeOpenArrayOfByteParam.PointerToRecord); 
     CodeLDesignator(designator,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param_RecordSizeAndAddr(argcodeIn,dcode,argcode); 
@@ -237,7 +237,7 @@ LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:
  /* PROCEDURE Caller( VAR a:ARRAY OF ARRAY OF T); BEGIN Callee(a [i] ); ... */
  /*                  [   ]          {        }                  {   }       */
  ArrayTypeRepr(_,_,_,_,_,len,_),_,VarEntry(_,_,_,_,_,_,varType,isParam,..),..
- => {argcode} ? (isParam & (len=OB.OPENARRAYLEN)); { TRACE(CodeOpenArrayOfByteParam.OpenArrayVarPar); 
+ => {argcode} :- (isParam & (len=OB.OPENARRAYLEN)); { TRACE(CodeOpenArrayOfByteParam.OpenArrayVarPar); 
     CodeImplicitLDesignator(designator,idData,objAcode); 
     IF actType=varType THEN (* the complete array gets passed... *)
    
@@ -268,7 +268,7 @@ LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:
  /* VAR p: ARRAY c OF POINTER TO ARRAY OF ARRAY OF T; BEGIN Callee(p [i] ^); ... */
  /*       {          }                   {        }                 {   }        */
  ArrayTypeRepr(_,_,_,_,_,len,_),PointerTypeRepr(_,_,_,_,_,TypeEntry(_,_,_,_,_,_,varType)),..
- => {argcode} ? (len=OB.OPENARRAYLEN); { TRACE(CodeOpenArrayOfByteParam.CompleteOpenArrayPointer); 
+ => {argcode} :- (len=OB.OPENARRAYLEN); { TRACE(CodeOpenArrayOfByteParam.CompleteOpenArrayPointer); 
     CodeImplicitLDesignator(designator,idData,objAcode); 
     IF actType=varType THEN (* the complete array gets passed... *)
        Cons.AddressOf(idData.acodeToObjHeader,dcode); 
@@ -285,7 +285,7 @@ LOCAL{ VAR objAcode,acode:ACode; dcode,sizeDcode:DCode; argcode:ArgCode; idData:
     END;
  };.
  
- TypeRepr(_,size,_,_,_),.. => {argcode} ?{ TRACE(CodeOpenArrayOfByteParam.Default); 
+ TypeRepr(_,size,_,_,_),.. => {argcode} :-{ TRACE(CodeOpenArrayOfByteParam.Default); 
     Cons.LongintConst(size,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
     
@@ -301,7 +301,7 @@ PROCEDURE CodeRecordVarParam ( Entries , srcType:TypeReprs , designator:Designat
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; idData:tImplicitDesignationData; implcode:ImplCode; }
 
  VarEntry(_,_,_,_,_,_,type:TypeReprs,_,_,parMode,_,_,_,_),.. => {argcode} 
- ? ((parMode=OB.REFPAR) OR T.IsPtrToRecOrArrOfPtrToRec(type)); { TRACE(CodeRecordVarParam.Ref); 
+ :- ((parMode=OB.REFPAR) OR T.IsPtrToRecOrArrOfPtrToRec(type)); { TRACE(CodeRecordVarParam.Ref); 
     CodeImplicitLDesignator(designator,idData,acode); 
 
     Cons.ConjureRegister(dcode); 
@@ -317,7 +317,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; idData:tImplicitDesignatio
     Cons.Param_Implicit(argcodeIn,implcode,argcode); 
  };.
 
- .. => {argcode} ?{ TRACE(CodeRecordVarParam.ConstType); 
+ .. => {argcode} :-{ TRACE(CodeRecordVarParam.ConstType); 
     CodeLDesignator(designator,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
@@ -334,17 +334,17 @@ PROCEDURE CodeRefdValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:Valu
                            , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING; }
 
- ArrayTypeRepr(_,_,_,_,_,len,CharTypeRepr),_,ValueRepr,.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeRefdValParam.String); 
+ ArrayTypeRepr(_,_,_,_,_,len,CharTypeRepr),_,ValueRepr,.. => {argcode} :- (len=OB.OPENARRAYLEN);{ TRACE(CodeRefdValParam.String); 
     CodeOpenArrayStringParam(srcType,srcVal,argcodeIn,argcode); 
  };.
 
- ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} ? (len=OB.OPENARRAYLEN);
+ ArrayTypeRepr(_,_,_,_,_,len,_),_,_,DesignExpr(_,_,_,d:Designator,entry),_ => {argcode} :- (len=OB.OPENARRAYLEN);
  { TRACE(CodeRefdValParam.OpenArray); 
     CodeOpenArrayParam(entry,dstType,srcType,srcVal,d,argcodeIn,argcode); 
  };.
 
  _,CharTypeRepr      ,CharValue(v),.. ;
- _,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeRefdValParam.Char); 
+ _,CharStringTypeRepr,CharValue(v),.. => {argcode} :-{ TRACE(CodeRefdValParam.Char); 
     ar[0]:=OT.CHARofoCHAR(v); ar[1]:=0C; 
     Strings.ArrayToString(ar,st); 
     OT.STR2oSTRING(st,os); 
@@ -354,19 +354,19 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; ar:ARRAY [0..2] OF CHAR; s
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- _,StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeRefdValParam.String); 
+ _,StringTypeRepr,StringValue(v),.. => {argcode} :-{ TRACE(CodeRefdValParam.String); 
     Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeRefdValParam.Default); 
+ _,_,_,DesignExpr(_,_,_,d:Designator,_),_ => {argcode} :-{ TRACE(CodeRefdValParam.Default); 
     CodeLDesignator(d,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeRefdValParam: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeRefdValParam: failed'); };.
  
 /*END CodeRefdValParam */
 
@@ -374,7 +374,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; ar:ARRAY [0..2] OF CHAR; s
 PROCEDURE CodeOpenArrayStringParam ( srcType:TypeReprs , srcVal:ValueReprs , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; str:OT.oSTRING; }
 
- CharStringTypeRepr,CharValue(v),_ => {argcode} ?{ TRACE(CodeOpenArrayStringParam.Char); 
+ CharStringTypeRepr,CharValue(v),_ => {argcode} :-{ TRACE(CodeOpenArrayStringParam.Char); 
     OT.oCHAR2oSTRING(v,str); 
 
     Cons.LongintConst(1+ORD(v#0),dcode); 
@@ -385,7 +385,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; str:OT.oSTRING; }
     Cons.Param(argcode,dcode,argcode);
  };.
 
- StringTypeRepr,StringValue(v),_ => {argcode} ?{ TRACE(CodeOpenArrayStringParam.String); 
+ StringTypeRepr,StringValue(v),_ => {argcode} :-{ TRACE(CodeOpenArrayStringParam.String); 
     Cons.LongintConst(1+OT.LengthOfoSTRING(v),dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
 
@@ -394,7 +394,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; str:OT.oSTRING; }
     Cons.Param(argcode,dcode,argcode);
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeOpenArrayStringParam: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeOpenArrayStringParam: failed'); };.
 
 /*END CodeOpenArrayStringParam */
 
@@ -403,34 +403,34 @@ PROCEDURE CodeValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:ValueRep
                        , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:LONGINT; }
 
- RealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Real_Real); 
+ RealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} :-{ TRACE(CodeValParam.Real_Real); 
     Cons.RealConst(v,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
 
- LongrealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Longreal_Real); 
+ LongrealTypeRepr,RealTypeRepr,RealValue(v),.. => {argcode} :-{ TRACE(CodeValParam.Longreal_Real); 
     OT.oREAL2oLONGREAL(v,lr); OT.SplitoLONGREAL(lr,lo,hi); 
     Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
     Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
  };.
 
- LongrealTypeRepr,LongrealTypeRepr,LongrealValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Longreal_Longreal); 
+ LongrealTypeRepr,LongrealTypeRepr,LongrealValue(v),.. => {argcode} :-{ TRACE(CodeValParam.Longreal_Longreal); 
     OT.SplitoLONGREAL(v,lo,hi); 
     Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
     Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
  };.
 
- CharTypeRepr,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeValParam.Char_Char); 
+ CharTypeRepr,CharStringTypeRepr,CharValue(v),.. => {argcode} :-{ TRACE(CodeValParam.Char_Char); 
     Cons.CharConst(v,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
 
- _,CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeValParam.String_Char); 
+ _,CharStringTypeRepr,CharValue(v),.. => {argcode} :-{ TRACE(CodeValParam.String_Char); 
     Cons.IntegerConst(v MOD 256,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
 
- _,StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeValParam.String_String); 
+ _,StringTypeRepr,StringValue(v),.. => {argcode} :-{ TRACE(CodeValParam.String_String); 
     CASE OT.LengthOfoSTRING(v) OF
     |0:   Cons.CharConst(0,dcode);
     |1:   OT.SplitoSTRING(v,li); Cons.IntegerConst(li,dcode); 
@@ -439,7 +439,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:
     Cons.Param(argcodeIn,dcode,argcode);
  };.
 
- FloatTypeRepr(_,size,..),.. => {argcode} ?{ TRACE(CodeValParam.Floats); 
+ FloatTypeRepr(_,size,..),.. => {argcode} :-{ TRACE(CodeValParam.Floats); 
     CodeRExpr(srcType,expr,coercion,dcode); 
     Cons.FloatParam(ASM.FloatSizeTab[size],argcodeIn,dcode,argcode);
  };.
@@ -454,12 +454,12 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:
  _,LongintTypeRepr  ,.. ;
  _,NilTypeRepr      ,.. ;
  _,PointerTypeRepr  ,.. ;
- _,ProcedureTypeRepr,.. => {argcode} ?{ TRACE(CodeValParam.StandardType); 
+ _,ProcedureTypeRepr,.. => {argcode} :-{ TRACE(CodeValParam.StandardType); 
     CodeRExpr(srcType,expr,coercion,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
  
- TypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ? (size<=4);{ TRACE(CodeValParam.SmallStructuredType); 
+ TypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} :- (size<=4);{ TRACE(CodeValParam.SmallStructuredType); 
     CodeLDesignator(d,acode); 
     CASE size OF
     |0:  Cons.ContentOf(b,acode,dcode); Cons.Param0(argcodeIn,dcode,argcode); 
@@ -468,7 +468,7 @@ LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:
     END;
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeValParam: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeValParam: failed'); };.
 
 /*END CodeValParam */
 
@@ -483,11 +483,11 @@ LOCAL{ VAR argcode:ArgCode; }
                                 ),_,_,_,_,_
                       )
            ,_)
- ,_ => {argcode} ?{ TRACE(CodeForeignVarParam.SYSTEM.VAL); 
+ ,_ => {argcode} :-{ TRACE(CodeForeignVarParam.SYSTEM.VAL); 
     CodeForeignVarParam1(e,argcodeIn,argcode); 
  };.
 
- .. => {argcode} ?{ TRACE(CodeForeignVarParam.Default); 
+ .. => {argcode} :-{ TRACE(CodeForeignVarParam.Default); 
     CodeForeignVarParam1(expr,argcodeIn,argcode); 
  };.
 
@@ -497,13 +497,13 @@ LOCAL{ VAR argcode:ArgCode; }
 PROCEDURE CodeForeignVarParam1 ( expr:Exprs , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; dcode:DCode; argcode:ArgCode; }
 
- DesignExpr(_,_,_,d:Designator,_),_ => {argcode} ?{ TRACE(CodeForeignVarParam1.Default); 
+ DesignExpr(_,_,_,d:Designator,_),_ => {argcode} :-{ TRACE(CodeForeignVarParam1.Default); 
     CodeLDesignator(d,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeForeignVarParam1: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeForeignVarParam1: failed'); };.
 
 /*END CodeForeignVarParam1 */
 
@@ -512,25 +512,25 @@ PROCEDURE CodeForeignValParam ( dstType:TypeReprs , srcType:TypeReprs , srcVal:V
                               , argcodeIn:ArgCode => ArgCode )
 LOCAL{ VAR acode:ACode; argcode:ArgCode; }
 
- ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.FormalOpenArray); 
+ ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} :- (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.FormalOpenArray); 
     CodeGenericParam(srcType,srcVal,expr,argcodeIn,argcode); 
  };.
 
- _,ArrayTypeRepr(_,size,_,_,_,len,_),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ? (len#OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualFixedArray); 
+ _,ArrayTypeRepr(_,size,_,_,_,len,_),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} :- (len#OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualFixedArray); 
     CodeLDesignator(d,acode); 
     Cons.ParamStructured(size,argcodeIn,acode,argcode); 
  };.
 
- _,ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} ? (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualOpenArray); 
+ _,ArrayTypeRepr(_,_,_,_,_,len,_),.. => {argcode} :- (len=OB.OPENARRAYLEN);{ TRACE(CodeForeignValParam.ActualOpenArray); 
     ERR.Fatal('CODE.CodeForeignValParam.ActualOpenArray: Not yet implemented');
  };.
 
- RecordTypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeForeignValParam.RecordType); 
+ RecordTypeRepr(_,size,..),_,_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} :-{ TRACE(CodeForeignValParam.RecordType); 
     CodeLDesignator(d,acode); 
     Cons.ParamStructured(size,argcodeIn,acode,argcode); 
  };.
 
- .. => {argcode}?{ TRACE(CodeForeignValParam.Default); 
+ .. => {argcode}:-{ TRACE(CodeForeignValParam.Default); 
     CodeValParam(dstType,srcType,srcVal,expr,coercion,argcodeIn,argcode); 
  };.
 
@@ -542,7 +542,7 @@ LOCAL{ VAR ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING;
            acode:ACode; dcode:DCode; argcode:ArgCode; lr:OT.oLONGREAL; li,lo,hi:LONGINT; }
 
  CharTypeRepr      ,CharValue(v),.. ;
- CharStringTypeRepr,CharValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.CharConst); 
+ CharStringTypeRepr,CharValue(v),.. => {argcode} :-{ TRACE(CodeGenericParam.CharConst); 
     ar[0]:=OT.CHARofoCHAR(v); ar[1]:=0C; 
     Strings.ArrayToString(ar,st); 
     OT.STR2oSTRING(st,os); 
@@ -552,24 +552,24 @@ LOCAL{ VAR ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING;
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- StringTypeRepr,StringValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.StringConst); 
+ StringTypeRepr,StringValue(v),.. => {argcode} :-{ TRACE(CodeGenericParam.StringConst); 
     Cons.GlobalVariable(CV.String(v),0,Idents.NoIdent,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- RealTypeRepr,RealValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.RealConst); 
+ RealTypeRepr,RealValue(v),.. => {argcode} :-{ TRACE(CodeGenericParam.RealConst); 
     Cons.RealConst(v,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
 
- LongrealTypeRepr,LongrealValue(v),.. => {argcode} ?{ TRACE(CodeGenericParam.LongrealConst); 
+ LongrealTypeRepr,LongrealValue(v),.. => {argcode} :-{ TRACE(CodeGenericParam.LongrealConst); 
     OT.SplitoLONGREAL(v,lo,hi); 
     Cons.LongintConst(hi,dcode); Cons.Param(argcodeIn,dcode,argcode); 
     Cons.LongintConst(lo,dcode); Cons.Param(argcode  ,dcode,argcode);
  };.
 
- FloatTypeRepr(_,size,..),.. => {argcode} ?{ TRACE(CodeGenericParam.Floats); 
+ FloatTypeRepr(_,size,..),.. => {argcode} :-{ TRACE(CodeGenericParam.Floats); 
     CodeRExpr(srcType,expr,OB.cmtCoercion,dcode); 
     Cons.FloatParam(ASM.FloatSizeTab[size],argcodeIn,dcode,argcode);
  };.
@@ -584,23 +584,23 @@ LOCAL{ VAR ar:ARRAY [0..2] OF CHAR; st:Strings.tString; os:OT.oSTRING;
  LongintTypeRepr  ,.. ;
  NilTypeRepr      ,.. ;
  PointerTypeRepr  ,.. ;
- ProcedureTypeRepr,.. => {argcode} ?{ TRACE(CodeGenericParam.StandardType); 
+ ProcedureTypeRepr,.. => {argcode} :-{ TRACE(CodeGenericParam.StandardType); 
     CodeRExpr(srcType,expr,OB.cmtCoercion,dcode); 
     Cons.Param(argcodeIn,dcode,argcode);
  };.
  
- RecordTypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeGenericParam.RecordType); 
+ RecordTypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} :-{ TRACE(CodeGenericParam.RecordType); 
     CodeLDesignator(d,acode); 
     Cons.ParamStructured(size,argcodeIn,acode,argcode); 
  };.
 
- TypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} ?{ TRACE(CodeGenericParam.StructuredType); 
+ TypeRepr(_,size,..),_,DesignExpr(_,_,_,d:Designator,_),.. => {argcode} :-{ TRACE(CodeGenericParam.StructuredType); 
     CodeLDesignator(d,acode); 
     Cons.AddressOf(acode,dcode); 
     Cons.Param(argcodeIn,dcode,argcode); 
  };.
 
- .. => NIL ?{ ERR.Fatal('CODE.CodeGenericParam: failed'); };.
+ .. => NIL :-{ ERR.Fatal('CODE.CodeGenericParam: failed'); };.
 
 /*END CodeGenericParam */
 

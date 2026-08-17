@@ -224,17 +224,17 @@ PROCEDURE NextVarAddr (  level    : tLevel
                       ,  newAddr  : tAddress )
 LOCAL{ VAR a:tAddress; }                      
 
-   /* level   =: */ {OB.MODULELEVEL},.. 
-=> /* varAddr := */ a
-,  /* newAddr := */ a+typesize          :-   { a:=pAligned(oldAddr,typesize); };.
+     {OB.MODULELEVEL},.. 
+=>   a
+,    a+typesize          :-   { a:=pAligned(oldAddr,typesize); };.
 
-   /* level   =: */ {OB.FIELDLEVEL},.. 
-=> /* varAddr := */ oldAddr
-,  /* newAddr := */ oldAddr+typesize    :- .
+     {OB.FIELDLEVEL},.. 
+=>   oldAddr
+,    oldAddr+typesize    :- .
 
-   /* level   =: */ .. 
-=> /* varAddr := */ a
-,  /* newAddr := */ a                   :-   { a:=nAligned(oldAddr-typesize,typesize); };.
+     .. 
+=>   a
+,    a                   :-   { a:=nAligned(oldAddr-typesize,typesize); };.
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 PROCEDURE NextParAddr (  parMode  : tParMode
@@ -245,39 +245,39 @@ PROCEDURE NextParAddr (  parMode  : tParMode
                       ,  newAddr  : tAddress )
 LOCAL{ VAR od:LONGINT; a:tAddress; r:tParMode; }                      
 
-   /* parMode =: */ {OB.REFPAR}
-,  /* type    =: */ RecordTypeRepr
-,  /* oldAddr =: */ _
-=> /* parAddr := */ oldAddr+4
-,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ oldAddr+8 :- .
+     {OB.REFPAR}
+,    RecordTypeRepr
+,    _
+=>   oldAddr+4
+,    {OB.REFPAR}
+,    oldAddr+8 :- .
                                                                 
-   /* parMode =: */ _
-,  /* type    =: */ RecordTypeRepr
-,  /* oldAddr =: */ _
-=> /* parAddr := */ oldAddr
-,  /* refMode := */ r          
-,  /* newAddr := */ {a} :-  { CASE T.SizeOfType(type) OF
+     _
+,    RecordTypeRepr
+,    _
+=>   oldAddr
+,    r          
+,    {a} :-  { CASE T.SizeOfType(type) OF
                               |0      : r:=OB.VALPAR; a:=oldAddr; 
                               |1,2,3,4: r:=OB.VALPAR; a:=oldAddr+4; 
                               ELSE      r:=OB.REFPAR; a:=oldAddr+4; 
                               END; };.
                                                                 
-   /* parMode =: */ _
-,  /* type    =: */ ArrayTypeRepr(_,_,_,_,_,len,_)
-,  /* oldAddr =: */ _
-=> /* parAddr := */ oldAddr
-,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ {a} :-  CONDITION (len=OB.OPENARRAYLEN); 
+     _
+,    ArrayTypeRepr(_,_,_,_,_,len,_)
+,    _
+=>   oldAddr
+,    {OB.REFPAR}
+,    {a} :-  CONDITION (len=OB.OPENARRAYLEN); 
                             { od:=T.OpenDimOfArrayType(type); a:=oldAddr+4+4*od;
                               IF od>1 THEN INC(a,4); END; };.
    
-   /* parMode =: */ _
-,  /* type    =: */ ArrayTypeRepr
-,  /* oldAddr =: */ _
-=> /* parAddr := */ oldAddr
-,  /* refMode := */ r          
-,  /* newAddr := */ {a} :-  { IF parMode=OB.REFPAR THEN 
+     _
+,    ArrayTypeRepr
+,    _
+=>   oldAddr
+,    r          
+,    {a} :-  { IF parMode=OB.REFPAR THEN 
                                   r:=OB.REFPAR; a:=oldAddr+4; 
                               ELSE
                                   CASE T.SizeOfType(type) OF
@@ -287,17 +287,17 @@ LOCAL{ VAR od:LONGINT; a:tAddress; r:tParMode; }
                                   END;
                               END; };.
    
-   /* parMode =: */ {OB.REFPAR}
-,  /* type    =: */ ..
-=> /* parAddr := */ oldAddr
-,  /* refMode := */ {OB.REFPAR}
-,  /* newAddr := */ oldAddr+4 :- .
+     {OB.REFPAR}
+,    ..
+=>   oldAddr
+,    {OB.REFPAR}
+,    oldAddr+4 :- .
    
-   /* parMode =: */ _
-,  /* type    =: */ ..
-=> /* parAddr := */ oldAddr
-,  /* refMode := */ {OB.VALPAR}
-,  /* newAddr := */ {oldAddr+Align4(T.SizeOfType(type))} :- .
+     _
+,    ..
+=>   oldAddr
+,    {OB.VALPAR}
+,    {oldAddr+Align4(T.SizeOfType(type))} :- .
    
 /*------------------------------------------------------------------------------------------------------------------------------*/
 FUNCTION TTableElemOfsInTDesc ( staticType:TypeReprs , testType:TypeReprs => tAddress ) BOOLEAN

@@ -1,8 +1,8 @@
 #!/bin/sh
-HOME=/home/mspring/prj/Jacob0
+HOME=/home/mspring/prj/jacob/jacob
 
 $HOME/Jacob \
-   -tab  $HOME \
+   -tab  $HOME/src \
    -link $HOME/bin/oc.linker \
    -asm  $HOME/bin/oc.assembler \
    $* \
