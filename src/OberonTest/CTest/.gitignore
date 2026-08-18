@@ -1,0 +1,8 @@
+*
+!*/
+!*.ob2
+!command
+!ref
+!*.ref
+!.gitignore
+out/
