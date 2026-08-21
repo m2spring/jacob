@@ -19,36 +19,54 @@ Two external toolchains are required, neither of which is part of this
 repository:
 
 * **Mocka** — a Modula-2 compiler, used to bootstrap Jacob's own source
-  (Jacob is written in Modula-2/Oberon-2 and compiles itself).
+  (Jacob is written in Modula-2/Oberon-2 and compiles itself). Use
+  `MOCKA 9903` (1999) from
+  [GunterMueller/Mocka_Modula-2_Compilers_and_Murus](https://github.com/GunterMueller/Mocka_Modula-2_Compilers_and_Murus)
+  — the oldest, and only currently-known-working, public Mocka: it's the
+  last one still using `.mi`/`.md` source extensions, matching Jacob's
+  own tree (see "Other Mocka releases tried" below for what doesn't
+  work). Just clone it; `./configure` (below) does everything else —
+  patching it for a modern glibc/x86_64 host, generating a `bin/mc`, and
+  linking its standard library source into `src/`:
 
   ```sh
-  git clone https://github.com/trijezdci/MOCKA
-  cd MOCKA/ver1807
-  chmod +x bin/Mocka
-  ./bin/Mocka -version   # should print "Mocka 1807"
-  cd ../..
+  git clone https://github.com/GunterMueller/Mocka_Modula-2_Compilers_and_Murus
   ```
 
-  `./configure` generates `bin/mc` as a thin passthrough wrapper to
-  `Mocka`, and also symlinks `.mod`/`.def` alongside every `.mi`/`.md` in
-  `src/`: this `Mocka` release hardcodes `.mod`/`.def` source extensions
-  (its own `FileName.def` has `.mi`/`.md` commented out right next to
-  them), while Jacob's whole tree uses `.mi`/`.md`, so without the
-  symlinks it can't find any module and fails with
-  `Missing [IMPLEMENTATION] MODULE`.
+  This release has one known correctness bug: `LONGREAL` constants lose
+  precision during compile-time constant folding. See "Test" below.
 
-  That gets it compiling for real — dozens of modules build cleanly —
-  but it still isn't a working substitute for `Mocka0605`. Two problems,
-  found by manual testing (not wired into `configure`/`Makefile`):
-  `Mocka`'s default `-list`/`-edit`/`-link`/`-asm`/`-syslib` script paths
-  (`/usr/local/bin/mocka/...`) don't exist on a fresh system, so it needs
-  those pointed somewhere real; pointing them at `Mocka0605`'s working
-  `sys/{list,edit,link,asm}` gets much further, but reintroduces the
-  dependency on that private, unreproducible copy this section exists to
-  get away from. Worse, `Mocka` itself then **segfaults** partway through
-  compiling Jacob (around module `OT`, after dozens of others compiled
-  fine) — a crash in the compiler binary on this codebase, not a
-  configuration problem, and not something fixable from this repo.
+  <details>
+  <summary>Other Mocka releases tried (public ones don't work; the one
+  that does isn't public)</summary>
+
+  * **`trijezdci/MOCKA`** ([github](https://github.com/trijezdci/MOCKA),
+    `ver1807`/`ver1808`) and the same mirror's **`Mocka_0605` folder**
+    (mislabeled — it's actually `0608m`) both use `.mod`/`.def` source
+    extensions instead of `.mi`/`.md` (a deliberate upstream change,
+    confirmed by [FU Berlin's own Mocka course
+    page](http://web.archive.org/web/20151007012404/http://lwb.mi.fu-berlin.de:80/inf/mocka/installation.shtml),
+    which has only ever offered post-`0605` releases). `./configure
+    --mocka=PATH` can still target one — it'll generate `.mod`/`.def`
+    symlinks next to every `.mi`/`.md` so it finds Jacob's modules at
+    all — but `trijezdci`'s compiler then **segfaults** partway through
+    Jacob's own sources (around module `OT`): a crash in that binary on
+    this codebase, not something fixable from here.
+  * **`MOCKA 0605`** (Universität Karlsruhe, May 2006) is the version
+    Jacob's source tree was actually developed against, and has no known
+    correctness bugs at all (see "Test" below) — but it was never
+    published anywhere we could find, including FU Berlin's own archived
+    Mocka mirror. The only copy known to exist is a personal one, sent by
+    Josef Grosch (Mocka's original author) directly over email in 2015,
+    along with his own patches for a modern Linux host — the same three
+    fixes `./configure` now applies to `Mocka 9903` (see below). If you
+    have independent access to a `0605` copy, `./configure --mocka=PATH`
+    accepts it too — the same patching/symlinking runs either way, but
+    is a no-op on an install that's already patched and doesn't need the
+    symlinks (`Makefile`'s `shims` step falls back to copying `0605`'s
+    precompiled `Exceptions.o`/`LREAL.o` instead of assembling them from
+    source, since `0605` doesn't ship that source).
+  </details>
 * **cocktail2110** — Dr. Josef Grosch's Cocktail compiler-construction
   toolbox (rex/lalr/puma/ast/ag), used to regenerate Jacob's scanner,
   parser, and tree-walking modules from their `.pum`/`.rex`/`.ast` sources.
@@ -106,10 +124,26 @@ This produces the `Jacob` compiler binary at the repo root.
 ```
 
 This runs the original 1998 conformance suite under `src/OberonTest/`. As of
-this writing it's clean except two known, unfixed backend code-generation
-bugs: the code generator emits `fild` without a size suffix and an invalid
-`decb %ax` register combination in two operator tests, both of which the
-original-era GNU assembler tolerated but a modern one rejects.
+this writing, six back-end tests fail regardless of which working Mocka
+built Jacob (see `src/OberonTest/CTest/alldiffs` for the full picture, not
+just `test.sh`'s own truncated summary):
+
+* Two (`Oper03`, `Oper05`) fail with "Compiler Error: No executable
+  created!" — the code generator emits `fild` without a size suffix and an
+  invalid `decb %ax` register combination, both of which the original-era
+  GNU assembler tolerated but a modern one rejects.
+* Four (`Simple06`, `Simple07`, `Simple11`, `Oper02`) print `REAL`/
+  `LONGREAL` values with different trailing digits than the reference
+  output (e.g. `0.99999994039535522` vs. the reference's
+  `0.99999994039535522460`) — a pre-existing floating-point formatting
+  discrepancy, not a regression from any particular Mocka.
+
+The front-end suite passes cleanly when Jacob is built with `Mocka0605`.
+Built with the publicly-reproducible `Mocka_9903` (see Prerequisites), it
+has one additional, `Mocka_9903`-specific regression: `LONGREAL` constants
+lose precision during compile-time constant folding (`eaex001t.ob2`,
+e.g. `-2.0` becomes `-1.9999997615814`) — a bug in that 1999 compiler
+itself, not something this repo's build tooling can work around.
 
 ### Compile and run an Oberon-2 program
 

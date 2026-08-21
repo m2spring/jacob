@@ -1,14 +1,15 @@
 #!/bin/sh
 # Minimal hand-written configure script, not GNU Autoconf/Automake (this
 # repo doesn't use the real Autotools, just their `./configure` convention).
-# Locates the MOCKA and cocktail toolchains and writes their paths to
-# config.mk, which the Makefile includes instead of hardcoding them.
+# Locates the MOCKA and cocktail toolchains, patches a fresh MOCKA clone
+# for a modern glibc/x86_64 host, and writes their paths to config.mk,
+# which the Makefile includes instead of hardcoding them.
 set -e
 
 HOME_DIR=$(cd "$(dirname "$0")" && pwd)
 PARENT_DIR=$(dirname "$HOME_DIR")
 
-MOCKA="$PARENT_DIR/MOCKA/ver1807/bin"
+MOCKA="$PARENT_DIR/Mocka_Modula-2_Compilers_and_Murus/GMD_MocKa_Compiler/Mocka_9903/mocka-9903.bin.linux.ELF.glibc"
 COCKTAIL="$PARENT_DIR/cocktail/bin"
 
 for arg in "$@"; do
@@ -19,11 +20,12 @@ for arg in "$@"; do
             cat <<EOF
 Usage: ./configure [--mocka=PATH] [--cocktail=PATH]
 
-Locates the MOCKA and cocktail toolchains (see README.md Prerequisites)
-and writes their paths to config.mk for the Makefile to use.
+Locates the MOCKA and cocktail toolchains (see README.md Prerequisites),
+patches a fresh MOCKA clone for a modern glibc/x86_64 host, and writes
+their paths to config.mk for the Makefile to use.
 
 Defaults, assuming siblings of this repo:
-  --mocka=$PARENT_DIR/MOCKA/ver1807/bin
+  --mocka=$MOCKA
   --cocktail=$PARENT_DIR/cocktail/bin
 EOF
             exit 0
@@ -35,47 +37,103 @@ EOF
     esac
 done
 
-if [ ! -x "$MOCKA/Mocka" ]; then
-    echo "configure: error: no Mocka binary at $MOCKA/Mocka" >&2
-    echo "  clone https://github.com/trijezdci/MOCKA as '../MOCKA' next to this repo," >&2
-    echo "  or pass --mocka=PATH. See README.md Prerequisites." >&2
+if [ ! -x "$MOCKA/sys/Mc" ]; then
+    echo "configure: error: no sys/Mc binary at $MOCKA/sys/Mc" >&2
+    echo "  clone https://github.com/GunterMueller/Mocka_Modula-2_Compilers_and_Murus" >&2
+    echo "  as '../Mocka_Modula-2_Compilers_and_Murus' next to this repo (see" >&2
+    echo "  README.md Prerequisites for the exact subdirectory), or pass --mocka=PATH." >&2
     exit 1
 fi
+chmod +x "$MOCKA/sys/Mc" "$MOCKA/sys/list" "$MOCKA/sys/edit" "$MOCKA/sys/link" "$MOCKA/sys/asm"
 
-if ! "$MOCKA/Mocka" -version >/dev/null 2>&1; then
-    echo "configure: error: $MOCKA/Mocka exists but failed to run" >&2
-    echo "  ('$MOCKA/Mocka -version' did not exit successfully -- check" >&2
-    echo "  32-bit multilib support and file permissions)." >&2
+# This 1999-era distribution assumes a 32-bit-native host and pre-TLS
+# glibc; three patches (the same ones Josef Grosch -- Mocka's own author
+# -- separately provided for a different Mocka release, by unrelated
+# correspondence) make it work on a modern 32-bit-compatibility x86_64
+# host instead. All three are idempotent (grep-guarded), so re-running
+# ./configure on an already-patched clone is a no-op here.
+
+# 1. sys/asm must assemble in 32-bit mode explicitly.
+if ! grep -q -- '--32' "$MOCKA/sys/asm"; then
+    sed -i 's/\$AS \$OPTIONS/$AS --32 $OPTIONS/' "$MOCKA/sys/asm"
+fi
+
+# 2. sys/link must link in 32-bit mode explicitly, and pull in the
+# M2RTS-ErrNo.o shim built below (see patch 3) instead of the errno
+# reference sys/link would otherwise leave out of RTS entirely.
+if ! grep -q -- '-m32' "$MOCKA/sys/link"; then
+    sed -i 's/\$LD -o \$program/$LD -m32 -o $program/' "$MOCKA/sys/link"
+fi
+if ! grep -q 'M2RTS-ErrNo.o' "$MOCKA/sys/link"; then
+    sed -i 's|RTS=\$SYSDIR/M2RTS-elf.o|RTS="$SYSDIR/M2RTS-elf.o $SYSDIR/M2RTS-ErrNo.o"|' "$MOCKA/sys/link"
+fi
+
+# 3. sys/M2RTS-elf.s's builtin ErrNo() reads the `errno` symbol directly
+# as raw (non-TLS) data, which modern glibc's TLS-based errno rejects at
+# link time ("TLS definition ... mismatches non-TLS reference"). Disable
+# it and supply M2RTS-ErrNo.o instead: a tiny C shim that reads errno
+# through <errno.h>, so glibc's own TLS access macro handles it.
+if grep -q '^ErrNo:' "$MOCKA/sys/M2RTS-elf.s"; then
+    sed -i \
+        -e 's/^\(\s*\)\.globl\s\+errno$/\1#.globl\terrno/' \
+        -e '/^ErrNo:$/,/^\tret$/ s/^/#/' \
+        "$MOCKA/sys/M2RTS-elf.s"
+fi
+cat > "$MOCKA/sys/M2RTS-ErrNo.c" <<'EOF'
+#include <errno.h>
+
+int ErrNo(void) {
+	return errno;
+}
+EOF
+/usr/bin/as --32 -o "$MOCKA/sys/M2RTS-elf.o" "$MOCKA/sys/M2RTS-elf.s"
+gcc -m32 -c -O2 -o "$MOCKA/sys/M2RTS-ErrNo.o" "$MOCKA/sys/M2RTS-ErrNo.c"
+
+if ! echo "-info" | "$MOCKA/sys/Mc" -link "$MOCKA/sys/link" -edit "$MOCKA/sys/edit" -list "$MOCKA/sys/list" -asm "$MOCKA/sys/asm" 2>&1 | grep -q "Options in effect"; then
+    echo "configure: error: $MOCKA/sys/Mc exists but failed to run" >&2
+    echo "  (its -info banner didn't print -- check 32-bit multilib support" >&2
+    echo "  and file permissions)." >&2
     exit 1
 fi
 
 # The build's `make -C src Jacob` step invokes the Modula-2 compiler by
-# running `mc` on PATH, not `Mocka` -- that's the old Mocka0605 naming.
-# trijezdci/MOCKA's releases only ship a binary literally named `Mocka`,
-# with no `mc`, so generate a thin passthrough wrapper under bin/,
-# overwriting the repo's old stale one (which hardcoded /usr/mocka).
+# running `mc` on PATH; this distribution has no bin/mc of its own (only
+# sys/Mc plus the four scripts above), so generate one, overwriting the
+# repo's old stale bin/mc (which hardcoded a nonexistent /usr/mocka).
+# -elf is a fixed flag, not passed by the build itself: sys/asm and
+# sys/link both branch on it (ELF vs. old a.out toolchain) and default to
+# a.out, whose /usr/i486-linuxaout/bin/as this host doesn't have.
 cat > "$HOME_DIR/bin/mc" <<EOF
 #!/bin/sh
 # Generated by ./configure. Do not edit; re-run ./configure instead.
-exec "$MOCKA/Mocka" "\$@"
+exec "$MOCKA/sys/Mc" -link "$MOCKA/sys/link" -edit "$MOCKA/sys/edit" \\
+     -list "$MOCKA/sys/list" -asm "$MOCKA/sys/asm" -elf "\$@"
 EOF
 chmod +x "$HOME_DIR/bin/mc"
 
-# trijezdci/MOCKA's FileName.def hardcodes .mod/.def source extensions
-# (its own comments show these were changed from .mi/.md); Jacob's whole
-# source tree uses .mi/.md, the Mocka0605 convention, so Mocka can't find
-# any module by name and reports "Missing [IMPLEMENTATION] MODULE".
-# Generate .mod/.def symlinks alongside every .mi/.md so Mocka's module
-# search finds them too. Harmless when MOCKA is Mocka0605, which only
-# ever looks for .mi/.md and ignores these.
-for f in "$HOME_DIR"/src/*.mi; do
-    [ -e "$f" ] || continue
-    ln -sf "$(basename "$f")" "${f%.mi}.mod"
-done
-for f in "$HOME_DIR"/src/*.md; do
-    [ -e "$f" ] || continue
-    ln -sf "$(basename "$f")" "${f%.md}.def"
-done
+# Mocka only auto-compiles-on-demand from its "Current Library" (the cwd
+# it's invoked from, i.e. src/); -syslib/-d only look for already-built
+# symbol files, which this fresh clone's lib/ doesn't have. Symlink its
+# .md/.mi standard library sources into src/ so Jacob's own SysLib.mi
+# etc. (which import Storage, Strings1, ...) find them there instead.
+# Skip Strings, which collides with Jacob's own unrelated Strings.md/.mi.
+# Managed block: re-running ./configure replaces it instead of growing it.
+GITIGNORE="$HOME_DIR/src/.gitignore"
+MARK_BEGIN="# --- begin: symlinked Mocka library sources (generated by configure) ---"
+MARK_END="# --- end: symlinked Mocka library sources (generated by configure) ---"
+sed -i "/^$MARK_BEGIN\$/,/^$MARK_END\$/d" "$GITIGNORE"
+{
+    echo "$MARK_BEGIN"
+    for f in "$MOCKA"/lib/*.mi "$MOCKA"/lib/*.md; do
+        [ -e "$f" ] || continue
+        b=$(basename "$f")
+        [ "$b" = "Strings.mi" ] && continue
+        [ "$b" = "Strings.md" ] && continue
+        ln -sf "$f" "$HOME_DIR/src/$b"
+        echo "/$b"
+    done
+    echo "$MARK_END"
+} >> "$GITIGNORE"
 
 if [ ! -x "$COCKTAIL/puma" ]; then
     echo "configure: error: no puma binary at $COCKTAIL/puma" >&2
@@ -104,5 +162,5 @@ EOF
 echo "==> Wrote config.mk"
 echo "      MOCKA=$MOCKA"
 echo "      COCKTAIL=$COCKTAIL"
-echo "==> Wrote bin/mc (passthrough wrapper to \$MOCKA/Mocka)"
-echo "==> Symlinked src/*.mod, src/*.def to their .mi/.md sources"
+echo "==> Wrote bin/mc, patched MOCKA's sys/ scripts for this host,"
+echo "    and symlinked its lib/ sources into src/"

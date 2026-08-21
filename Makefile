@@ -10,15 +10,27 @@ $(error No config.mk found; run ./configure first)
 endif
 include config.mk
 
-# Mocka must come before $(HOME_DIR)/bin: jacob/bin also has a (stale,
-# unrelated) 'mc' wrapper script that expects MOCKADIR=/usr/mocka.
-export PATH := $(COCKTAIL):$(MOCKA):$(HOME_DIR)/bin:$(PATH)
+export PATH := $(COCKTAIL):$(HOME_DIR)/bin:$(PATH)
 
 .PHONY: all shims clean
 
 all: shims
 	@echo "==> Building Jacob..."
-	$(MAKE) -C src Jacob
+	@$(MAKE) -C src Jacob || true
+	@if [ ! -f src/Jacob ]; then \
+	    echo "==> src/Jacob missing after first pass -- retrying once. On a" >&2; \
+	    echo "    from-scratch build (no .d/.r yet) mc can clobber a FOREIGN" >&2; \
+	    echo "    module's real object with its trivial empty stub the first" >&2; \
+	    echo "    time it sees that module, before .d/.r exist to tell it not" >&2; \
+	    echo "    to; rebuilding it and trying again fixes that. (Only" >&2; \
+	    echo "    System/MySysLib have a real .mi to be clobbered by --" >&2; \
+	    echo "    Exceptions/LREAL have none, so re-touching those too would" >&2; \
+	    echo "    just falsely invalidate already-consistent modules.)" >&2; \
+	    gcc -m32 -c -O2 -o src/System.o src/System.c -DUNIX; \
+	    gcc -m32 -c -O2 -o src/MySysLib.o src/xstat_shim.c; \
+	    touch src/System.o src/MySysLib.o; \
+	    $(MAKE) -C src Jacob; \
+	fi
 	@if [ ! -f src/Jacob ]; then \
 	    echo "==> error: src/Jacob was not produced." >&2; \
 	    echo "    mc's own diagnostics above (not make's exit code) are the" >&2; \
@@ -34,15 +46,30 @@ all: shims
 
 # System.md and MySysLib.md are FOREIGN modules with no buildable Modula-2
 # body; System.o/MySysLib.o are real C objects (from System.c/xstat_shim.c)
-# providing OpenInput/Read/Write/.../_xstat. mc has no rule for them, and if
-# it recompiles MySysLib.mi's trivial stub it silently overwrites the real
-# _xstat with an empty (undefined-symbol) one, so rebuild them here and
-# make sure their mtimes are newer than the .md/.mi before `make Jacob` runs.
+# providing OpenInput/Read/Write/.../_xstat. Exceptions.md and LREAL.md
+# (symlinked from MOCKA's own lib/, see ./configure) are the same kind of
+# FOREIGN module, provided as hand-assembled *-elf.s rather than C. mc has
+# no rule for any of these, and if it recompiles their trivial .mi/.md
+# stubs it silently overwrites the real objects with empty (undefined-
+# symbol) ones, so rebuild them here and make sure their mtimes are newer
+# than the .md/.mi before `make Jacob` runs.
 shims:
-	@echo "==> Building foreign-module runtime shims (System, MySysLib)..."
+	@echo "==> Building foreign-module runtime shims..."
 	gcc -m32 -c -O2 -o src/System.o src/System.c -DUNIX
 	gcc -m32 -c -O2 -o src/MySysLib.o src/xstat_shim.c
-	touch src/System.o src/MySysLib.o
+	@# MOCKA_9903-style installs ship these as raw assembly (assemble them);
+	@# MOCKA0605-style installs ship them precompiled already (copy those).
+	if [ -f $(MOCKA)/lib/Exceptions-elf.s ]; then \
+	    /usr/bin/as --32 -o src/Exceptions.o $(MOCKA)/lib/Exceptions-elf.s; \
+	else \
+	    cp $(MOCKA)/lib/Exceptions.o src/Exceptions.o; \
+	fi
+	if [ -f $(MOCKA)/lib/LREAL-elf.s ]; then \
+	    /usr/bin/as --32 -o src/LREAL.o $(MOCKA)/lib/LREAL-elf.s; \
+	else \
+	    cp $(MOCKA)/lib/LREAL.o src/LREAL.o; \
+	fi
+	touch src/System.o src/MySysLib.o src/Exceptions.o src/LREAL.o
 	# Cons.md/Cons.mi are Beg-generated output, committed as source (see
 	# README Prerequisites: we do not reproduce Beg). Their only Makefile
 	# rule ties them to oberon.cgd.tmp, a generated intermediate; on a
