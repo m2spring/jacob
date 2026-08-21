@@ -2,7 +2,7 @@
 # Minimal hand-written configure script, not GNU Autoconf/Automake (this
 # repo doesn't use the real Autotools, just their `./configure` convention).
 # Locates the MOCKA and cocktail toolchains and writes their paths to
-# config.mk, which build.sh reads instead of hardcoding them.
+# config.mk, which the Makefile includes instead of hardcoding them.
 set -e
 
 HOME_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -20,7 +20,7 @@ for arg in "$@"; do
 Usage: ./configure [--mocka=PATH] [--cocktail=PATH]
 
 Locates the MOCKA and cocktail toolchains (see README.md Prerequisites)
-and writes their paths to config.mk for build.sh to use.
+and writes their paths to config.mk for the Makefile to use.
 
 Defaults, assuming siblings of this repo:
   --mocka=$PARENT_DIR/MOCKA/ver1807/bin
@@ -42,11 +42,44 @@ if [ ! -x "$MOCKA/Mocka" ]; then
     exit 1
 fi
 
+if ! "$MOCKA/Mocka" -version >/dev/null 2>&1; then
+    echo "configure: error: $MOCKA/Mocka exists but failed to run" >&2
+    echo "  ('$MOCKA/Mocka -version' did not exit successfully -- check" >&2
+    echo "  32-bit multilib support and file permissions)." >&2
+    exit 1
+fi
+
+# The build's `make -C src Jacob` step invokes the Modula-2 compiler by
+# running `mc` on PATH, not `Mocka` -- that's the old Mocka0605 script
+# protocol (list/edit/link/asm around sys/Mc). trijezdci/MOCKA's releases
+# only ship a binary literally named `Mocka`, with no `mc`, so pointing
+# --mocka at one today passes the checks above but still can't build (see
+# README Prerequisites: "Not yet wired into the Makefile"). Catch that
+# here instead of letting PATH silently fall through to jacob/bin/mc (a
+# stale, unrelated wrapper hardcoding /usr/mocka) deep inside the build.
+if [ ! -x "$MOCKA/mc" ]; then
+    echo "configure: error: $MOCKA/Mocka runs, but no 'mc' binary is at $MOCKA/mc" >&2
+    echo "  The build invokes 'mc', not 'Mocka'. A trijezdci/MOCKA clone (see" >&2
+    echo "  README.md Prerequisites) isn't wired into the Makefile yet -- it" >&2
+    echo "  doesn't provide 'mc'. Point --mocka=PATH at a directory with a" >&2
+    echo "  working 'mc' (the old Mocka0605 sys/Mc script protocol) instead." >&2
+    exit 1
+fi
+
 if [ ! -x "$COCKTAIL/puma" ]; then
     echo "configure: error: no puma binary at $COCKTAIL/puma" >&2
     echo "  clone https://github.com/cocolab8/cocktail as '../cocktail' next to this" >&2
     echo "  repo and run 'make install DIR=\$(pwd)' there, or pass --cocktail=PATH." >&2
     echo "  See README.md Prerequisites." >&2
+    exit 1
+fi
+
+# puma -h exits 1 even on success (it's a usage message, not a status
+# flag), so check its output instead of its exit code.
+if ! "$COCKTAIL/puma" -h 2>&1 | grep -q "usage: puma"; then
+    echo "configure: error: $COCKTAIL/puma exists but failed to run" >&2
+    echo "  ('$COCKTAIL/puma -h' didn't print the expected usage text --" >&2
+    echo "  check 32-bit multilib support and file permissions)." >&2
     exit 1
 fi
 
