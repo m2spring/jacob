@@ -16,4 +16,5 @@ mvn.out*
 .Xdefaults
 /Jacob
 /config.mk
+/bin/mc
 lib/*.o

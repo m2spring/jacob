@@ -29,9 +29,15 @@ repository:
   cd ../..
   ```
 
-  Not yet wired into the `Makefile` — its `list`/`edit`/`link`/`asm`
-  script protocol still needs to be reconciled with (or replace) the
-  `sys`/`lib` runtime scripts and modules this build relies on.
+  `./configure` generates `bin/mc` as a thin passthrough wrapper to
+  `Mocka`, so the build finds a compiler on `PATH`. That alone isn't
+  enough to actually compile Jacob yet, though: `Mocka`'s default
+  library/script paths (`/usr/local/bin/mocka/...`,
+  `/usr/local/lib/mocka/mockalib`) don't exist on a fresh system, and it
+  fails with `Missing [IMPLEMENTATION] MODULE` rather than finding
+  Jacob's own sources — its `list`/`edit`/`link`/`asm` script protocol
+  and library path still need to be reconciled with (or replace) the
+  `sys`/`lib` runtime this build relies on.
 * **cocktail2110** — Dr. Josef Grosch's Cocktail compiler-construction
   toolbox (rex/lalr/puma/ast/ag), used to regenerate Jacob's scanner,
   parser, and tree-walking modules from their `.pum`/`.rex`/`.ast` sources.
