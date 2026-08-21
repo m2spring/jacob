@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SYSDIR=/home/mspring/prj/jacob/jacob/src
+SYSDIR=$(cd "$(dirname "$0")/../src" && pwd)
 
 case $1 in
 '-elf' ) shift ;;

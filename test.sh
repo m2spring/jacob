@@ -7,7 +7,7 @@
 # Usage: ./test.sh [of|oc|all]   (default: all; see src/OberonTest/check)
 set -e
 
-HOME_DIR=/home/mspring/prj/jacob/jacob
+HOME_DIR=$(cd "$(dirname "$0")" && pwd)
 MODE="${1:-all}"
 
 if [ ! -x "$HOME_DIR/Jacob" ]; then

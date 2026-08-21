@@ -1,5 +1,5 @@
 #!/bin/sh
-HOME=/home/mspring/prj/jacob/jacob
+HOME=$(cd "$(dirname "$0")/.." && pwd)
 
 $HOME/Jacob \
    -tab  $HOME/src \
