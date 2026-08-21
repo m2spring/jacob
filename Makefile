@@ -36,6 +36,16 @@ shims:
 	gcc -m32 -c -O2 -o src/System.o src/System.c -DUNIX
 	gcc -m32 -c -O2 -o src/MySysLib.o src/xstat_shim.c
 	touch src/System.o src/MySysLib.o
+	# Cons.md/Cons.mi are Beg-generated output, committed as source (see
+	# README Prerequisites: we do not reproduce Beg). Their only Makefile
+	# rule ties them to oberon.cgd.tmp, a generated intermediate; on a
+	# fresh clone/checkout/merge, file mtimes don't reflect build order,
+	# so oberon.cgd.tmp can look newer than the already-checked-out
+	# Cons.md/mi, and `make Jacob` then tries to regenerate them via the
+	# (unavailable, 1994-era) Beg binary. Build oberon.cgd.tmp first, then
+	# touch Cons.md/mi so they're never seen as stale relative to it.
+	$(MAKE) -C src oberon.cgd.tmp
+	touch src/Cons.md src/Cons.mi
 
 clean:
 	@echo "==> Cleaning generated files..."
