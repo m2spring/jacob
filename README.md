@@ -30,14 +30,25 @@ repository:
   ```
 
   `./configure` generates `bin/mc` as a thin passthrough wrapper to
-  `Mocka`, so the build finds a compiler on `PATH`. That alone isn't
-  enough to actually compile Jacob yet, though: `Mocka`'s default
-  library/script paths (`/usr/local/bin/mocka/...`,
-  `/usr/local/lib/mocka/mockalib`) don't exist on a fresh system, and it
-  fails with `Missing [IMPLEMENTATION] MODULE` rather than finding
-  Jacob's own sources — its `list`/`edit`/`link`/`asm` script protocol
-  and library path still need to be reconciled with (or replace) the
-  `sys`/`lib` runtime this build relies on.
+  `Mocka`, and also symlinks `.mod`/`.def` alongside every `.mi`/`.md` in
+  `src/`: this `Mocka` release hardcodes `.mod`/`.def` source extensions
+  (its own `FileName.def` has `.mi`/`.md` commented out right next to
+  them), while Jacob's whole tree uses `.mi`/`.md`, so without the
+  symlinks it can't find any module and fails with
+  `Missing [IMPLEMENTATION] MODULE`.
+
+  That gets it compiling for real — dozens of modules build cleanly —
+  but it still isn't a working substitute for `Mocka0605`. Two problems,
+  found by manual testing (not wired into `configure`/`Makefile`):
+  `Mocka`'s default `-list`/`-edit`/`-link`/`-asm`/`-syslib` script paths
+  (`/usr/local/bin/mocka/...`) don't exist on a fresh system, so it needs
+  those pointed somewhere real; pointing them at `Mocka0605`'s working
+  `sys/{list,edit,link,asm}` gets much further, but reintroduces the
+  dependency on that private, unreproducible copy this section exists to
+  get away from. Worse, `Mocka` itself then **segfaults** partway through
+  compiling Jacob (around module `OT`, after dozens of others compiled
+  fine) — a crash in the compiler binary on this codebase, not a
+  configuration problem, and not something fixable from this repo.
 * **cocktail2110** — Dr. Josef Grosch's Cocktail compiler-construction
   toolbox (rex/lalr/puma/ast/ag), used to regenerate Jacob's scanner,
   parser, and tree-walking modules from their `.pum`/`.rex`/`.ast` sources.

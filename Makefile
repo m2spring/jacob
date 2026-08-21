@@ -19,6 +19,13 @@ export PATH := $(COCKTAIL):$(MOCKA):$(HOME_DIR)/bin:$(PATH)
 all: shims
 	@echo "==> Building Jacob..."
 	$(MAKE) -C src Jacob
+	@if [ ! -f src/Jacob ]; then \
+	    echo "==> error: src/Jacob was not produced." >&2; \
+	    echo "    mc's own diagnostics above (not make's exit code) are the" >&2; \
+	    echo "    real error here -- mc/Mocka can report a compile failure" >&2; \
+	    echo "    without making this a build error. See README Prerequisites." >&2; \
+	    exit 1; \
+	fi
 	@echo "==> Building Oberon-2 runtime (elf-rts)..."
 	$(MAKE) -C src ELFAS="/usr/bin/as --32" ELFGCC="gcc -m32" elf-rts
 	@echo "==> Installing Jacob to $(HOME_DIR)/Jacob..."

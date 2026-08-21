@@ -2,6 +2,8 @@
 *.r
 *.d
 *.lst
+/*.mod
+/*.def
 Jacob
 ADR.md
 ADR.mi

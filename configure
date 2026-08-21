@@ -61,6 +61,22 @@ exec "$MOCKA/Mocka" "\$@"
 EOF
 chmod +x "$HOME_DIR/bin/mc"
 
+# trijezdci/MOCKA's FileName.def hardcodes .mod/.def source extensions
+# (its own comments show these were changed from .mi/.md); Jacob's whole
+# source tree uses .mi/.md, the Mocka0605 convention, so Mocka can't find
+# any module by name and reports "Missing [IMPLEMENTATION] MODULE".
+# Generate .mod/.def symlinks alongside every .mi/.md so Mocka's module
+# search finds them too. Harmless when MOCKA is Mocka0605, which only
+# ever looks for .mi/.md and ignores these.
+for f in "$HOME_DIR"/src/*.mi; do
+    [ -e "$f" ] || continue
+    ln -sf "$(basename "$f")" "${f%.mi}.mod"
+done
+for f in "$HOME_DIR"/src/*.md; do
+    [ -e "$f" ] || continue
+    ln -sf "$(basename "$f")" "${f%.md}.def"
+done
+
 if [ ! -x "$COCKTAIL/puma" ]; then
     echo "configure: error: no puma binary at $COCKTAIL/puma" >&2
     echo "  clone https://github.com/cocolab8/cocktail as '../cocktail' next to this" >&2
@@ -89,3 +105,4 @@ echo "==> Wrote config.mk"
 echo "      MOCKA=$MOCKA"
 echo "      COCKTAIL=$COCKTAIL"
 echo "==> Wrote bin/mc (passthrough wrapper to \$MOCKA/Mocka)"
+echo "==> Symlinked src/*.mod, src/*.def to their .mi/.md sources"
