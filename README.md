@@ -26,6 +26,7 @@ repository:
   cd MOCKA/ver1807
   chmod +x bin/Mocka
   ./bin/Mocka -version   # should print "Mocka 1807"
+  cd ../..
   ```
 
   Not yet wired into the `Makefile` — its `list`/`edit`/`link`/`asm`
@@ -42,6 +43,7 @@ repository:
   make
   make install DIR=$(pwd)
   ./bin/puma -h   # should print usage/options text
+  cd ..
   ```
 
   The `Makefile`'s `COCKTAIL` variable (from `config.mk`) needs to point
@@ -64,7 +66,7 @@ Also needed: gcc/as/ld with 32-bit multilib support (`gcc-multilib` /
 ```sh
 git clone <this repo> jacob && cd jacob
 ./configure            # locates MOCKA and cocktail, writes config.mk
-make                    # incremental build
+make                   # incremental build
 make clean && make     # forces full puma/rex/lark/ast regeneration first
 ```
 
