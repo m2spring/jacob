@@ -11,7 +11,7 @@ HOME_DIR=/home/mspring/prj/jacob/jacob
 MODE="${1:-all}"
 
 if [ ! -x "$HOME_DIR/Jacob" ]; then
-    echo "==> $HOME_DIR/Jacob not found - run ./build.sh first." >&2
+    echo "==> $HOME_DIR/Jacob not found - run ./configure && make first." >&2
     exit 1
 fi
 
