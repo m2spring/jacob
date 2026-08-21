@@ -4,6 +4,7 @@ echo Checking Front-End...
 echo Deleting directory out...
 dir=`pwd`
 
+mkdir -p $dir/out
 rm $dir/out/* $dir/out/.??* 2>/dev/null
 rm $dir/test/*_errors 2>/dev/null
 
