@@ -47,11 +47,12 @@ fi
 chmod +x "$MOCKA/sys/Mc" "$MOCKA/sys/list" "$MOCKA/sys/edit" "$MOCKA/sys/link" "$MOCKA/sys/asm"
 
 # This 1999-era distribution assumes a 32-bit-native host and pre-TLS
-# glibc; three patches (the same ones Josef Grosch -- Mocka's own author
-# -- separately provided for a different Mocka release, by unrelated
-# correspondence) make it work on a modern 32-bit-compatibility x86_64
-# host instead. All three are idempotent (grep-guarded), so re-running
-# ./configure on an already-patched clone is a no-op here.
+# glibc; these patches (the -m32/--32/errno ones are the same three Josef
+# Grosch -- Mocka's own author -- separately provided for a different
+# Mocka release, by unrelated correspondence) make it work on a modern
+# 32-bit-compatibility x86_64 host instead. All are idempotent
+# (grep-guarded), so re-running ./configure on an already-patched clone
+# is a no-op here.
 
 # 1. sys/asm must assemble in 32-bit mode explicitly.
 if ! grep -q -- '--32' "$MOCKA/sys/asm"; then
@@ -66,6 +67,14 @@ if ! grep -q -- '-m32' "$MOCKA/sys/link"; then
 fi
 if ! grep -q 'M2RTS-ErrNo.o' "$MOCKA/sys/link"; then
     sed -i 's|RTS=\$SYSDIR/M2RTS-elf.o|RTS="$SYSDIR/M2RTS-elf.o $SYSDIR/M2RTS-ErrNo.o"|' "$MOCKA/sys/link"
+fi
+# None of sys/link's inputs carry a .note.GNU-stack section (they predate
+# the convention), so ld warns and falls back to assuming an executable
+# stack. Nothing here needs one; say so explicitly instead of relying on
+# that (deprecated) fallback -- same fix as bin/oc.linker's, for the
+# build of Jacob itself rather than programs Jacob compiles.
+if ! grep -q 'noexecstack' "$MOCKA/sys/link"; then
+    sed -i 's/\$LD -m32 -o \$program/$LD -m32 -Wl,-z,noexecstack -o $program/' "$MOCKA/sys/link"
 fi
 
 # 3. sys/M2RTS-elf.s's builtin ErrNo() reads the `errno` symbol directly

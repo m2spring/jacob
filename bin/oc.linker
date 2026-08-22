@@ -14,5 +14,10 @@ case $1 in
 esac;
 
 PROGRAM=$1 ; shift ; OBJECTS=$*
-gcc -m32 -no-pie -o $PROGRAM $STAT $RTS $OBJECTS -lc
+# None of Jacob's generated .s (or Mocka-era runtime .s) files carry a
+# .note.GNU-stack section -- they predate the convention -- so ld warns
+# and falls back to assuming an executable stack. Nothing here actually
+# needs one; tell the linker explicitly instead of relying on that
+# (deprecated) fallback.
+gcc -m32 -no-pie -Wl,-z,noexecstack -o $PROGRAM $STAT $RTS $OBJECTS -lc
 chmod 770 $PROGRAM
