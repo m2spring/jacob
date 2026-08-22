@@ -13,6 +13,8 @@ do
   if test -f $i/command
     then (
            cd $i
+           mkdir -p out	# out/ is gitignored, so a fresh clone lacks it;
+                        # every command script assumes it already exists
            echo "Processing `basename $i`..."
            sh ./command
            $dir/ref_compare
