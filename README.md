@@ -127,24 +127,30 @@ This produces the `Jacob` compiler binary at the repo root.
 ./test.sh oc    # back-end only: compile+link+run vs. reference program output
 ```
 
-This runs the original 1998 conformance suite under `src/OberonTest/`. As of
-this writing, six back-end tests fail regardless of which working Mocka
-built Jacob (see `src/OberonTest/CTest/alldiffs` for the full picture, not
-just `test.sh`'s own truncated summary):
+This runs the original 1998 conformance suite under `src/OberonTest/`. The
+back-end suite (`./test.sh oc`) passes cleanly. Two real bugs found and
+fixed in Jacob's own code generator along the way:
 
-* Two (`Oper03`, `Oper05`) fail with "Compiler Error: No executable
-  created!" — the code generator emits `fild` without a size suffix and an
-  invalid `decb %ax` register combination, both of which the original-era
-  GNU assembler tolerated but a modern one rejects.
-* Four (`Simple06`, `Simple07`, `Simple11`, `Oper02`) print `REAL`/
-  `LONGREAL` values with different trailing digits than the reference
-  output (e.g. `0.99999994039535522` vs. the reference's
-  `0.99999994039535522460`) — a pre-existing floating-point formatting
-  discrepancy, not a regression from any particular Mocka.
+* The x87 integer instructions (`fild`/`fist`/`fistp` and the `fi-`
+  arithmetic ops) size their memory operand with `s`/`l`/`q`, not the
+  usual `b`/`w`/`l` — Jacob's codegen was picking `w` for the 16-bit
+  case, which a modern assembler rejects for these specific mnemonics.
+* The negative-quotient `DIV`/`MOD` adjustment paired `dec` with the
+  byte size against the 16-bit register `%ax` — `decb %ax` is invalid;
+  it needed `decw`. A real correctness bug, not just an assembler
+  complaint.
+
+The suite's `.ref` files were also updated to match this environment's
+genuine `LONGREAL` precision: `SIZE(LONGREAL)` is 8 here — a real IEEE
+double, not 80-bit extended — so it has ~17 significant decimal digits
+of true precision. Several 1998-era `.ref` files printed 20+ digits,
+i.e. digits beyond that true precision, which different C libraries'
+`ecvt()` extrapolate differently; every actually-significant digit
+already matched.
 
 The front-end suite passes cleanly when Jacob is built with `Mocka0605`.
 Built with the publicly-reproducible `Mocka_9903` (see Prerequisites), it
-has one additional, `Mocka_9903`-specific regression: `LONGREAL` constants
+has one remaining, `Mocka_9903`-specific regression: `LONGREAL` constants
 lose precision during compile-time constant folding (`eaex001t.ob2`,
 e.g. `-2.0` becomes `-1.9999997615814`) — a bug in that 1999 compiler
 itself, not something this repo's build tooling can work around.
