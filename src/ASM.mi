@@ -497,6 +497,26 @@ BEGIN (* NeedsJmpStar *)
 END NeedsJmpStar;
 
 (************************************************************************************************************************)
+(* The x87 integer instructions (fild/fist/fistp and the fi- arithmetic
+   ops) size their memory operand with 's'/'l'/'q' (16/32/64-bit), not
+   the 'b'/'w'/'l' every other instruction uses. Modern GNU as rejects
+   the generic 'w' SizeStrTab would print for a 16-bit operand here --
+   "invalid instruction suffix for `fild'" -- where it wants 's'. *)
+PROCEDURE IsX87IntOp(oper:ASMOP.tOper):BOOLEAN;
+BEGIN (* IsX87IntOp *)
+ RETURN (oper=ASMOP.fild) OR (oper=ASMOP.fist) OR (oper=ASMOP.fistp)
+      OR (oper=ASMOP.fiadd) OR (oper=ASMOP.fimul) OR (oper=ASMOP.ficomp)
+      OR (oper=ASMOP.fisub) OR (oper=ASMOP.fisubr)
+      OR (oper=ASMOP.fidiv) OR (oper=ASMOP.fidivr);
+END IsX87IntOp;
+
+PROCEDURE SizeCh(oper:ASMOP.tOper; sz:tSize):CHAR;
+BEGIN (* SizeCh *)
+ IF (sz=w) & IsX87IntOp(oper) THEN RETURN 's'; END; (* IF *)
+ RETURN SizeStrTab[sz];
+END SizeCh;
+
+(************************************************************************************************************************)
 PROCEDURE OutOper(VAR oper:tOperationBuf);
 
  PROCEDURE OutCmt;
@@ -531,7 +551,7 @@ BEGIN (* OutOper *)
     ELSE
        OutCh(CHR(9)); 
        OutS(ASMOP.OperStrTab[oper.operation]); 
-       IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
+       IF oper.size#NoSize THEN OutCh(SizeCh(oper.operation,oper.size)); END; (* IF *)
    
        IF (oper.operand1^.ID#ID_) OR (oper.comment[0]#0C) THEN
           OutCh(CHR(9));
@@ -554,7 +574,7 @@ BEGIN (* OutOper *)
        OpProcTab[oper.operand2^.ID].Out(oper.operand2^); 
     ELSE
        OutS(ASMOP.OperStrTab[oper.operation]); 
-       IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
+       IF oper.size#NoSize THEN OutCh(SizeCh(oper.operation,oper.size)); END; (* IF *)
    
        IF oper.operand1^.ID#ID_ THEN OutCh(' '); END; (* IF *)
 

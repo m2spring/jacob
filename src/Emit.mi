@@ -1785,13 +1785,21 @@ BEGIN
          ASM.CS2                                     ( mov,w   ,  i(e^.son[2]^.gcg^.Constant.val),R(RegAlloc.allocation[ai].scr[1])                                              ); 
          ASM.C0                                      ( cwd                                                                      ); 
          ASM.CS1                                     ( idiv,w  ,  R(RegAlloc.allocation[ai].scr[1])                                                        ); 
-         ASM.CS2                                     ( test,w  ,  R(dx),R(dx)                                                   ); 
+         ASM.CS2                                     ( test,w  ,  R(dx),R(dx)                                                   );
          ASM.C1                                      ( jge     ,  L(LAB.New(label))                                             );
-         ASM.CS1                                     ( dec,b   ,  R(ax)                                                         );
+         (* Hand-patched: Beg's generated output paired dec with the
+            byte size (b) against the word register R(ax), producing
+            invalid `decb %ax'; the rest of this rule (mov/idiv/test)
+            is consistently word-sized (w), and R(ax) is a word
+            register, so w is the size that actually matches. Beg
+            itself can't be re-run to regenerate this correctly (see
+            README Prerequisites), so this is a direct, minimal patch
+            to the committed generated source. *)
+         ASM.CS1                                     ( dec,w   ,  R(ax)                                                         );
          ASM.Label                            ( label                                                                           );
       END;
-    
-   | 172 : 
+
+   | 172 :
   EmitNtLReg(e^.son[1],nest+1,AT0 ); 
        ai:=ai-1;
        IF RegAlloc.allocation [ai]. num>0 THEN 
