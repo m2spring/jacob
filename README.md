@@ -13,6 +13,10 @@ this fork; everything from "Introduction" onward is the original project's
 own README, kept for history and still largely accurate about the language
 implementation itself.
 
+Hit a problem following these instructions? Check
+[README-details.md](README-details.md) for known issues and fixes before
+opening a new one.
+
 ### Prerequisites
 
 Two external toolchains are required, neither of which is part of this
