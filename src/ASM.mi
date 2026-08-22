@@ -486,6 +486,17 @@ BEGIN (* OutR *)
 END OutR;
 
 (************************************************************************************************************************)
+(* jmp through anything other than a bare direct label -- a register, or
+   any label/base/index addressing combination (e.g. a CASE statement's
+   jump table, label(,%reg,4)) -- is a computed/indirect jump. Modern
+   GNU as (unlike the one this codegen originally targeted) requires the
+   '*' that marks it as such, or it warns "indirect jmp without `*'". *)
+PROCEDURE NeedsJmpStar(oper:ASMOP.tOper; id:tOpID):BOOLEAN;
+BEGIN (* NeedsJmpStar *)
+ RETURN (oper=jmp) & (id#ID_) & (id#ID_L) & ((id=ID_R) OR ((id>=ID_oLBIf) & (id<=ID_If)));
+END NeedsJmpStar;
+
+(************************************************************************************************************************)
 PROCEDURE OutOper(VAR oper:tOperationBuf);
 
  PROCEDURE OutCmt;
@@ -522,11 +533,12 @@ BEGIN (* OutOper *)
        OutS(ASMOP.OperStrTab[oper.operation]); 
        IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
    
-       IF (oper.operand1^.ID#ID_) OR (oper.comment[0]#0C) THEN 
-          OutCh(CHR(9)); 
+       IF (oper.operand1^.ID#ID_) OR (oper.comment[0]#0C) THEN
+          OutCh(CHR(9));
        END; (* IF *)
-       
-       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); 
+
+       IF NeedsJmpStar(oper.operation,oper.operand1^.ID) THEN OutCh('*'); END; (* IF *)
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^);
        IF oper.operand2^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand2^.ID].Out(oper.operand2^); END; (* IF *)
        IF oper.operand3^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand3^.ID].Out(oper.operand3^); END; (* IF *)
        IF oper.comment[0]#0C   THEN OutCh(CHR(9)); OutCmt; END; (* IF *)
@@ -545,8 +557,9 @@ BEGIN (* OutOper *)
        IF oper.size#NoSize THEN OutCh(SizeStrTab[oper.size]); END; (* IF *)
    
        IF oper.operand1^.ID#ID_ THEN OutCh(' '); END; (* IF *)
-       
-       OpProcTab[oper.operand1^.ID].Out(oper.operand1^); 
+
+       IF NeedsJmpStar(oper.operation,oper.operand1^.ID) THEN OutCh('*'); END; (* IF *)
+       OpProcTab[oper.operand1^.ID].Out(oper.operand1^);
        IF oper.operand2^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand2^.ID].Out(oper.operand2^); END; (* IF *)
        IF oper.operand3^.ID#ID_ THEN OutCh(','); OpProcTab[oper.operand3^.ID].Out(oper.operand3^); END; (* IF *)
     END; (* CASE *)
