@@ -144,6 +144,8 @@ has one additional, `Mocka_9903`-specific regression: `LONGREAL` constants
 lose precision during compile-time constant folding (`eaex001t.ob2`,
 e.g. `-2.0` becomes `-1.9999997615814`) — a bug in that 1999 compiler
 itself, not something this repo's build tooling can work around.
+`checkof` treats this one file as a known, expected skip rather than a
+failure, so `./test.sh of` still exits clean rather than reporting it.
 
 ### Compile and run an Oberon-2 program
 
